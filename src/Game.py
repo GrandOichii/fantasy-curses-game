@@ -24,7 +24,7 @@ class Game:
         credits_menu = Menu()
         credits_menu.choice_symbol = '> '
         credits_menu.title = 'Credits'
-        credits_menu.text = 'https://github.com/GrandOichii/whatever-i-called-it'
+        credits_menu.text = 'https://github.com/GrandOichii/fantasy-curses-game'
 
         new_game_button = ActionButton('New game', main_menu, self.new_game_action)
 
@@ -213,12 +213,20 @@ class Game:
                     self.message_box(f'Maximum length of character is {max_name_len}', ['Ok'])
                 else:
                     name += chr(key)
-            if key in [27]: # escape
-                if self.message_box('Cancel character creation?', ['Yes', 'No']) == 'Yes':
+            # too slow for some reason
+            if key in [27]: # ESC
+                cancel_result = self.message_box('Cancel character creation?', ['No', 'Yes'])
+                if cancel_result == 'Yes':
                     self.stdscr.clear()
                     return
-            if key in [127, 8] and len(name) > 0: # BACKSPACE
-                name = name[:-1]
+            if key in [127, 8]: # BACKSPACE
+                if len(name) > 0:
+                    name = name[:-1]
+                else:
+                    cancel_result = self.message_box('Cancel character creation?', ['No', 'Yes'])
+                    if cancel_result == 'Yes':
+                        self.stdscr.clear()
+                        return
             if key in [10]: # ENTER
                 if len(name) < min_name_len:
                     self.message_box(f'The name has to be at least {min_name_len} characters long!', ['Ok'])
