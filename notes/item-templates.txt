@@ -1,0 +1,73 @@
+ARMOR:
+
+// iron helmet
++ 3 armor
+takes HEAD slot
+requirements: 14 strength
+
+// iron armor
++ 4 armor
+takes BODY slot
+requirements: 14 strength
+
+// iron leggins
++ 2 armor
+takes LEGS slot
+requirements: 14 strength
+
+// mage's hat
++ 1 armor
++ 3 mana
+takes HEAD slot
+requirements: none
+
+// mage's robe
++ 1 armor
++ 5 mana
+takes BODY slot
+requirements: none 
+
+// hood
++ 1 armor
+takes HEAD slot
+requirements: none
+
+// leather armor
++ 2 armor
+takes BODY slot
+requirements: 10 strength
+
+
+
+WEAPONS:
+
+// iron sword
+base damage - 5
+max modifier + 3
+range - 2
+takes ARM slot
+requirements: strength 14
+
+// iron shield
++ 2 armor
+range - 1
+base damage - 1
+max modifier + 1
+takes ARM slot
+requirements: 14 strength
+
+// long bow
+base damage - 6
+max modifier + 1
+range - 5 + dexterity 
+uses: arrow
+requirements: strength 12
+
+
+
+AMMO:
+
+// wooden arrow
+base damage - 1
+max modifier + 1
+

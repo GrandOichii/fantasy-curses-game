@@ -1,0 +1,116 @@
+{
+    "armor": [
+        {
+            "name": "Iron Helmet",
+            "mods": {
+                "armor": 3
+            },
+            "slot": "HEAD",
+            "requires": {
+                "STR": 14
+            }
+        },
+        {
+            "name": "Iron Armor",
+            "mods": {
+                "armor": 4
+            },
+            "slot": "BODY",
+            "requires": {
+                "STR": 14
+            }
+        },
+        {
+            "name": "Iron Leggins",
+            "mods": {
+                "armor": 2
+            },
+            "slot": "HEAD",
+            "requires": {
+                "STR": 14
+            }
+        },
+        {
+            "name": "Mage's Hat",
+            "mods": {
+                "armor": 1,
+                "mana": 3
+            },
+            "slot": "HEAD",
+            "requires": {}
+        },
+        {
+            "name": "Mage's Robe",
+            "mods": {
+                "armor": 1,
+                "mana": 5
+            },
+            "slot": "BODY",
+            "requires": {}
+        },
+        {
+            "name": "Hood",
+            "mods": {
+                "armor": 1
+            },
+            "requires": {}
+        },
+        {
+            "name": "Leather Armor",
+            "mods": {
+                "armor": 2
+            },
+            "slot": "BODY",
+            "requires": {
+                "STR": 10
+            }
+        }
+    ],
+    "melee": [
+        {
+            "name": "Iron Sword",
+            "base_damage": 5,
+            "max_mod": 3,
+            "range": 2,
+            "slot": "ARM",
+            "mods": {},
+            "requires": {
+                "STR": 14
+            }
+        },
+        {
+            "name": "Iron Shield",
+            "base_damage": 1,
+            "max_mod": 1,
+            "range": 1,
+            "slot": "ARM",
+            "mods": {
+                "armor": 2
+            },
+            "requires": {
+                "STR": 14
+            }
+        }
+    ],
+    "ranged":[
+        {
+            "name": "Long Bow",
+            "base_damage": 6,
+            "max_mod": 1,
+            "range": 5,
+            "ammo_type": "arrow",
+            "requires": {
+                "STR": 12
+            }
+        }
+    ],
+    
+    "ammo": [
+        {
+            "name": "Wooden Arrow",
+            "base_damage": 1,
+            "max_mod": 1,
+            "type": "arrow"
+        }
+    ]
+}
