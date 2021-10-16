@@ -7,6 +7,7 @@ from Menu import Menu, Button, ActionButton
 
 class Game:
     def __init__(self, saves_path):
+        self.debug = False
         self.saves_path = saves_path
 
         self.create_folders()
@@ -80,24 +81,21 @@ class Game:
         # main game loop
         self.running = True
         while self.running:
-            key = stdscr.getkey()
+            key = stdscr.getch()
             stdscr.clear()
 
             # keys
-            if key == 'Q':
+            if key in [81]: # Q
                 self.running = False
-            
-            if key == 'KEY_UP':
+            if key in [259]: # UP
                 self.menu_choice_id -= 1
                 if self.menu_choice_id < 0:
                     self.menu_choice_id = len(self.current_menu.buttons) - 1
-            
-            if key == 'KEY_DOWN':
+            if key in [258]: # DOWN
                 self.menu_choice_id += 1
                 if self.menu_choice_id >= len(self.current_menu.buttons):
                     self.menu_choice_id = 0
-
-            if key == '\n':
+            if key in [10]: # ENTER
                 if not self.current_menu.buttons[self.menu_choice_id].leads_to:
                     if not isinstance(self.current_menu.buttons[self.menu_choice_id], ActionButton) :
                         self.message_box('This button doesn\'t do anything', ['Ok'])
@@ -108,7 +106,7 @@ class Game:
                     self.menu_choice_id = 0
 
             if self.running:
-                # self.addstr(1, 1, f'Last key: |{key}|')
+                if self.debug: self.addstr(0, 0, f'KEY: |{key}|')
                 self.display_current_menu(1, 1)
                 stdscr.refresh()
 
@@ -126,7 +124,7 @@ class Game:
         max_width = self.WIDTH - 2
 
         # calculate values
-        choices_len = (len(choices) + 1) * 2 # may not be working properly
+        choices_len = (len(choices) + 1) * 2
         for choice in choices:
             choices_len += len(choice)
         if height == -1:
@@ -161,11 +159,11 @@ class Game:
             key = win.getch()
             win.addstr(height - 2, 1, ' ' * width)
             win.refresh()
-            if key == 68:
+            if key in [68]: # LEFT
                 choice_id -= 1
                 if choice_id < 0:
                     choice_id = len(choices) - 1
-            if key == 67:
+            if key in [67]: # RIGHT
                 choice_id += 1
                 if choice_id >= len(choices):
                     choice_id = 0
@@ -178,7 +176,7 @@ class Game:
                 pos += len(choices[i]) + 2
             if key == 10:
                 done = True
-            # win.addstr(5, 3, f'-{key}-')
+            if self.debug: win.addstr(0, 0, f'KEY: |{key}|')
         win.clear()
         win.refresh()
         return choices[choice_id]
@@ -208,15 +206,15 @@ class Game:
         name = ''
         while not done:
             key = self.stdscr.getch()
-            # self.addstr(4, 4, f'|{key}|')
-            if (key >= 97 and key <= 122) or (key >= 65 and key <= 90) or key == 32:
+            if self.debug: self.addstr(0, 0, f'KEY: |{key}|')
+            if (key >= 97 and key <= 122) or (key >= 65 and key <= 90) or key in [32]: # from a to z, from A to Z, SPACE
                 if len(name) >= max_name_len:
                     self.message_box(f'Maximum length of character is {max_name_len}', ['Ok'])
                 else:
                     name += chr(key)
-            if key == 127 and len(name) > 0:
+            if key in [127] and len(name) > 0: # BACKSPACE
                 name = name[:-1]
-            if key == 10:
+            if key in [10]: # ENTER
                 if len(name) < min_name_len:
                     self.message_box(f'The name has to be at least {min_name_len} characters long!', ['Ok'])
                 else:
