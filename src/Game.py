@@ -12,8 +12,8 @@ class Game:
         self.create_folders()
         main_menu = Menu()
         main_menu.choice_symbol = '> '
-        main_menu.title = 'Shitty python game'
-        main_menu.text = 'I made this shitty game using python curses get mad'
+        main_menu.title = 'Fantasy Curses Game'
+        main_menu.text = 'This is a fantasy game made using python curses'
 
         settings_menu = Menu()
         settings_menu.choice_symbol = '> '
