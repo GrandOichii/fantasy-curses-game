@@ -6,8 +6,9 @@ import os
 from Menu import Menu, Button, ActionButton
 
 class Game:
-    def __init__(self, saves_path):
+    def __init__(self, saves_path, assets_path):
         self.debug = False
+        self.assets_path = assets_path
         self.saves_path = saves_path
 
         self.create_folders()
@@ -46,6 +47,8 @@ class Game:
 
     def create_folders(self):
         # create saves folder
+        if not os.path.exists(self.assets_path):
+            raise Exception('ERROR: No assets folder found')
         if not os.path.exists(self.saves_path):
             try:
                 os.mkdir(self.saves_path)
