@@ -1,0 +1,9 @@
+- learning spells (reading books) requires intelligence
+- wielding heavy weaponry requires high strength
+- high speed requires high dexterity
+- mana regenerates over time
+- some artifacts can increase magick regeneration
+- you start in a sewer
+- you can buy books at the library
+- upgrade shops by finding certain items while exploring
+- range of ranged weapons is (range + DEX)

@@ -1,0 +1,44 @@
+WARRIOR:
+- med damage, high armor, low range
+health - 20
+mana - 10
+/attributes/
+strength - 15
+dexterity - 10
+intelligence - 10
+/starting gear/
+- iron helmet
+- iron armor
+- armor leggins
+- iron sword
+- iron shield
+
+
+MAGE:
+- high damage, low armor, med range
+health - 10
+mana - 20
+/attributes/
+strength - 10
+dexterity - 12
+intelligence - 15
+/starting gear/
+- mage's hat
+- mages's robe
+- spellbook of fireball
+
+
+THIEF:
+- med damage, low armor, high range
+health - 15
+mana - 12
+/attributes/
+strength - 12
+dexterity - 12
+intelligence - 12
+/starting gear/
+- hood
+- leather armor
+- long bow
+- 100 wooden arrows
+- iron dagger
