@@ -6,3 +6,7 @@ RIGHT - 261
 BACKSPACE - 127
 ENTER - 10
 Q - 81
+
+WINDOWS (any missing are the same on mac):
+BACKSPACE - 8
+ESC - 27

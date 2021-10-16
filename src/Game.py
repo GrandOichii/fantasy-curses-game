@@ -144,6 +144,7 @@ class Game:
         win = curses.newwin(height + 2, width + 2, ypos - 1, xpos - 1)
         textpad.rectangle(win, 0, 0, height, width + 1)
         win.addstr(2, 3, message)
+        win.keypad(1)
         for i in range(len(additional_lines)):
             win.addstr(3 + i, 3, additional_lines[i])
         pos = 3
@@ -159,11 +160,11 @@ class Game:
             key = win.getch()
             win.addstr(height - 2, 1, ' ' * width)
             win.refresh()
-            if key in [68]: # LEFT
+            if key in [260]: # LEFT
                 choice_id -= 1
                 if choice_id < 0:
                     choice_id = len(choices) - 1
-            if key in [67]: # RIGHT
+            if key in [261]: # RIGHT
                 choice_id += 1
                 if choice_id >= len(choices):
                     choice_id = 0
@@ -212,7 +213,11 @@ class Game:
                     self.message_box(f'Maximum length of character is {max_name_len}', ['Ok'])
                 else:
                     name += chr(key)
-            if key in [127] and len(name) > 0: # BACKSPACE
+            if key in [27]: # escape
+                if self.message_box('Cancel character creation?', ['Yes', 'No']) == 'Yes':
+                    self.stdscr.clear()
+                    return
+            if key in [127, 8] and len(name) > 0: # BACKSPACE
                 name = name[:-1]
             if key in [10]: # ENTER
                 if len(name) < min_name_len:
