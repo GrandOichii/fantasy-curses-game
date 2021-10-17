@@ -266,7 +266,11 @@ class Game:
         if gamelib.SaveFile.count_saves(self.saves_path) == 0:
             self.message_box('No save files detected!', ['Ok'])
             return
-        save_desc = gamelib.SaveFile.save_descriptions(self.saves_path)
+        save_desc, corrupt_files = gamelib.SaveFile.save_descriptions(self.saves_path)
+        for cor in corrupt_files:
+            if self.message_box(f'Character {cor} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
+                gamelib.SaveFile.delete_save_file(cor, self.saves_path)
+
         ch_names = gamelib.SaveFile.character_names(self.saves_path)
         self.menu_choice_id = 0
         self.load_menu = Menu()

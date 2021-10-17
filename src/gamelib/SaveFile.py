@@ -21,12 +21,16 @@ def load(name, saves_path):
 def save_descriptions(saves_path):
     result = []
     files = _get_save_file_names(saves_path)
+    corrupt_files = []
     for file in files:
-        data = json.loads(open(f'{saves_path}/{file}', 'r').read())['player']
-        name = data['name']
-        cl = data['class_name']
-        result += [f'{name} ({cl})']
-    return result
+        try:
+            data = json.loads(open(f'{saves_path}/{file}', 'r').read())['player']
+            name = data['name']
+            cl = data['class_name']
+            result += [f'{name} ({cl})']
+        except KeyError:
+            corrupt_files += [name]
+    return result, corrupt_files
 
 def count_saves(saves_path):
     return len(listdir(saves_path))
