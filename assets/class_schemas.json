@@ -1,0 +1,45 @@
+{
+    "warrior": {
+        "description": "med damage, high armor, low range",
+        "health": 20,
+        "mana": 10,
+        "STR": 15,
+        "DEX": 10,
+        "INT": 10,
+        "items": [
+            "Iron Helmet",
+            "Iron Armor",
+            "Armor Leggins",
+            "Iron Sword",
+            "Iron Shield"
+        ]
+    },
+    "mage": {
+        "description": "high damage, low armor, med range",
+        "health": 10,
+        "mana": 20,
+        "STR": 10,
+        "DEX": 12,
+        "INT": 15,
+        "items": [
+            "Mage's Hat",
+            "Mage's Robe",
+            "Spellbook Fireball"
+        ]
+    },
+    "thief": {
+        "description": "med damage, low armor, high range",
+        "health": 15,
+        "mana": 12,
+        "STR": 12,
+        "DEX": 12,
+        "INT": 12,
+        "items": [
+            "Hood",
+            "Leather Armor",
+            "Long Bow",
+            "Wooden Arrow #100",
+            "Iron Dagger"
+        ]
+    }
+}

@@ -4,15 +4,20 @@ class Item:
     def __init__(self):
         self.name = ''
 
-    def get_base_item(name, path):
+    def get_base_items(names, path):
         data = json.loads(open(path).read())
+        result = []
         for type in data:
             for item in data[type]:
-                if item['name'] == name:
-                    return Item.from_json(item, type)
-        return 'ERR'
+                if item['name'] in names:
+                    result += [Item.from_json(item, type)]
+        return result
 
-
+    def arr_to_json(items):
+        result = []
+        for item in items:
+            result += [item.json()]
+        return result
     
     def from_json(js, type='item'):
         result = Item()
@@ -31,6 +36,9 @@ class Item:
     def __str__(self):
         result = f'Name: {self.name}'
         return result
+
+    def json(self):
+        return self.__dict__
 
 class Armor(Item):
     def __init__(self):
@@ -56,10 +64,12 @@ class Ammo(Item):
     def __init__(self):
         super().__init__()
         self.type = ''
+        self.amount = 0
 
     def __str__(self):
         result = super().__str__()     
-
+        result += f'\nType: {self.type}'
+        result += f'\nAmount: {self.amount}'
         return result
 
 class MeleeWeapon(Item):

@@ -1,9 +1,13 @@
 import curses
 import curses.textpad as textpad
+import json
 
 import os
+import gamelib.SaveFile
 
 from Menu import Menu, Button, ActionButton
+
+from gamelib.Entities import Player
 
 class Game:
     def __init__(self, saves_path, assets_path):
@@ -239,10 +243,24 @@ class Game:
                 placeholder = '_' * (max_name_len - len(name))
                 self.addstr(1, 1 + len(enstr), f'{name}{placeholder}')
         class_result = self.message_box('Choose your character class:', ['Warrior', 'Mage', 'Thief'])
-        if self.message_box('Is this ok?',  ['Yes', 'No'], additional_lines=[f'Name: {name}', f'Class: {class_result}'],) == 'No':
+        if self.message_box('Is this ok?',  ['Yes', 'No'], additional_lines=[f'Name: {name}', f'Class: {class_result}']) == 'No':
             self.new_game_action()
             return
+        
         # create character with name and class_result
+        class_result = class_result.lower()
+        player = Player()
+        player.name = name
+        data = json.loads(open('assets/class_schemas.json').read())
+        if not class_result in data:
+            raise Exception(f'ERR: Class {class_result} not found in assets')
+        player.load_class(data[class_result], 'assets/items.json')
+        already_exists = gamelib.SaveFile.save_file_exists('saves', player.name)
+        if already_exists and self.message_box(f'File with name {player.name} already exists, override?', ['No', 'Yes']) == 'No':
+            self.stdscr.clear()
+            self.new_game_action()
+            return
+        gamelib.SaveFile.save(player, 'saves')
         self.stdscr.clear()
 
     def load_game_action(self):

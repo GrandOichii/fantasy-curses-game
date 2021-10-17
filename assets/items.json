@@ -79,6 +79,17 @@
             }
         },
         {
+            "name": "Iron Dagger",
+            "base_damage": 2,
+            "max_mod": 3,
+            "range": 1,
+            "slot": "ARM",
+            "mods": {},
+            "requires": {
+                "STR": 10
+            }
+        },
+        {
             "name": "Iron Shield",
             "base_damage": 1,
             "max_mod": 1,
