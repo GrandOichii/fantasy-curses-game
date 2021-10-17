@@ -5,7 +5,8 @@ import json
 import os
 import gamelib.SaveFile
 
-from Menu import Menu, Button, ActionButton
+from ui.Menu import Menu
+from ui.Buttons import Button, ActionButton
 
 from gamelib.Entities import Player
 
