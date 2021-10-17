@@ -1,6 +1,7 @@
 import json
 from os import listdir, remove
 from os.path import isfile, join, splitext
+from posixpath import split
 
 def save(player, saves_path):
     data = dict()
@@ -28,8 +29,9 @@ def save_descriptions(saves_path):
             name = data['name']
             cl = data['class_name']
             result += [f'{name} ({cl})']
-        except KeyError:
-            corrupt_files += [name]
+        except Exception:
+            corrupt_files += [splitext(file)[0]]
+            
     return result, corrupt_files
 
 def count_saves(saves_path):
