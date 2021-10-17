@@ -13,7 +13,8 @@
             "Iron Leggins",
             "Iron Sword",
             "Iron Shield"
-        ]
+        ],
+        "countable_items": {}
     },
     "mage": {
         "name": "Mage",
@@ -27,7 +28,8 @@
             "Mage's Hat",
             "Mage's Robe",
             "Spellbook Fireball"
-        ]
+        ],
+        "countable_items": {}
     },
     "thief": {
         "name": "Thief",
