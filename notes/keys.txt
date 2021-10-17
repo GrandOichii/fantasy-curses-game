@@ -5,7 +5,9 @@ LEFT - 260
 RIGHT - 261
 BACKSPACE - 127
 ENTER - 10
+SPACE - 32
 Q - 81
+8 - 56
 
 WINDOWS (any missing are the same on mac):
 BACKSPACE - 8

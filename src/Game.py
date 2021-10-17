@@ -132,13 +132,10 @@ class Game:
         # if possible break up the messages
         if width != -1 and len(additional_lines) == 0:
             lines = Utility.str_smart_split(message, width - 6)
-            open('result.txt', 'w').write(str(lines))
-
             if len(lines) != 1:
                 message = lines[0]
                 lines.pop(0)
                 additional_lines = lines
-                open('result.txt', 'w').write(str(additional_lines))
 
         # set max min values
         max_width = self.WIDTH - 2
@@ -330,16 +327,98 @@ class Game:
         if self.window_height % 2 == 0: self.window_height -= 1
         self.window_width = self.WIDTH - self.max_name_len - 8
 
+        self.window_height -= 1
+        self.window_width -= 1
+
         # permanent display
-        self.tile_window = curses.newwin(self.window_height + 2, self.window_width + 2, 0, 0)
+        self.tile_window = curses.newwin(self.window_height, self.window_width, 1, 1)
         self.tile_window.keypad(1)
         self.display_info_ui()
+        self.display_player_info()
+        self.stdscr.refresh()
+
+
+        map = [
+            '#################################',
+            '#                               #',
+            '#    ###  # #   ##  #   #       #',
+            '#    #    # #  #    # #         #',
+            '#    ##   # #  #    # #         #',
+            '#    #    # #  #    #  #        #',
+            '#    #    ###   ##  #   #       #',
+            '#               @               #',
+            '#     #   ###  ###              #',
+            '#    # #  #    #                #',
+            '#    # #  ##   ##               #',
+            '#    # #  #    #                #',
+            '#     #   #    #                #',
+            '#                               #',
+            '#################################',
+        ]
+        # ACS_BLOCK
+        player_y, player_x = 1, 1
+        for i in range(len(map)):
+            for j in range(len(map[i])):
+                if map[i][j] == '@':
+                    player_y, player_x = i, j
+                    # map[i][j] = ' '
+
+        visible_range = 10
+        mid_y = self.window_height // 2 
+        mid_x = self.window_width // 2
+
+        self.tile_window.addstr(mid_y, mid_x, '@')
+
+        # starting y: mid_y - visible_range
+        # ending   y: mid_y + visible_range
+        # starting x: mid_x - visible_range
+        # ending   x: mid_x - visible_range
+
+        #   0 1 2 3 4
+        # 0 - - - - -
+        # 1 - - - - -
+        # 2 - - - - -
+        # 3 - - - - -
+        # 4 - - - - -
+
+        self.draw_tiles(player_y, player_x, mid_y, mid_x, visible_range, map)
+        self.tile_window.addstr(mid_y, mid_x, '@')
 
         # main game loop
         while True:
-            if self.tile_window.getch() == 81:
+            key = self.tile_window.getch()
+            self.tile_window.clear()
+            if key == 81:
                 if self.message_box('Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
                     break
+            if key == 32:
+                self.player.add_health(1)
+                self.player.add_mana(1)
+            if key == 10:
+                self.player.add_health(-1)
+                self.player.add_mana(-1)
+            if key in [56, 259] and not player_y < 0 and map[player_y - 1][player_x] != '#':
+                player_y -= 1
+            if key in [50, 258] and not player_y >= len(map) and map[player_y + 1][player_x] != '#':
+                player_y += 1
+            if key in [52, 260] and not player_x < 0 and map[player_y][player_x - 1] != '#':
+                player_x -= 1
+            if key in [54, 261] and not player_x >= len(map[0]) and map[player_y][player_x + 1] != '#':
+                player_x += 1
+            # if key in [105, 57]: # NE
+            # if key in [121, 55]: # NW
+            # if key in [98, 49]: # SW
+            # if key in [110, 51]: # SE
+            
+            
+
+            self.draw_tiles(player_y, player_x, mid_y, mid_x, visible_range, map)
+            # last to display
+            self.tile_window.addstr(mid_y, mid_x, '@')
+
+            self.display_player_info()
+            self.tile_window.refresh()
+            self.stdscr.refresh()
 
         # at the VERY end
         self.tile_window.clear()
@@ -351,12 +430,43 @@ class Game:
 
     def display_info_ui(self):
         s = '1234567891234567891234'
-        textpad.rectangle(self.tile_window, 0, 0, self.window_height, self.window_width)
-        self.addstr(1, self.window_width + 2, f'Name: {self.player.name}')
-        self.addstr(2, self.window_width + 2, f'Class: {self.player.class_name}')
-        self.addstr(4, self.window_width + 2, f'Health:          (   /   )') # left: 19
-        self.addstr(5, self.window_width + 2, f'Mana:            (   /   )') # left: 21
-        self.addstr(7, self.window_width + 2, f'STR:') # left: 22
-        self.addstr(8, self.window_width + 2, f'DEX:') # left: 22
-        self.addstr(9, self.window_width + 2, f'INT:') # left: 22
+        textpad.rectangle(self.stdscr, 0, 0, self.window_height + 2, self.window_width + 1)
+        self.addstr(1, self.window_width + 3, f'Name: {self.player.name}')
+        self.addstr(2, self.window_width + 3, f'Class: {self.player.class_name}')
+        self.addstr(4, self.window_width + 3, f'Health:          (   /   )') # left: 19
+        self.addstr(5, self.window_width + 3, f'Mana:            (   /   )') # left: 21
+        self.addstr(7, self.window_width + 3, f'STR:') # left: 22
+        self.addstr(8, self.window_width + 3, f'DEX:') # left: 22
+        self.addstr(9, self.window_width + 3, f'INT:') # left: 22
         self.stdscr.refresh()
+
+    def display_player_info(self):
+        health_info =  ' ' * (3 - len(str(self.player.health))) + f'{self.player.health}'
+        self.addstr(4, self.window_width + 21, f'{health_info}')
+        max_health_info =  ' ' * (3 - len(str(self.player.max_health))) + f'{self.player.max_health}'
+        self.addstr(4, self.window_width + 25, f'{max_health_info}')
+        self.addstr(4, self.window_width + 10, Utility.calc_pretty_bars(self.player.health, self.player.max_health, 10))
+        
+        mana_info =  ' ' * (3 - len(str(self.player.mana))) + f'{self.player.mana}'
+        self.addstr(5, self.window_width + 21, f'{mana_info}')
+        max_mana_info =  ' ' * (3 - len(str(self.player.max_mana))) + f'{self.player.max_mana}'
+        self.addstr(5, self.window_width + 25, f'{max_mana_info}')
+        self.addstr(5, self.window_width + 10, Utility.calc_pretty_bars(self.player.mana, self.player.max_mana, 10))
+
+        str_info = ' ' * (3 - len(str(self.player.STR))) + f'{self.player.STR}'
+        self.addstr(7, self.window_width + 7, f'{str_info}')
+        dex_info = ' ' * (3 - len(str(self.player.DEX))) + f'{self.player.DEX}'
+        self.addstr(8, self.window_width + 7, f'{dex_info}')
+        int_info = ' ' * (3 - len(str(self.player.INT))) + f'{self.player.INT}'
+        self.addstr(9, self.window_width + 7, f'{int_info}')
+        
+    def draw_tiles(self, player_y, player_x, mid_y, mid_x, visible_range, map):
+        for i in range(mid_y - visible_range, mid_y + visible_range + 1):
+            for j in range(mid_x - visible_range, mid_x + visible_range + 1):
+                if Utility.distance(i, j, mid_y, mid_x) < visible_range:
+                    map_y = i + player_y - mid_y
+                    map_x = j + player_x - mid_x
+                    if map_y < 0 or map_x < 0 or map_y >= len(map) or map_x >= len(map[0]):
+                        self.tile_window.addch(i, j, '#')
+                    else:
+                        self.tile_window.addch(i, j, map[map_y][map_x])

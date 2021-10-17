@@ -5,13 +5,29 @@ class Entity:
     def __init__(self):
         self.name = ''
         self.health = 0
+        self.max_health = 0
         self.mana = 0
+        self.max_mana = 0
         self.STR = 0
         self.DEX = 0
         self.INT = 0
         self.description = ''
         self.items = []
         self.countable_items = []
+
+    def add_health(self, amount):
+        self.health += amount
+        if self.health > self.max_health:
+            self.health = self.max_health
+        if self.health < 0:
+            self.health = 0
+
+    def add_mana(self, amount):
+        self.mana += amount
+        if self.mana > self.max_mana:
+            self.mana = self.max_mana 
+        if self.mana < 0:
+            self.mana = 0
 
 class Player(Entity):
     def __init__(self):
@@ -20,8 +36,10 @@ class Player(Entity):
         self.class_name = ''
 
     def load_class(self, class_data, assets_path):
-        self.health = class_data['health']
-        self.mana = class_data['mana']
+        self.max_health = class_data['max_health']
+        self.health = self.max_health
+        self.max_mana = class_data['max_mana']
+        self.mana = self.max_mana
         self.STR = class_data['STR']
         self.DEX = class_data['DEX']
         self.INT = class_data['INT']
