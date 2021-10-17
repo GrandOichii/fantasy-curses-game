@@ -3,7 +3,10 @@
 - high speed requires high dexterity
 - mana regenerates over time
 - some artifacts can increase magick regeneration
-- you start in a sewer
 - you can buy books at the library
 - upgrade shops by finding certain items while exploring
 - range of ranged weapons is (range + DEX)
+- once an opponent enters your view, you begin fighting
+- whether you can begin an encounter is determined by your range
+- opponents can also begin encounters
+- leave combat for later, now focus on main engine

@@ -2,6 +2,7 @@
     "armor": [
         {
             "name": "Iron Helmet",
+            "itype": "armor",
             "mods": {
                 "armor": 3
             },
@@ -12,6 +13,7 @@
         },
         {
             "name": "Iron Armor",
+            "itype": "armor",
             "mods": {
                 "armor": 4
             },
@@ -22,6 +24,7 @@
         },
         {
             "name": "Iron Leggins",
+            "itype": "armor",
             "mods": {
                 "armor": 2
             },
@@ -32,6 +35,7 @@
         },
         {
             "name": "Mage's Hat",
+            "itype": "armor",
             "mods": {
                 "armor": 1,
                 "mana": 3
@@ -41,6 +45,7 @@
         },
         {
             "name": "Mage's Robe",
+            "itype": "armor",
             "mods": {
                 "armor": 1,
                 "mana": 5
@@ -50,6 +55,7 @@
         },
         {
             "name": "Hood",
+            "itype": "armor",
             "mods": {
                 "armor": 1
             },
@@ -57,6 +63,7 @@
         },
         {
             "name": "Leather Armor",
+            "itype": "armor",
             "mods": {
                 "armor": 2
             },
@@ -69,6 +76,7 @@
     "melee": [
         {
             "name": "Iron Sword",
+            "itype": "melee",
             "base_damage": 5,
             "max_mod": 3,
             "range": 2,
@@ -80,6 +88,7 @@
         },
         {
             "name": "Iron Dagger",
+            "itype": "melee",
             "base_damage": 2,
             "max_mod": 3,
             "range": 1,
@@ -91,6 +100,7 @@
         },
         {
             "name": "Iron Shield",
+            "itype": "melee",
             "base_damage": 1,
             "max_mod": 1,
             "range": 1,
@@ -106,6 +116,7 @@
     "ranged":[
         {
             "name": "Long Bow",
+            "itype": "ranged",
             "base_damage": 6,
             "max_mod": 1,
             "range": 5,
@@ -115,10 +126,10 @@
             }
         }
     ],
-    
     "ammo": [
         {
             "name": "Wooden Arrow",
+            "itype": "ammo",
             "base_damage": 1,
             "max_mod": 1,
             "type": "arrow"

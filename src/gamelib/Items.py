@@ -1,16 +1,13 @@
 import json
 
 class Item:
-    def __init__(self):
-        self.name = ''
-
     def get_base_items(names, path):
         data = json.loads(open(path).read())
         result = []
         for type in data:
             for item in data[type]:
                 if item['name'] in names:
-                    result += [Item.from_json(item, type)]
+                    result += [Item.from_json(item)]
         return result
 
     def arr_to_json(items):
@@ -19,19 +16,24 @@ class Item:
             result += [item.json()]
         return result
     
-    def from_json(js, type='item'):
+    def from_json(js):
         result = Item()
-        if type == 'melee':
+        t = js['itype']
+        if t == 'melee':
             result = MeleeWeapon()
-        if type == 'ranged':
+        if t == 'ranged':
             result = RangedWeapon()
-        if type == 'armor':
+        if t == 'armor':
             result = Armor()
-        if type == 'ammo':
+        if t == 'ammo':
             result = Ammo()
 
         result.__dict__ = js
         return result
+
+    def __init__(self):
+        self.name = ''
+        self.itype = 'item'
 
     def __str__(self):
         result = f'Name: {self.name}'
@@ -60,11 +62,22 @@ class Armor(Item):
                 result += f'\n  {key}: {self.requires[key]}'
         return result
 
-class Ammo(Item):
+class CountableItem(Item):
+    def __init__(self):
+        super().__init__()
+        self.amount = 0
+
+    def get_base_items(d, path):
+        items = Item.get_base_items(d.keys(), path)
+        result = []
+        for i in range(len(items)):
+            items[i].amount = list(d.values())[i]
+        return items
+
+class Ammo(CountableItem):
     def __init__(self):
         super().__init__()
         self.type = ''
-        self.amount = 0
 
     def __str__(self):
         result = super().__str__()     

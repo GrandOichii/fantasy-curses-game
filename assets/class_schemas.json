@@ -10,7 +10,7 @@
         "items": [
             "Iron Helmet",
             "Iron Armor",
-            "Armor Leggins",
+            "Iron Leggins",
             "Iron Sword",
             "Iron Shield"
         ]
@@ -41,8 +41,10 @@
             "Hood",
             "Leather Armor",
             "Long Bow",
-            "Wooden Arrow #100",
             "Iron Dagger"
-        ]
+        ],
+        "countable_items": {
+            "Wooden Arrow": 100
+        }
     }
 }

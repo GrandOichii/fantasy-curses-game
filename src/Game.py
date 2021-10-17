@@ -10,11 +10,15 @@ from ui.Buttons import Button, ActionButton
 
 from gamelib.Entities import Player
 
+import Utility
+
 class Game:
     def __init__(self, saves_path, assets_path):
         self.debug = False
         self.assets_path = assets_path
         self.saves_path = saves_path
+        self.max_name_len = 20
+
 
         self.create_folders()
         self.main_menu = Menu()
@@ -118,12 +122,23 @@ class Game:
     def addstr(self, ypos, xpos, message):
         self.stdscr.addstr(ypos, xpos, message)
 
-    def message_box(self, message, choices, height=-1, width=-1, additional_lines=[]):
+    def message_box(self, message, choices, ypos=-1, xpos=-1, height=-1, width=-1, additional_lines=[]):
         # restrict the min and max width of message box
         if len(choices) == 0 or len(choices) > 3:
             raise Exception(f'MESSAGE_BOX ERROR: choices length can\'t be {len(choices)}')
         choice_id = 0
         done = False
+
+        # if possible break up the messages
+        if width != -1 and len(additional_lines) == 0:
+            lines = Utility.str_smart_split(message, width - 6)
+            open('result.txt', 'w').write(str(lines))
+
+            if len(lines) != 1:
+                message = lines[0]
+                lines.pop(0)
+                additional_lines = lines
+                open('result.txt', 'w').write(str(additional_lines))
 
         # set max min values
         max_width = self.WIDTH - 2
@@ -132,8 +147,6 @@ class Game:
         choices_len = (len(choices) + 1) * 2
         for choice in choices:
             choices_len += len(choice)
-        if height == -1:
-            height = 6 + len(additional_lines)
         if width == -1:
             width = max(choices_len, len(message) + 4)
             max_add_len = 0
@@ -142,8 +155,16 @@ class Game:
             max_add_len += 4
             width = max(width, max_add_len)
             width = min(max_width, width)
-        ypos = (self.HEIGHT - height) // 2
-        xpos = (self.WIDTH - width) // 2
+    
+
+        if height == -1:
+            height = 6 + len(additional_lines)
+    
+
+        if ypos == -1:
+            ypos = (self.HEIGHT - height) // 2
+        if xpos == -1:
+            xpos = (self.WIDTH - width) // 2
         
         # print the message box itself
         win = curses.newwin(height + 2, width + 2, ypos - 1, xpos - 1)
@@ -165,14 +186,18 @@ class Game:
             key = win.getch()
             win.addstr(height - 2, 1, ' ' * width)
             win.refresh()
-            if key in [260]: # LEFT
+            if key == 260: # LEFT
                 choice_id -= 1
                 if choice_id < 0:
                     choice_id = len(choices) - 1
-            if key in [261]: # RIGHT
+            if key == 261: # RIGHT
                 choice_id += 1
                 if choice_id >= len(choices):
                     choice_id = 0
+            if 'Cancel' in choices and key == 27: # ESC
+                win.clear()
+                win.refresh()
+                return 'Cancel'
             pos = 3
             for i in range(len(choices)):
                 if i == choice_id:
@@ -182,7 +207,7 @@ class Game:
                 pos += len(choices[i]) + 2
             if key == 10:
                 done = True
-            if self.debug: win.addstr(0, 0, f'KEY: |{key}|')
+            if self.debug: win.addstr(0, 0, f'KEY: |{key}|\t{height}; {width}')
         win.clear()
         win.refresh()
         return choices[choice_id]
@@ -204,18 +229,17 @@ class Game:
     def new_game_action(self):
         self.stdscr.clear()
         enstr = 'Enter your character\'s name (press ESC to cancel): '
-        max_name_len = 20
         min_name_len = 3
         self.addstr(1, 1, f'{enstr}')
-        self.addstr(1, 1 + len(enstr), '_' * max_name_len)
+        self.addstr(1, 1 + len(enstr), '_' * self.max_name_len)
         done = False
         name = ''
         while not done:
             key = self.stdscr.getch()
             if self.debug: self.addstr(0, 0, f'KEY: |{key}|')
             if (key >= 97 and key <= 122) or (key >= 65 and key <= 90) or key in [32]: # from a to z, from A to Z, SPACE
-                if len(name) >= max_name_len:
-                    self.message_box(f'Maximum length of character is {max_name_len}', ['Ok'])
+                if len(name) >= self.max_name_len:
+                    self.message_box(f'Maximum length of character is {self.max_name_len}', ['Ok'])
                 else:
                     name += chr(key)
             # too slow for some reason
@@ -238,7 +262,7 @@ class Game:
                 else:
                     done = True
             if not done:
-                placeholder = '_' * (max_name_len - len(name))
+                placeholder = '_' * (self.max_name_len - len(name))
                 self.addstr(1, 1 + len(enstr), f'{name}{placeholder}')
         class_result = self.message_box('Choose your character class:', ['Warrior', 'Mage', 'Thief'])
         if self.message_box('Is this ok?',  ['Yes', 'No'], additional_lines=[f'Name: {name}', f'Class: {class_result}']) == 'No':
@@ -275,19 +299,13 @@ class Game:
         self.menu_choice_id = 0
         self.load_menu = Menu()
         self.load_menu.title = 'Load'
+        self.load_menu.choice_symbol = '> '
         self.load_menu.text = 'Choose a save file:'
         for i in range(len(save_desc)):
             button = ActionButton(f'load_{ch_names[i]}_button', save_desc[i], self.load_menu, self.load_character_pick_action)
         button = Button('back_to_main_button', 'Back', self.load_menu)
         button.connect_to(self.main_menu)
         self.current_menu = self.load_menu
-
-    def load_character(self, character_name, saves_path):
-        data = gamelib.SaveFile.load(character_name, saves_path)
-        if data == -1:
-            raise Exception(f'ERR: save file of character with name {character_name} not found in {saves_path}')
-        loaded_name = data['player']['name']
-        self.message_box(f'Player name: {loaded_name}', ['Back to main menu'])
 
     def load_character_pick_action(self):
         name = gamelib.SaveFile.character_names(self.saves_path)[self.menu_choice_id]
@@ -300,3 +318,45 @@ class Game:
             gamelib.SaveFile.delete_save_file(name, self.saves_path)
             self.load_menu.remove_button_with_name(f'load_{name}_button')
             
+    def load_character(self, character_name, saves_path):
+        data = gamelib.SaveFile.load(character_name, saves_path)
+        if data == -1:
+            raise Exception(f'ERR: save file of character with name {character_name} not found in {saves_path}')
+        self.player = Player.from_json(data['player'])
+        self.stdscr.clear()
+
+        # set some values
+        self.window_height = self.HEIGHT * 2 // 3
+        if self.window_height % 2 == 0: self.window_height -= 1
+        self.window_width = self.WIDTH - self.max_name_len - 8
+
+        # permanent display
+        self.tile_window = curses.newwin(self.window_height + 2, self.window_width + 2, 0, 0)
+        self.tile_window.keypad(1)
+        self.display_info_ui()
+
+        # main game loop
+        while True:
+            if self.tile_window.getch() == 81:
+                if self.message_box('Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
+                    break
+
+        # at the VERY end
+        self.tile_window.clear()
+        self.tile_window.refresh()
+        del self.tile_window
+        self.stdscr.clear()
+        self.stdscr.refresh()
+        self.current_menu = self.main_menu
+
+    def display_info_ui(self):
+        s = '1234567891234567891234'
+        textpad.rectangle(self.tile_window, 0, 0, self.window_height, self.window_width)
+        self.addstr(1, self.window_width + 2, f'Name: {self.player.name}')
+        self.addstr(2, self.window_width + 2, f'Class: {self.player.class_name}')
+        self.addstr(4, self.window_width + 2, f'Health:          (   /   )') # left: 19
+        self.addstr(5, self.window_width + 2, f'Mana:            (   /   )') # left: 21
+        self.addstr(7, self.window_width + 2, f'STR:') # left: 22
+        self.addstr(8, self.window_width + 2, f'DEX:') # left: 22
+        self.addstr(9, self.window_width + 2, f'INT:') # left: 22
+        self.stdscr.refresh()
