@@ -1,5 +1,6 @@
 class Button:
-    def __init__(self, text: str, parent):
+    def __init__(self, name, text: str, parent):
+        self.name = name
         self.text = text
         parent.add_button(self)
         self.leads_to = 0
@@ -8,8 +9,8 @@ class Button:
         self.leads_to = menu
 
 class ActionButton(Button):
-    def __init__(self, text: str, parent, action):
-        super().__init__(text, parent)
+    def __init__(self, name, text: str, parent, action):
+        super().__init__(name, text, parent)
         self.action = action
     
     def click(self):

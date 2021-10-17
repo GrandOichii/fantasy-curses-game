@@ -17,10 +17,10 @@ class Game:
         self.saves_path = saves_path
 
         self.create_folders()
-        main_menu = Menu()
-        main_menu.choice_symbol = '> '
-        main_menu.title = 'Fantasy Curses Game'
-        main_menu.text = 'This is a fantasy game made using python curses'
+        self.main_menu = Menu()
+        self.main_menu.choice_symbol = '> '
+        self.main_menu.title = 'Fantasy Curses Game'
+        self.main_menu.text = 'This is a fantasy game made using python curses'
 
         settings_menu = Menu()
         settings_menu.choice_symbol = '> '
@@ -32,23 +32,23 @@ class Game:
         credits_menu.title = 'Credits'
         credits_menu.text = 'https://github.com/GrandOichii/fantasy-curses-game'
 
-        new_game_button = ActionButton('New game', main_menu, self.new_game_action)
+        new_game_button = ActionButton('new_game_button', 'New game', self.main_menu, self.new_game_action)
 
-        load_button = ActionButton('Load', main_menu, self.load_game_action)
+        load_button = ActionButton('load_button', 'Load', self.main_menu, self.load_game_action)
 
-        main_to_settings_button = Button('Settings', main_menu)
+        main_to_settings_button = Button('settings_button', 'Settings', self.main_menu)
         main_to_settings_button.connect_to(settings_menu)
 
-        main_to_credits_button = Button('Credits', main_menu)
+        main_to_credits_button = Button('credits_button', 'Credits', self.main_menu)
         main_to_credits_button.connect_to(credits_menu)
 
-        exit_button = ActionButton('Exit', main_menu, self.exit_action)
+        exit_button = ActionButton('exit_button', 'Exit', self.main_menu, self.exit_action)
 
-        back_to_main_button = Button('Back', settings_menu)
-        back_to_main_button.connect_to(main_menu)
+        back_to_main_button = Button('back_to_main_button', 'Back', settings_menu)
+        back_to_main_button.connect_to(self.main_menu)
         credits_menu.add_button(back_to_main_button)
 
-        self.current_menu = main_menu
+        self.current_menu = self.main_menu
 
     def create_folders(self):
         # create saves folder
@@ -62,9 +62,6 @@ class Game:
                 print(ex)
                 input()
                 exit()
-
-    def count_saves(self):
-        return len(os.listdir(self.saves_path))
 
     def start(self):
         curses.wrapper(self.main)
@@ -256,19 +253,46 @@ class Game:
         if not class_result in data:
             raise Exception(f'ERR: Class {class_result} not found in assets')
         player.load_class(data[class_result], 'assets/items.json')
-        already_exists = gamelib.SaveFile.save_file_exists('saves', player.name)
+        already_exists = gamelib.SaveFile.save_file_exists(self.saves_path, player.name)
         if already_exists and self.message_box(f'File with name {player.name} already exists, override?', ['No', 'Yes']) == 'No':
             self.stdscr.clear()
             self.new_game_action()
             return
-        gamelib.SaveFile.save(player, 'saves')
+        gamelib.SaveFile.save(player, self.saves_path)
         self.stdscr.clear()
+        self.load_character(player.name, self.saves_path)
 
     def load_game_action(self):
-        if self.count_saves() == 0:
+        if gamelib.SaveFile.count_saves(self.saves_path) == 0:
             self.message_box('No save files detected!', ['Ok'])
             return
-        self.message_box('To be implemented', ['Ok'])
+        save_desc = gamelib.SaveFile.save_descriptions(self.saves_path)
+        ch_names = gamelib.SaveFile.character_names(self.saves_path)
+        self.menu_choice_id = 0
+        self.load_menu = Menu()
+        self.load_menu.title = 'Load'
+        self.load_menu.text = 'Choose a save file:'
+        for i in range(len(save_desc)):
+            button = ActionButton(f'load_{ch_names[i]}_button', save_desc[i], self.load_menu, self.load_character_pick_action)
+        button = Button('back_to_main_button', 'Back', self.load_menu)
+        button.connect_to(self.main_menu)
+        self.current_menu = self.load_menu
 
+    def load_character(self, character_name, saves_path):
+        data = gamelib.SaveFile.load(character_name, saves_path)
+        if data == -1:
+            raise Exception(f'ERR: save file of character with name {character_name} not found in {saves_path}')
+        loaded_name = data['player']['name']
+        self.message_box(f'Player name: {loaded_name}', ['Back to main menu'])
 
-
+    def load_character_pick_action(self):
+        name = gamelib.SaveFile.character_names(self.saves_path)[self.menu_choice_id]
+        response = self.message_box(f'Load character {name}?', ['Load', 'Delete', 'Cancel'])
+        if response == 'Cancel':
+            return
+        if response == 'Load':
+            self.load_character(name, self.saves_path)
+        if response == 'Delete' and self.message_box(f'Delete character {name}? (Permanent)', ['No', 'Yes']) == 'Yes':
+            gamelib.SaveFile.delete_save_file(name, self.saves_path)
+            self.load_menu.remove_button_with_name(f'load_{name}_button')
+            

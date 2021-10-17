@@ -16,6 +16,7 @@ class Player(Entity):
     def __init__(self):
         super().__init__()
         self.class_description = ''
+        self.class_name = ''
 
     def load_class(self, class_data, assets_path):
         self.health = class_data['health']
@@ -23,6 +24,7 @@ class Player(Entity):
         self.STR = class_data['STR']
         self.DEX = class_data['DEX']
         self.INT = class_data['INT']
+        self.class_name = class_data['name']
         self.class_description = class_data['description']
         self.items = gamelib.Items.Item.get_base_items(class_data['items'], assets_path)
 
