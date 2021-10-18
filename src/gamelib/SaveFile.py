@@ -3,21 +3,26 @@ from os import listdir, remove
 from os.path import isfile, join, splitext
 from posixpath import split
 
-def save(player, saves_path):
+def save(player, map_name, saves_path, player_y=-1, player_x=-1):
     data = dict()
     data['player'] = player.json()
+    data['map_name'] = map_name
+    if player_y != -1:
+        data['player_y'] = player_y
+    if player_x != -1:
+        data['player_x'] = player_x
     
     open(f'{saves_path}/{player.name}.save', 'w').write(json.dumps(data, indent=4, sort_keys=True))
-
-def save_file_exists(saves_path, name):
-    files = _get_save_file_names(saves_path)
-    return f'{name}.save' in files
 
 def load(name, saves_path):
     files = _get_save_file_names(saves_path)
     if not f'{name}.save' in files:
         return -1
     return json.loads(open(f'{saves_path}/{name}.save', 'r').read())
+
+def save_file_exists(saves_path, name):
+    files = _get_save_file_names(saves_path)
+    return f'{name}.save' in files
 
 def save_descriptions(saves_path):
     result = []

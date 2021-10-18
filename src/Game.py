@@ -3,7 +3,7 @@ import curses.textpad as textpad
 import json
 
 import os
-import gamelib.SaveFile
+import gamelib.SaveFile as SaveFile
 
 from ui.Menu import Menu
 from ui.Buttons import Button, ActionButton
@@ -11,6 +11,7 @@ from ui.Buttons import Button, ActionButton
 from gamelib.Entities import Player
 
 import Utility
+import gamelib.Map as Map
 
 class Game:
     def __init__(self, saves_path, assets_path):
@@ -18,6 +19,7 @@ class Game:
         self.assets_path = assets_path
         self.saves_path = saves_path
         self.max_name_len = 20
+        self.starting_map = 'map1'
 
 
         self.create_folders()
@@ -274,25 +276,25 @@ class Game:
         if not class_result in data:
             raise Exception(f'ERR: Class {class_result} not found in assets')
         player.load_class(data[class_result], 'assets/items.json')
-        already_exists = gamelib.SaveFile.save_file_exists(self.saves_path, player.name)
+        already_exists = SaveFile.save_file_exists(self.saves_path, player.name)
         if already_exists and self.message_box(f'File with name {player.name} already exists, override?', ['No', 'Yes']) == 'No':
             self.stdscr.clear()
             self.new_game_action()
             return
-        gamelib.SaveFile.save(player, self.saves_path)
+        SaveFile.save(player, self.starting_map, self.saves_path)
         self.stdscr.clear()
         self.load_character(player.name, self.saves_path)
 
     def load_game_action(self):
-        if gamelib.SaveFile.count_saves(self.saves_path) == 0:
+        if SaveFile.count_saves(self.saves_path) == 0:
             self.message_box('No save files detected!', ['Ok'])
             return
-        save_desc, corrupt_files = gamelib.SaveFile.save_descriptions(self.saves_path)
+        save_desc, corrupt_files = SaveFile.save_descriptions(self.saves_path)
         for cor in corrupt_files:
             if self.message_box(f'Character {cor} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
-                gamelib.SaveFile.delete_save_file(cor, self.saves_path)
+                SaveFile.delete_save_file(cor, self.saves_path)
 
-        ch_names = gamelib.SaveFile.character_names(self.saves_path)
+        ch_names = SaveFile.character_names(self.saves_path)
         self.menu_choice_id = 0
         self.load_menu = Menu()
         self.load_menu.title = 'Load'
@@ -305,21 +307,27 @@ class Game:
         self.current_menu = self.load_menu
 
     def load_character_pick_action(self):
-        name = gamelib.SaveFile.character_names(self.saves_path)[self.menu_choice_id]
+        name = SaveFile.character_names(self.saves_path)[self.menu_choice_id]
         response = self.message_box(f'Load character {name}?', ['Load', 'Delete', 'Cancel'])
         if response == 'Cancel':
             return
         if response == 'Load':
             self.load_character(name, self.saves_path)
         if response == 'Delete' and self.message_box(f'Delete character {name}? (Permanent)', ['No', 'Yes']) == 'Yes':
-            gamelib.SaveFile.delete_save_file(name, self.saves_path)
+            SaveFile.delete_save_file(name, self.saves_path)
             self.load_menu.remove_button_with_name(f'load_{name}_button')
             
     def load_character(self, character_name, saves_path):
-        data = gamelib.SaveFile.load(character_name, saves_path)
+        data = SaveFile.load(character_name, saves_path)
         if data == -1:
             raise Exception(f'ERR: save file of character with name {character_name} not found in {saves_path}')
         self.player = Player.from_json(data['player'])
+        map = Map.Map.by_name(data['map_name'], f'{self.assets_path}/maps/')
+        self.player_y, self.player_x = map.player_spawn_y, map.player_spawn_x
+        if 'player_y' in data:
+            self.player_y = data['player_y']
+        if 'player_x' in data:
+            self.player_x = data['player_x']
         self.stdscr.clear()
 
         # set some values
@@ -337,31 +345,9 @@ class Game:
         self.display_player_info()
         self.stdscr.refresh()
 
-
-        map = [
-            '#################################',
-            '#                               #',
-            '#    ###  # #   ##  #   #       #',
-            '#    #    # #  #    # #         #',
-            '#    ##   # #  #    # #         #',
-            '#    #    # #  #    #  #        #',
-            '#    #    ###   ##  #   #       #',
-            '#               @               #',
-            '#     #   ###  ###              #',
-            '#    # #  #    #                #',
-            '#    # #  ##   ##               #',
-            '#    # #  #    #                #',
-            '#     #   #    #                #',
-            '#                               #',
-            '#################################',
-        ]
+        
         # ACS_BLOCK
-        player_y, player_x = 1, 1
-        for i in range(len(map)):
-            for j in range(len(map[i])):
-                if map[i][j] == '@':
-                    player_y, player_x = i, j
-                    # map[i][j] = ' '
+
 
         visible_range = 10
         mid_y = self.window_height // 2 
@@ -369,19 +355,8 @@ class Game:
 
         self.tile_window.addstr(mid_y, mid_x, '@')
 
-        # starting y: mid_y - visible_range
-        # ending   y: mid_y + visible_range
-        # starting x: mid_x - visible_range
-        # ending   x: mid_x - visible_range
 
-        #   0 1 2 3 4
-        # 0 - - - - -
-        # 1 - - - - -
-        # 2 - - - - -
-        # 3 - - - - -
-        # 4 - - - - -
-
-        self.draw_tiles(player_y, player_x, mid_y, mid_x, visible_range, map)
+        self.draw_tiles(mid_y, mid_x, visible_range, map)
         self.tile_window.addstr(mid_y, mid_x, '@')
 
         # main game loop
@@ -390,6 +365,7 @@ class Game:
             self.tile_window.clear()
             if key == 81:
                 if self.message_box('Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
+                    SaveFile.save(self.player, map.name, self.saves_path, player_y=self.player_y, player_x=self.player_x)
                     break
             if key == 32:
                 self.player.add_health(1)
@@ -397,22 +373,43 @@ class Game:
             if key == 10:
                 self.player.add_health(-1)
                 self.player.add_mana(-1)
-            if key in [56, 259] and not player_y < 0 and map[player_y - 1][player_x] != '#':
-                player_y -= 1
-            if key in [50, 258] and not player_y >= len(map) and map[player_y + 1][player_x] != '#':
-                player_y += 1
-            if key in [52, 260] and not player_x < 0 and map[player_y][player_x - 1] != '#':
-                player_x -= 1
-            if key in [54, 261] and not player_x >= len(map[0]) and map[player_y][player_x + 1] != '#':
-                player_x += 1
-            # if key in [105, 57]: # NE
-            # if key in [121, 55]: # NW
-            # if key in [98, 49]: # SW
+
+            # movement management
+            y_lim = map.height
+            x_lim = map.width
+            if key in [56, 259] and not self.player_y < 0 and not map.tiles[self.player_y - 1][self.player_x].solid: # North
+                self.player_y -= 1
+            if key in [50, 258] and not self.player_y >= y_lim and not map.tiles[self.player_y + 1][self.player_x].solid: # South
+                self.player_y += 1
+            if key in [52, 260] and not self.player_x < 0 and not map.tiles[self.player_y][self.player_x - 1].solid: # West
+                self.player_x -= 1
+            if key in [54, 261] and not self.player_x >= x_lim and not map.tiles[self.player_y][self.player_x + 1].solid: # East
+                self.player_x += 1
+            if key in [117, 57] and not (self.player_y < 0 and not self.player_x >= x_lim) and not map.tiles[self.player_y - 1][self.player_x + 1].solid: # NE
+                self.player_y -= 1
+                self.player_x += 1
+            if key in [121, 55] and not (self.player_y < 0 and self.player_x < 0) and not map.tiles[self.player_y - 1][self.player_x - 1].solid: # NW
+                self.player_y -= 1
+                self.player_x -= 1
+            if key in [98, 49] and not (self.player_y >= y_lim and self.player_x < 0) and not map.tiles[self.player_y + 1][self.player_x - 1].solid: # SW
+                self.player_y += 1
+                self.player_x -= 1
+            if key in [110, 51] and not (self.player_y >= y_lim and self.player_x >= x_lim) and not map.tiles[self.player_y + 1][self.player_x + 1].solid: # SE
+                self.player_y += 1
+                self.player_x += 1
             # if key in [110, 51]: # SE
             
-            
+            tile = map.tiles[self.player_y][self.player_x]
+            if isinstance(tile, Map.DoorTile):
+                door_num = str(tile.door_ref)
+                if not door_num in map.door_refs.keys():
+                    raise Exception(f'ERR: Not found ref {door_num} in current map')
+                if self.message_box(f'Use door?', ['No', 'Yes']) == 'Yes':
+                    destination_map = map.door_refs[door_num]
+                    map = Map.Map.by_name(destination_map, f'{self.assets_path}/maps/', player_spawn_char=door_num)
+                    self.player_y, self.player_x = map.player_spawn_y, map.player_spawn_x
 
-            self.draw_tiles(player_y, player_x, mid_y, mid_x, visible_range, map)
+            self.draw_tiles(mid_y, mid_x, visible_range, map)
             # last to display
             self.tile_window.addstr(mid_y, mid_x, '@')
 
@@ -460,13 +457,16 @@ class Game:
         int_info = ' ' * (3 - len(str(self.player.INT))) + f'{self.player.INT}'
         self.addstr(9, self.window_width + 7, f'{int_info}')
         
-    def draw_tiles(self, player_y, player_x, mid_y, mid_x, visible_range, map):
-        for i in range(mid_y - visible_range, mid_y + visible_range + 1):
-            for j in range(mid_x - visible_range, mid_x + visible_range + 1):
+    def draw_tiles(self, mid_y, mid_x, visible_range, map):
+        for i in range(max(0, mid_y - visible_range), min(self.window_height, mid_y + visible_range + 1)):
+            for j in range(max (0, mid_x - visible_range), min(self.window_width, mid_x + visible_range + 1)):
                 if Utility.distance(i, j, mid_y, mid_x) < visible_range:
-                    map_y = i + player_y - mid_y
-                    map_x = j + player_x - mid_x
-                    if map_y < 0 or map_x < 0 or map_y >= len(map) or map_x >= len(map[0]):
+                    if i == self.window_height - 1 and j == self.window_width - 1:
+                        break
+                    map_y = i + self.player_y - mid_y
+                    map_x = j + self.player_x - mid_x
+                    if map_y < 0 or map_x < 0 or map_y >= map.height or map_x >= map.width:
                         self.tile_window.addch(i, j, '#')
                     else:
-                        self.tile_window.addch(i, j, map[map_y][map_x])
+                        self.tile_window.addch(i, j, map.tiles[map_y][map_x].char)
+                        
