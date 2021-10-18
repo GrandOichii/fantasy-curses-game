@@ -283,7 +283,7 @@ class Game:
             return
         SaveFile.save(player, self.starting_map, self.saves_path)
         self.stdscr.clear()
-        self.load_character(player.name, self.saves_path)
+        self.load_character(player.name)
 
     def load_game_action(self):
         if SaveFile.count_saves(self.saves_path) == 0:
@@ -312,30 +312,28 @@ class Game:
         if response == 'Cancel':
             return
         if response == 'Load':
-            self.load_character(name, self.saves_path)
+            self.load_character(name)
         if response == 'Delete' and self.message_box(f'Delete character {name}? (Permanent)', ['No', 'Yes']) == 'Yes':
             SaveFile.delete_save_file(name, self.saves_path)
             self.load_menu.remove_button_with_name(f'load_{name}_button')
             
-    def load_character(self, character_name, saves_path):
-        try:
-            data = SaveFile.load(character_name, saves_path)
-            if data == -1:
-                raise Exception(f'ERR: save file of character with name {character_name} not found in {saves_path}')
-            self.player = Player.from_json(data['player'])
-            map = Map.Map.by_name(data['map_name'], f'{self.assets_path}/maps/')
-            self.player_y, self.player_x = map.player_spawn_y, map.player_spawn_x
-            if 'player_y' in data:
-                self.player_y = data['player_y']
-            if 'player_x' in data:
-                self.player_x = data['player_x']
-        except:
-            if self.message_box(f'Character {character_name} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
-                SaveFile.delete_save_file(character_name, self.saves_path)
-                self.load_menu.remove_button_with_name(f'load_{character_name}_button')
-
-
-            return
+    def load_character(self, character_name):
+        # try:
+        data = SaveFile.load(character_name, self.saves_path)
+        if data == -1:
+            raise Exception(f'ERR: save file of character with name {character_name} not found in {self.saves_path}')
+        self.player = Player.from_json(data['player'])
+        map = Map.Map.by_name(data['map_name'], f'{self.assets_path}/maps/', self.assets_path)
+        self.player_y, self.player_x = map.player_spawn_y, map.player_spawn_x
+        if 'player_y' in data:
+            self.player_y = data['player_y']
+        if 'player_x' in data:
+            self.player_x = data['player_x']
+        # except:
+        #     if self.message_box(f'Character {character_name} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
+        #         SaveFile.delete_save_file(character_name, self.saves_path)
+        #         self.load_menu.remove_button_with_name(f'load_{character_name}_button')
+        #     return
             
         self.stdscr.clear()
 
@@ -354,16 +352,11 @@ class Game:
         self.display_player_info()
         self.stdscr.refresh()
 
-        
-        # ACS_BLOCK
-
-
         visible_range = 10
         mid_y = self.window_height // 2 
         mid_x = self.window_width // 2
 
         self.tile_window.addstr(mid_y, mid_x, '@')
-
 
         self.draw_tiles(mid_y, mid_x, visible_range, map)
         self.tile_window.addstr(mid_y, mid_x, '@')
@@ -409,13 +402,11 @@ class Game:
             # if key in [110, 51]: # SE
             
             tile = map.tiles[self.player_y][self.player_x]
+            # check if is standing on a door
             if isinstance(tile, Map.DoorTile):
-                door_num = str(tile.door_ref)
-                if not door_num in map.door_refs.keys():
-                    raise Exception(f'ERR: Not found ref {door_num} in current map')
                 if self.message_box(f'Use door?', ['No', 'Yes']) == 'Yes':
-                    destination_map = map.door_refs[door_num]
-                    map = Map.Map.by_name(destination_map, f'{self.assets_path}/maps/', player_spawn_char=door_num)
+                    destination_map = tile.to
+                    map = Map.Map.by_name(destination_map, f'{self.assets_path}/maps/', self.assets_path, player_spawn_char=tile.char)
                     self.player_y, self.player_x = map.player_spawn_y, map.player_spawn_x
 
             self.draw_tiles(mid_y, mid_x, visible_range, map)
