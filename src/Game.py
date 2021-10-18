@@ -12,6 +12,7 @@ from gamelib.Entities import Player
 
 import Utility
 import gamelib.Map as Map
+import gamelib.Items as Items
 
 class Game:
     def __init__(self, saves_path, assets_path):
@@ -318,22 +319,23 @@ class Game:
             self.load_menu.remove_button_with_name(f'load_{name}_button')
             
     def load_character(self, character_name):
-        # try:
-        data = SaveFile.load(character_name, self.saves_path)
-        if data == -1:
-            raise Exception(f'ERR: save file of character with name {character_name} not found in {self.saves_path}')
-        self.player = Player.from_json(data['player'])
-        game_map = Map.Map.by_name(data['map_name'], f'{self.assets_path}/maps/', self.assets_path)
-        self.player_y, self.player_x = game_map.player_spawn_y, game_map.player_spawn_x
-        if 'player_y' in data:
-            self.player_y = data['player_y']
-        if 'player_x' in data:
-            self.player_x = data['player_x']
-        # except:
-        #     if self.message_box(f'Character {character_name} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
-        #         SaveFile.delete_save_file(character_name, self.saves_path)
-        #         self.load_menu.remove_button_with_name(f'load_{character_name}_button')
-        #     return
+        try:
+            data = SaveFile.load(character_name, self.saves_path)
+            if data == -1:
+                raise Exception(f'ERR: save file of character with name {character_name} not found in {self.saves_path}')
+            self.player = Player.from_json(data['player'])
+            game_map = Map.Map.by_name(data['map_name'], f'{self.assets_path}/maps/', self.assets_path)
+            self.player_y, self.player_x = game_map.player_spawn_y, game_map.player_spawn_x
+            if 'player_y' in data:
+                self.player_y = data['player_y']
+            if 'player_x' in data:
+                self.player_x = data['player_x']
+        except Exception as ex:
+            if self.debug: raise ex
+            if self.message_box(f'Character {character_name} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
+                SaveFile.delete_save_file(character_name, self.saves_path)
+                self.load_menu.remove_button_with_name(f'load_{character_name}_button')
+            return
             
         self.stdscr.clear()
 
@@ -368,41 +370,51 @@ class Game:
             if key == 81 and self.message_box('Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
                 SaveFile.save(self.player, game_map.name, self.saves_path, player_y=self.player_y, player_x=self.player_x)
                 break
-            if key == 32:
+            if self.debug and key == 32:
                 self.player.add_health(1)
                 self.player.add_mana(1)
-            if key == 10:
+            if self.debug and key == 10:
                 self.player.add_health(-1)
                 self.player.add_mana(-1)
 
             # movement management
             y_lim = game_map.height
             x_lim = game_map.width
-            if key in [56, 259] and not self.player_y < 0 and not game_map.tiles[self.player_y - 1][self.player_x].solid: # North
+            # North
+            if key in [56, 259] and not self.player_y < 0 and not game_map.tiles[self.player_y - 1][self.player_x].solid:
                 self.player_y -= 1
-            if key in [50, 258] and not self.player_y >= y_lim and not game_map.tiles[self.player_y + 1][self.player_x].solid: # South
+            # South
+            if key in [50, 258] and not self.player_y >= y_lim and not game_map.tiles[self.player_y + 1][self.player_x].solid:
                 self.player_y += 1
-            if key in [52, 260] and not self.player_x < 0 and not game_map.tiles[self.player_y][self.player_x - 1].solid: # West
+            # West
+            if key in [52, 260] and not self.player_x < 0 and not game_map.tiles[self.player_y][self.player_x - 1].solid:
                 self.player_x -= 1
-            if key in [54, 261] and not self.player_x >= x_lim and not game_map.tiles[self.player_y][self.player_x + 1].solid: # East
+            # East
+            if key in [54, 261] and not self.player_x >= x_lim and not game_map.tiles[self.player_y][self.player_x + 1].solid:
                 self.player_x += 1
-            if key in [117, 57] and not (self.player_y < 0 and not self.player_x >= x_lim) and not game_map.tiles[self.player_y - 1][self.player_x + 1].solid: # NE
+            # NE
+            if key in [117, 57] and not (self.player_y < 0 and not self.player_x >= x_lim) and not game_map.tiles[self.player_y - 1][self.player_x + 1].solid:
                 self.player_y -= 1
                 self.player_x += 1
-            if key in [121, 55] and not (self.player_y < 0 and self.player_x < 0) and not game_map.tiles[self.player_y - 1][self.player_x - 1].solid: # NW
+            # NW
+            if key in [121, 55] and not (self.player_y < 0 and self.player_x < 0) and not game_map.tiles[self.player_y - 1][self.player_x - 1].solid:
                 self.player_y -= 1
                 self.player_x -= 1
-            if key in [98, 49] and not (self.player_y >= y_lim and self.player_x < 0) and not game_map.tiles[self.player_y + 1][self.player_x - 1].solid: # SW
+            # SW
+            if key in [98, 49] and not (self.player_y >= y_lim and self.player_x < 0) and not game_map.tiles[self.player_y + 1][self.player_x - 1].solid:
                 self.player_y += 1
                 self.player_x -= 1
-            if key in [110, 51] and not (self.player_y >= y_lim and self.player_x >= x_lim) and not game_map.tiles[self.player_y + 1][self.player_x + 1].solid: # SE
+            # SE
+            if key in [110, 51] and not (self.player_y >= y_lim and self.player_x >= x_lim) and not game_map.tiles[self.player_y + 1][self.player_x + 1].solid:
                 self.player_y += 1
                 self.player_x += 1
-            # if key in [110, 51]: # SE
-            
+            # open inventory
+            if key == 105: # i
+                self.open_inventory()
+                
             tile = game_map.tiles[self.player_y][self.player_x]
             # check if is standing on a door
-            if isinstance(tile, Map.DoorTile) and self.message_box(f'Use door?', ['No', 'Yes']) == 'Yes':
+            if isinstance(tile, Map.DoorTile) and self.message_box(f'Use door?', ['No', 'Yes'], width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
                 destination_map = tile.to
                 game_map = Map.Map.by_name(destination_map, f'{self.assets_path}/maps/', self.assets_path, player_spawn_char=tile.char)
                 self.player_y, self.player_x = game_map.player_spawn_y, game_map.player_spawn_x
@@ -415,10 +427,10 @@ class Game:
             self.tile_window.refresh()
             self.stdscr.refresh()
 
-        # at the VERY end
+        # end of method
         self.tile_window.clear()
         self.tile_window.refresh()
-        del self.tile_window
+        # del self.tile_window
         self.stdscr.clear()
         self.stdscr.refresh()
         self.current_menu = self.main_menu
@@ -468,3 +480,81 @@ class Game:
                     else:
                         self.tile_window.addch(i, j, game_map.tiles[map_y][map_x].char)
                         
+    def open_inventory(self):
+        inventory_window = curses.newwin(self.window_height, self.window_width, 1, 1)
+        inventory_window.keypad(1)
+
+        mid_x = self.window_width // 2
+        
+        items = list(self.player.items)
+        items += self.player.countable_items
+
+        display_names = []
+        for item in items:
+            line = f'{item.name}'
+            if issubclass(type(item), Items.CountableItem):
+                line += f' x{item.amount}'
+            if issubclass(type(item), Items.EquipableItem):
+                line += f' ({item.slot})'
+            display_names += [line]
+
+        inventory_window.addstr(0, 0, 'Inventory')
+        # initial items print
+        choice_id = 0
+        for i in range(min(len(display_names), self.window_height - 4)):
+            if i == choice_id:
+                inventory_window.addstr(i + 3, 0, '> ')
+            inventory_window.addstr(i + 3, 2, display_names[i])
+        if len(display_names) > self.window_height - 3:
+            inventory_window.addstr(self.window_height - 1, mid_x, 'V')
+        inventory_window.refresh()
+
+        display_length = min(len(display_names), self.window_height - 4)
+        while True:
+            key = inventory_window.getch()
+            inventory_window.clear()
+
+            if key == 27: # ESC
+                break
+            if key == 259: # UP
+                choice_id -= 1
+                if choice_id < 0: choice_id = len(display_names) - 1
+            if key == 258: # DOWN
+                choice_id += 1
+                if choice_id >= len(display_names): choice_id = 0
+
+            if len(display_names) > display_length:
+                if choice_id != 0:
+                    inventory_window.addstr(2, mid_x, '^')
+                if choice_id + display_length > len(display_names):
+                    start = len(display_names) - display_length
+                else: 
+                    start = choice_id
+                end = start + display_length
+            else:
+                start = 0
+                end = display_length
+            
+            inventory_window.addstr(0, 0, 'Inventory')
+
+            if choice_id + display_length < len(display_names):
+                inventory_window.addstr(3, 0, '> ')
+                if len(display_names) > display_length:
+                    inventory_window.addstr(self.window_height - 1, mid_x, 'V')
+
+            for i in range(start, end):
+                if i == choice_id:
+                    if len(display_names) > display_length:
+                        if choice_id + display_length >= len(display_names):
+                            inventory_window.addstr(i + 3 - start, 0, '> ')
+                    else:
+                        inventory_window.addstr(i + 3 - start, 0, '> ')
+                inventory_window.addstr(i + 3 - start, 2, display_names[i])
+
+            
+            inventory_window.refresh()
+
+            inventory_window.refresh()
+        # end of method
+        inventory_window.clear()
+        inventory_window.refresh()

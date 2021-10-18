@@ -42,11 +42,15 @@ class Item:
     def json(self):
         return self.__dict__
 
-class Armor(Item):
+class EquipableItem(Item):
+    def __init__(self):
+        super().__init__()
+        self.slot = ''
+
+class Armor(EquipableItem):
     def __init__(self):
         super().__init__()
         self.mods = {}
-        self.slot = ''
         self.requires = {}
 
     def __str__(self):
@@ -69,7 +73,6 @@ class CountableItem(Item):
 
     def get_base_items(d, path):
         items = Item.get_base_items(d.keys(), path)
-        result = []
         for i in range(len(items)):
             items[i].amount = list(d.values())[i]
         return items
@@ -85,13 +88,12 @@ class Ammo(CountableItem):
         result += f'\nAmount: {self.amount}'
         return result
 
-class MeleeWeapon(Item):
+class MeleeWeapon(EquipableItem):
     def __init__(self):
         super().__init__()
         self.base_damage = 0
         self.max_mod = 0
         self.range = 0
-        self.slot = ''
         self.mods = {}
         self.requires = {}
 
@@ -119,6 +121,4 @@ class RangedWeapon(MeleeWeapon):
         result = super().__str__()
         result += f'\nType of ammo: {self.ammo_type}'
         return result
-
-        
     

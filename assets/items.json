@@ -59,7 +59,8 @@
             "mods": {
                 "armor": 1
             },
-            "requires": {}
+            "requires": {},
+            "slot": "HEAD"
         },
         {
             "name": "Leather Armor",
@@ -117,6 +118,7 @@
         {
             "name": "Long Bow",
             "itype": "ranged",
+            "slot": "ARMS",
             "base_damage": 6,
             "max_mod": 1,
             "range": 5,
