@@ -318,16 +318,25 @@ class Game:
             self.load_menu.remove_button_with_name(f'load_{name}_button')
             
     def load_character(self, character_name, saves_path):
-        data = SaveFile.load(character_name, saves_path)
-        if data == -1:
-            raise Exception(f'ERR: save file of character with name {character_name} not found in {saves_path}')
-        self.player = Player.from_json(data['player'])
-        map = Map.Map.by_name(data['map_name'], f'{self.assets_path}/maps/')
-        self.player_y, self.player_x = map.player_spawn_y, map.player_spawn_x
-        if 'player_y' in data:
-            self.player_y = data['player_y']
-        if 'player_x' in data:
-            self.player_x = data['player_x']
+        try:
+            data = SaveFile.load(character_name, saves_path)
+            if data == -1:
+                raise Exception(f'ERR: save file of character with name {character_name} not found in {saves_path}')
+            self.player = Player.from_json(data['player'])
+            map = Map.Map.by_name(data['map_name'], f'{self.assets_path}/maps/')
+            self.player_y, self.player_x = map.player_spawn_y, map.player_spawn_x
+            if 'player_y' in data:
+                self.player_y = data['player_y']
+            if 'player_x' in data:
+                self.player_x = data['player_x']
+        except:
+            if self.message_box(f'Character {character_name} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
+                SaveFile.delete_save_file(character_name, self.saves_path)
+                self.load_menu.remove_button_with_name(f'load_{character_name}_button')
+
+
+            return
+            
         self.stdscr.clear()
 
         # set some values

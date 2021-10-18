@@ -3,7 +3,7 @@
         "name": "Warrior",
         "description": "med damage, high armor, low range",
         "max_health": 20,
-        "max_ana": 10,
+        "max_mana": 10,
         "STR": 15,
         "DEX": 10,
         "INT": 10,
