@@ -323,8 +323,8 @@ class Game:
         if data == -1:
             raise Exception(f'ERR: save file of character with name {character_name} not found in {self.saves_path}')
         self.player = Player.from_json(data['player'])
-        map = Map.Map.by_name(data['map_name'], f'{self.assets_path}/maps/', self.assets_path)
-        self.player_y, self.player_x = map.player_spawn_y, map.player_spawn_x
+        game_map = Map.Map.by_name(data['map_name'], f'{self.assets_path}/maps/', self.assets_path)
+        self.player_y, self.player_x = game_map.player_spawn_y, game_map.player_spawn_x
         if 'player_y' in data:
             self.player_y = data['player_y']
         if 'player_x' in data:
@@ -358,17 +358,16 @@ class Game:
 
         self.tile_window.addstr(mid_y, mid_x, '@')
 
-        self.draw_tiles(mid_y, mid_x, visible_range, map)
+        self.draw_tiles(mid_y, mid_x, visible_range, game_map)
         self.tile_window.addstr(mid_y, mid_x, '@')
 
         # main game loop
         while True:
             key = self.tile_window.getch()
             self.tile_window.clear()
-            if key == 81:
-                if self.message_box('Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
-                    SaveFile.save(self.player, map.name, self.saves_path, player_y=self.player_y, player_x=self.player_x)
-                    break
+            if key == 81 and self.message_box('Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
+                SaveFile.save(self.player, game_map.name, self.saves_path, player_y=self.player_y, player_x=self.player_x)
+                break
             if key == 32:
                 self.player.add_health(1)
                 self.player.add_mana(1)
@@ -377,39 +376,38 @@ class Game:
                 self.player.add_mana(-1)
 
             # movement management
-            y_lim = map.height
-            x_lim = map.width
-            if key in [56, 259] and not self.player_y < 0 and not map.tiles[self.player_y - 1][self.player_x].solid: # North
+            y_lim = game_map.height
+            x_lim = game_map.width
+            if key in [56, 259] and not self.player_y < 0 and not game_map.tiles[self.player_y - 1][self.player_x].solid: # North
                 self.player_y -= 1
-            if key in [50, 258] and not self.player_y >= y_lim and not map.tiles[self.player_y + 1][self.player_x].solid: # South
+            if key in [50, 258] and not self.player_y >= y_lim and not game_map.tiles[self.player_y + 1][self.player_x].solid: # South
                 self.player_y += 1
-            if key in [52, 260] and not self.player_x < 0 and not map.tiles[self.player_y][self.player_x - 1].solid: # West
+            if key in [52, 260] and not self.player_x < 0 and not game_map.tiles[self.player_y][self.player_x - 1].solid: # West
                 self.player_x -= 1
-            if key in [54, 261] and not self.player_x >= x_lim and not map.tiles[self.player_y][self.player_x + 1].solid: # East
+            if key in [54, 261] and not self.player_x >= x_lim and not game_map.tiles[self.player_y][self.player_x + 1].solid: # East
                 self.player_x += 1
-            if key in [117, 57] and not (self.player_y < 0 and not self.player_x >= x_lim) and not map.tiles[self.player_y - 1][self.player_x + 1].solid: # NE
+            if key in [117, 57] and not (self.player_y < 0 and not self.player_x >= x_lim) and not game_map.tiles[self.player_y - 1][self.player_x + 1].solid: # NE
                 self.player_y -= 1
                 self.player_x += 1
-            if key in [121, 55] and not (self.player_y < 0 and self.player_x < 0) and not map.tiles[self.player_y - 1][self.player_x - 1].solid: # NW
+            if key in [121, 55] and not (self.player_y < 0 and self.player_x < 0) and not game_map.tiles[self.player_y - 1][self.player_x - 1].solid: # NW
                 self.player_y -= 1
                 self.player_x -= 1
-            if key in [98, 49] and not (self.player_y >= y_lim and self.player_x < 0) and not map.tiles[self.player_y + 1][self.player_x - 1].solid: # SW
+            if key in [98, 49] and not (self.player_y >= y_lim and self.player_x < 0) and not game_map.tiles[self.player_y + 1][self.player_x - 1].solid: # SW
                 self.player_y += 1
                 self.player_x -= 1
-            if key in [110, 51] and not (self.player_y >= y_lim and self.player_x >= x_lim) and not map.tiles[self.player_y + 1][self.player_x + 1].solid: # SE
+            if key in [110, 51] and not (self.player_y >= y_lim and self.player_x >= x_lim) and not game_map.tiles[self.player_y + 1][self.player_x + 1].solid: # SE
                 self.player_y += 1
                 self.player_x += 1
             # if key in [110, 51]: # SE
             
-            tile = map.tiles[self.player_y][self.player_x]
+            tile = game_map.tiles[self.player_y][self.player_x]
             # check if is standing on a door
-            if isinstance(tile, Map.DoorTile):
-                if self.message_box(f'Use door?', ['No', 'Yes']) == 'Yes':
-                    destination_map = tile.to
-                    map = Map.Map.by_name(destination_map, f'{self.assets_path}/maps/', self.assets_path, player_spawn_char=tile.char)
-                    self.player_y, self.player_x = map.player_spawn_y, map.player_spawn_x
+            if isinstance(tile, Map.DoorTile) and self.message_box(f'Use door?', ['No', 'Yes']) == 'Yes':
+                destination_map = tile.to
+                game_map = Map.Map.by_name(destination_map, f'{self.assets_path}/maps/', self.assets_path, player_spawn_char=tile.char)
+                self.player_y, self.player_x = game_map.player_spawn_y, game_map.player_spawn_x
 
-            self.draw_tiles(mid_y, mid_x, visible_range, map)
+            self.draw_tiles(mid_y, mid_x, visible_range, game_map)
             # last to display
             self.tile_window.addstr(mid_y, mid_x, '@')
 
@@ -457,7 +455,7 @@ class Game:
         int_info = ' ' * (3 - len(str(self.player.INT))) + f'{self.player.INT}'
         self.addstr(9, self.window_width + 7, f'{int_info}')
         
-    def draw_tiles(self, mid_y, mid_x, visible_range, map):
+    def draw_tiles(self, mid_y, mid_x, visible_range, game_map):
         for i in range(max(0, mid_y - visible_range), min(self.window_height, mid_y + visible_range + 1)):
             for j in range(max (0, mid_x - visible_range), min(self.window_width, mid_x + visible_range + 1)):
                 if Utility.distance(i, j, mid_y, mid_x) < visible_range:
@@ -465,8 +463,8 @@ class Game:
                         break
                     map_y = i + self.player_y - mid_y
                     map_x = j + self.player_x - mid_x
-                    if map_y < 0 or map_x < 0 or map_y >= map.height or map_x >= map.width:
+                    if map_y < 0 or map_x < 0 or map_y >= game_map.height or map_x >= game_map.width:
                         self.tile_window.addch(i, j, '#')
                     else:
-                        self.tile_window.addch(i, j, map.tiles[map_y][map_x].char)
+                        self.tile_window.addch(i, j, game_map.tiles[map_y][map_x].char)
                         
