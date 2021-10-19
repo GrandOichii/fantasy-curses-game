@@ -1,0 +1,12 @@
+###
+#3#
+# #
+# #
+# #
+# #
+# #
+#2#
+###
+---
+2 D door room1 to_room2
+3 D door doors from_doors_to_room2

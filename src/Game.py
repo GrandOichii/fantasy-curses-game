@@ -365,7 +365,7 @@ class Game:
         self.display_player_info()
         self.stdscr.refresh()
 
-        visible_range = 10
+        visible_range = 100
         mid_y = self.window_height // 2 
         mid_x = self.window_width // 2
 
