@@ -3,6 +3,7 @@ import curses.textpad as textpad
 import json
 
 import os
+from typing import KeysView
 import gamelib.SaveFile as SaveFile
 
 from ui.Menu import Menu
@@ -15,12 +16,13 @@ import gamelib.Map as Map
 import gamelib.Items as Items
 
 class Game:
-    def __init__(self, saves_path, assets_path):
+    def __init__(self, saves_path, assets_path, maps_path):
         self.debug = False
         self.assets_path = assets_path
         self.saves_path = saves_path
+        self.maps_path = maps_path
         self.max_name_len = 20
-        self.starting_map = 'map1'
+        self.starting_map = 'index'
 
 
         self.create_folders()
@@ -212,6 +214,14 @@ class Game:
         win.refresh()
         return choices[choice_id]
 
+    def prompt_display(self, message):
+        self.addstr(11, self.window_width + 11, message)
+        self.stdscr.refresh()
+        key = self.stdscr.getch()
+        self.addstr(11, self.window_width + 11, ' ' * (self.WIDTH - self.window_width - 11))
+        self.stdscr.refresh()
+        return key
+
     def display_menu(self, menu, y, x):
         self.addstr(y, x, menu.title)
         self.addstr(y + 2, x, menu.text)
@@ -319,23 +329,24 @@ class Game:
             self.load_menu.remove_button_with_name(f'load_{name}_button')
             
     def load_character(self, character_name):
-        try:
-            data = SaveFile.load(character_name, self.saves_path)
-            if data == -1:
-                raise Exception(f'ERR: save file of character with name {character_name} not found in {self.saves_path}')
-            self.player = Player.from_json(data['player'])
-            game_map = Map.Map.by_name(data['map_name'], f'{self.assets_path}/maps/', self.assets_path)
-            self.player_y, self.player_x = game_map.player_spawn_y, game_map.player_spawn_x
-            if 'player_y' in data:
-                self.player_y = data['player_y']
-            if 'player_x' in data:
-                self.player_x = data['player_x']
-        except Exception as ex:
-            if self.debug: raise ex
-            if self.message_box(f'Character {character_name} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
-                SaveFile.delete_save_file(character_name, self.saves_path)
-                self.load_menu.remove_button_with_name(f'load_{character_name}_button')
-            return
+        # try:
+        data = SaveFile.load(character_name, self.saves_path)
+        if data == -1:
+            raise Exception(f'ERR: save file of character with name {character_name} not found in {self.saves_path}')
+        self.player = Player.from_json(data['player'])
+        game_map = Map.Map.by_name(data['map_name'], self.maps_path, self.assets_path)
+        self.emitted_signals = data['emitted_signals']
+        self.player_y, self.player_x = game_map.player_spawn_y, game_map.player_spawn_x
+        if 'player_y' in data:
+            self.player_y = data['player_y']
+        if 'player_x' in data:
+            self.player_x = data['player_x']
+        # except Exception as ex:
+        #     if self.debug: raise ex
+        #     if self.message_box(f'Character {character_name} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
+        #         SaveFile.delete_save_file(character_name, self.saves_path)
+        #         self.load_menu.remove_button_with_name(f'load_{character_name}_button')
+        #     return
             
         self.stdscr.clear()
 
@@ -368,7 +379,9 @@ class Game:
             key = self.tile_window.getch()
             self.tile_window.clear()
             if key == 81 and self.message_box('Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
-                SaveFile.save(self.player, game_map.name, self.saves_path, player_y=self.player_y, player_x=self.player_x)
+                SaveFile.save(self.player, game_map.name, self.saves_path, player_y=self.player_y, player_x=self.player_x, emitted_signals=self.emitted_signals)
+                # without emitted signals
+                # SaveFile.save(self.player, game_map.name, self.saves_path, player_y=self.player_y, player_x=self.player_x)
                 break
             if self.debug and key == 32:
                 self.player.add_health(1)
@@ -408,6 +421,25 @@ class Game:
             if key in [110, 51] and not (self.player_y >= y_lim and self.player_x >= x_lim) and not game_map.tiles[self.player_y + 1][self.player_x + 1].solid:
                 self.player_y += 1
                 self.player_x += 1
+            # interact
+            if key == 101: # e
+                interactable_tiles = self.get_interactable_tiles(game_map, self.player_y, self.player_x)
+                if len(interactable_tiles) == 0:
+                    self.message_box('No tiles to interact with nearby!', ['Ok'],width=self.window_width - 3, ypos=2, xpos=2)
+                else:
+                    interact_key = self.prompt_display('Interact where?')
+                    flag = False
+                    i_tile = None
+                    for o in interactable_tiles:
+                        if interact_key in o[1]:
+                            flag = True
+                            i_tile = o[0]
+                    if flag:
+                        self.prompt_display(i_tile.name)
+                    else:
+                        a=1
+                        # add to log history
+
             # open inventory
             if key == 105: # i
                 self.open_inventory()
@@ -416,9 +448,11 @@ class Game:
             # check if is standing on a door
             if isinstance(tile, Map.DoorTile) and self.message_box(f'Use door?', ['No', 'Yes'], width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
                 destination_map = tile.to
-                game_map = Map.Map.by_name(destination_map, f'{self.assets_path}/maps/', self.assets_path, player_spawn_char=tile.char)
+                door_code = tile.door_code
+                game_map = Map.Map.by_name(destination_map, self.maps_path, self.assets_path, door_code=door_code)
                 self.player_y, self.player_x = game_map.player_spawn_y, game_map.player_spawn_x
-
+            if isinstance(tile, Map.PressurePlateTile) and not tile.signal in self.emitted_signals:
+                self.emitted_signals += [tile.signal]
             self.draw_tiles(mid_y, mid_x, visible_range, game_map)
             # last to display
             self.tile_window.addstr(mid_y, mid_x, '@')
@@ -445,6 +479,7 @@ class Game:
         self.addstr(7, self.window_width + 3, f'STR:') # left: 22
         self.addstr(8, self.window_width + 3, f'DEX:') # left: 22
         self.addstr(9, self.window_width + 3, f'INT:') # left: 22
+        self.addstr(11, self.window_width + 3, 'Prompt: ')
         self.stdscr.refresh()
 
     def display_player_info(self):
@@ -478,7 +513,13 @@ class Game:
                     if map_y < 0 or map_x < 0 or map_y >= game_map.height or map_x >= game_map.width:
                         self.tile_window.addch(i, j, '#')
                     else:
-                        self.tile_window.addch(i, j, game_map.tiles[map_y][map_x].char)
+                        if game_map.tiles[map_y][map_x].char == '!':
+                            self.tile_window.addch(i, j, game_map.tiles[map_y][map_x].char, curses.A_BLINK)
+                        else:
+                            tile = game_map.tiles[map_y][map_x]
+                            if isinstance(tile, Map.HiddenTile) and tile.signal in self.emitted_signals:
+                                game_map.tiles[map_y][map_x] = tile.actual_tile
+                            self.tile_window.addch(i, j, game_map.tiles[map_y][map_x].char)
                         
     def open_inventory(self):
         inventory_window = curses.newwin(self.window_height, self.window_width, 1, 1)
@@ -558,3 +599,33 @@ class Game:
         # end of method
         inventory_window.clear()
         inventory_window.refresh()
+
+    def get_interactable_tiles(self, game_map, y, x):
+        y_lim = game_map.height
+        x_lim = game_map.width
+        result = []
+        # North
+        if not y < 0 and game_map.tiles[y - 1][x].interactable:
+            result += [[game_map.tiles[y - 1][x], [56, 259]]]
+        # South
+        if not y >= y_lim and game_map.tiles[y + 1][x].interactable:
+            result += [[game_map.tiles[y + 1][x], [50, 258]]]
+        # West
+        if not x < 0 and game_map.tiles[y][x - 1].interactable:
+            result += [[game_map.tiles[y][x - 1], [52, 260]]]
+        # East
+        if not x >= x_lim and game_map.tiles[y][x + 1].interactable:
+            result += [[game_map.tiles[y][x + 1], [54, 261]]]
+        # NE
+        if not (y < 0 and not self.x >= x_lim) and game_map.tiles[y - 1][x + 1].interactable:
+            result += [[game_map.tiles[y - 1][x + 1], [117, 57]]]
+        # NW
+        if not (y < 0 and x < 0) and game_map.tiles[y - 1][x - 1].interactable:
+            result += [[game_map.tiles[y - 1][x - 1], [121, 55]]]
+        # SW
+        if not (y >= y_lim and x < 0) and game_map.tiles[y + 1][x - 1].interactable:
+            result += [[game_map.tiles[y + 1][x - 1], [98, 49]]]
+        # SE
+        if not (y >= y_lim and x >= x_lim) and game_map.tiles[y + 1][x + 1].interactable:
+            result += [[game_map.tiles[y + 1][x + 1], [110, 51]]]
+        return result
