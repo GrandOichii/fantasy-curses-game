@@ -1,0 +1,6 @@
+wall: no format
+floor: no format:
+chest: <tile_sym> <actual_sym> chest <contents_as_json>
+door: <tile_sym> <actual_sym> door <destinaton_map> <door_code>
+pressure plate: <tile_sym> <actual_sym> pressure_plate <signal>
+hidden wall: <tile_sym> # hidden_wall <signal> <actual_sym> <actual_name> <rest_of_the_data>
