@@ -6,6 +6,8 @@
 ##      5#
 ##########
 ---
+visible_range=10
+---
 D D door index to_chests
 1 C chest {"items": []}
 2 C chest {"items": ["Hood"]}

@@ -365,14 +365,14 @@ class Game:
         self.display_player_info()
         self.stdscr.refresh()
 
-        visible_range = 100
-        mid_y = self.window_height // 2 
-        mid_x = self.window_width // 2
+        self.mid_y = self.window_height // 2 
+        self.mid_x = self.window_width // 2
 
-        self.tile_window.addstr(mid_y, mid_x, '@')
+        self.tile_window.addstr(self.mid_y, self.mid_x, '@')
 
-        self.draw_tiles(mid_y, mid_x, visible_range, game_map)
-        self.tile_window.addstr(mid_y, mid_x, '@')
+        self.draw_tiles(self.player_y, self.player_x, game_map.visible_range, game_map)
+        self.draw_torches(game_map)
+        self.tile_window.addstr(self.mid_y, self.mid_x, '@')
 
         # main game loop
         while True:
@@ -453,9 +453,10 @@ class Game:
                 self.player_y, self.player_x = game_map.player_spawn_y, game_map.player_spawn_x
             if isinstance(tile, Map.PressurePlateTile) and not tile.signal in self.emitted_signals:
                 self.emitted_signals += [tile.signal]
-            self.draw_tiles(mid_y, mid_x, visible_range, game_map)
+            self.draw_tiles(self.player_y, self.player_x, game_map.visible_range, game_map)
+            self.draw_torches(game_map)
             # last to display
-            self.tile_window.addstr(mid_y, mid_x, '@')
+            self.tile_window.addstr(self.mid_y, self.mid_x, '@')
 
             self.display_player_info()
             self.tile_window.refresh()
@@ -501,15 +502,26 @@ class Game:
         self.addstr(8, self.window_width + 7, f'{dex_info}')
         int_info = ' ' * (3 - len(str(self.player.INT))) + f'{self.player.INT}'
         self.addstr(9, self.window_width + 7, f'{int_info}')
-        
-    def draw_tiles(self, mid_y, mid_x, visible_range, game_map):
+
+    def draw_torches(self, game_map):
+        for i in range(game_map.height):
+            for j in range(game_map.width):
+                if isinstance(game_map.tiles[i][j], Map.TorchTile):
+                    self.draw_tiles(i, j, game_map.tiles[i][j].visible_range, game_map)
+                if  isinstance(game_map.tiles[i][j], Map.HiddenTile) and game_map.tiles[i][j].signal in self.emitted_signals and isinstance(game_map.tiles[i][j].actual_tile, Map.TorchTile):
+                    self.draw_tiles(i, j, game_map.tiles[i][j].actual_tile.visible_range, game_map)
+
+
+    def draw_tiles(self, y, x, visible_range, game_map):
+        mid_y = self.mid_y - self.player_y + y
+        mid_x = self.mid_x - self.player_x + x
         for i in range(max(0, mid_y - visible_range), min(self.window_height, mid_y + visible_range + 1)):
             for j in range(max (0, mid_x - visible_range), min(self.window_width, mid_x + visible_range + 1)):
                 if Utility.distance(i, j, mid_y, mid_x) < visible_range:
                     if i == self.window_height - 1 and j == self.window_width - 1:
                         break
-                    map_y = i + self.player_y - mid_y
-                    map_x = j + self.player_x - mid_x
+                    map_y = i + y - mid_y
+                    map_x = j + x - mid_x
                     if map_y < 0 or map_x < 0 or map_y >= game_map.height or map_x >= game_map.width:
                         self.tile_window.addch(i, j, '#')
                     else:
@@ -520,12 +532,10 @@ class Game:
                             if isinstance(tile, Map.HiddenTile) and tile.signal in self.emitted_signals:
                                 game_map.tiles[map_y][map_x] = tile.actual_tile
                             self.tile_window.addch(i, j, game_map.tiles[map_y][map_x].char)
-                        
+
     def open_inventory(self):
         inventory_window = curses.newwin(self.window_height, self.window_width, 1, 1)
         inventory_window.keypad(1)
-
-        mid_x = self.window_width // 2
         
         items = list(self.player.items)
         items += self.player.countable_items
@@ -547,7 +557,7 @@ class Game:
                 inventory_window.addstr(i + 3, 0, '> ')
             inventory_window.addstr(i + 3, 2, display_names[i])
         if len(display_names) > self.window_height - 3:
-            inventory_window.addstr(self.window_height - 1, mid_x, 'V')
+            inventory_window.addstr(self.window_height - 1, self.mid_x, 'V')
         inventory_window.refresh()
 
         display_length = min(len(display_names), self.window_height - 4)
@@ -566,7 +576,7 @@ class Game:
 
             if len(display_names) > display_length:
                 if choice_id != 0:
-                    inventory_window.addstr(2, mid_x, '^')
+                    inventory_window.addstr(2, self.mid_x, '^')
                 if choice_id + display_length > len(display_names):
                     start = len(display_names) - display_length
                 else: 
@@ -581,7 +591,7 @@ class Game:
             if choice_id + display_length < len(display_names):
                 inventory_window.addstr(3, 0, '> ')
                 if len(display_names) > display_length:
-                    inventory_window.addstr(self.window_height - 1, mid_x, 'V')
+                    inventory_window.addstr(self.window_height - 1, self.mid_x, 'V')
 
             for i in range(start, end):
                 if i == choice_id:

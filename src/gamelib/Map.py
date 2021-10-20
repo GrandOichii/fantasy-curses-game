@@ -27,6 +27,8 @@ class Tile:
                 return ChestTile(tile_name, tile_actual_char, True, tile_data, assets_path)
             if tile_name == 'pressure plate':
                 return PressurePlateTile(tile_name, tile_actual_char, False, False, tile_data)
+            if tile_name == 'torch':
+                return TorchTile(tile_name, tile_actual_char, True, False, tile_data)
             if tile_name == 'hidden tile':
                 split = tile_data.split()
                 signal = split[0]
@@ -49,6 +51,11 @@ class DoorTile(Tile):
         super().__init__(name, char, solid, False)
         self.to = info.split()[0]
         self.door_code = info.split()[1]
+
+class TorchTile(Tile):
+    def __init__(self, name, char, solid, interactable, visible_range):
+        super().__init__(name, char, solid, interactable)
+        self.visible_range = int(visible_range)
 
 class ChestTile(Tile):
     def __init__(self, name, char, solid, names, assets_path):
@@ -74,6 +81,7 @@ class Map:
         self.tiles = []
         self.player_spawn_y = 0
         self.player_spawn_x = 0
+        self.visible_range = 0
         self.player_spawn_char = player_spawn_char
 
     def by_name(name, maps_path, assets_path, door_code=None):
@@ -81,14 +89,16 @@ class Map:
         if not f'{name}.map' in map_names:
             raise Exception(f'ERR: map with name {name} not found in {maps_path}')
         raw_data = open(f'{maps_path}/{name}.map', 'r').read()
-        map_data = raw_data.split('\n---\n')
-        if len(map_data) != 2:
+        data = raw_data.split('\n---\n')
+        if len(data) != 3:
             raise Exception(f'ERR: Incorrect map file format. Map name: {name}')
-        layout_data = map_data[0]
-        tiles_raw_data = map_data[1]
+        layout_data = data[0]
+        map_data = data[1]
+        tiles_raw_data = data[2]
         tiles_data = tiles_raw_data.split('\n')
         result = Map.from_str(layout_data, tiles_data, '@', assets_path, door_code)
         result.name = name
+        result.add_map_data(map_data)
         return result
 
     def from_str(layout_data, raw_tiles_data, player_spawn_char, assets_path, door_code):
@@ -132,3 +142,9 @@ class Map:
 
         return result
 
+    def add_map_data(self, map_data):
+        split = map_data.split()
+        for line in split:
+            s = line.split('=')
+            if s[0] == 'visible_range':
+                self.visible_range = int(s[1])

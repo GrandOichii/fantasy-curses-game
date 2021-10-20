@@ -7,6 +7,8 @@
 #            #######
 ####################
 ---
+visible_range=10
+---
 D D door index to_hidden_walls
 1 _ pressure_plate open_a
 2 # hidden_tile open_a _ pressure_plate open_b
