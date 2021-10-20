@@ -196,6 +196,7 @@ class MainAppWindow(QMainWindow):
         result_tile_data = []
         result_map_data['visible_range'] = self.visible_range_spin_box.value()
         char_int = 64
+        hidden_floors_chars = dict()
         for i in range(self.map_height):
             result_layout += ['']
             for j in range(self.map_width):
@@ -206,6 +207,16 @@ class MainAppWindow(QMainWindow):
                     tile_info += ['5']
                 
                 if tile.is_hidden:
+                    if tile_info[0] == 'floor':
+                        if tile.hidden_tile_info == '':
+                            self.showMB('Hidden tile at y:{tile.map_y}, x:{tile.map_x} doesn\'t catch a signal!', 'Error')
+                            return
+                        if not tile.hidden_tile_info in hidden_floors_chars.keys():
+                            char_int += 1
+                            hidden_floors_chars[tile.hidden_tile_info] = f'{chr(char_int)} # hidden_tile {tile.hidden_tile_info}'
+                            result_tile_data += [hidden_floors_chars[tile.hidden_tile_info]]
+                        result_layout[i] += hidden_floors_chars[tile.hidden_tile_info][0]
+                        continue
                     char_int += 1
                     result_layout[i] += chr(char_int)
                     if tile.hidden_tile_info == '':

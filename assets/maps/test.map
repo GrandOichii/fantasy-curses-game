@@ -1,14 +1,17 @@
 ##########
-#        #
-#  ###   #
-#  # #   #
-#  ###   #
-#  # #  A#
-#        #
-#        #
-#        #
+#AA      #
+#A#      #
+#A#      #
+#A#      #
+#A#  B  C#
+#A#      #
+#A#      #
+#D#      #
 ##########
 ---
-visible_range=10
+visible_range=5
 ---
-A D door index testing
+A # hidden_tile s
+B _ pressure_plate s
+C D door index testing
+D # hidden_tile s I torch 10
