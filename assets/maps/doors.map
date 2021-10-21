@@ -1,18 +1,18 @@
 #################
-#D###############
+#A###############
 # ###############
 # ###############
-#            2###
+#            B###
 # ###############
 # ###############
 # ###############
 # ###############
 # ###############
-#1###############
+#C###############
 #################
 ---
 visible_range=10
 ---
-D D door index to_doors
-1 D door room1 from_doors_to_room1
-2 D door room2 from_doors_to_room2
+A D door index to_doors
+B D door room2 from_doors_to_room2
+C D door room1 from_doors_to_room1

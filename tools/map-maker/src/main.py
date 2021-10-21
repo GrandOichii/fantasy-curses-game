@@ -33,8 +33,6 @@ class TileLabel(QLabel):
         self.border_color = color
         self.setStyleSheet(f'{self.border_style}{self.border_color}{self.background_color_style}{self.color}')
 
-
-
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             tile = self.parent().tile
@@ -71,6 +69,8 @@ class MainAppWindow(QMainWindow):
         self.tile_width = 32
 
         self.tile = 'wall'
+
+        self.labels = []
 
         self.tiles_dict = dict()
         self.tiles_dict['wall'] = {
@@ -165,18 +165,38 @@ class MainAppWindow(QMainWindow):
         self.visible_range_spin_box = QSpinBox(self)
         self.visible_range_spin_box.setMinimum(0)
         self.visible_range_spin_box.setFixedWidth(50)
-        # self.visible_range_label.setStyleSheet('border: 1px solid black')
-
-        # self.visible_range_line_edit = QLineEdit(self)
-        # self.
         
-        self.load(['##########', '#        #', '#        #', '#        #', '#        #', '#        #', '#        #', '#        #', '#        #', '##########'], 'visible_range=10', [])
+        self.load(['##########', '#        #', '#        #', '#        #', '#        #', '#        #', '#        #', '#        #', '#        #', '##########'], ['visible_range=10'], [])
         
     def new_map_action_triggered(self):
-        self.showMB('Not implemented yet!', 'Map maker')
+        if QMessageBox.question(self, 'Map maker', 'Ensaved changes will be discarded. Continue?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.Yes:
+            height, ok = QInputDialog.getInt(self, 'Map maker', 'Enter the map height', 10)
+            if height and ok:
+                width, ok = QInputDialog.getInt(self, 'Map maker', 'Enter the map width', 10)
+                if width and ok:
+                    self.loaded_file_path = ''
+                    layout = []
+                    layout += ['#' * width]
+                    for _ in range(height - 2):
+                        layout += ['#' + ' ' * (width - 2) + '#']
+                    layout += ['#' * width]
+                    map_info = ['visible_range=10']
+                    tiles_info = []
+                    self.load(layout, map_info, tiles_info)
 
     def load_map_action_triggered(self):
-        self.showMB('Not implemented yet!', 'Map maker')
+        if QMessageBox.question(self, 'Map maker', 'Ensaved changes will be discarded. Continue?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.Yes:
+            path = QFileDialog.getOpenFileName(self, 'Open', '', 'Map files(*.map)')[0]
+            if path:
+                text = open(path, 'r').read()
+                split = text.split('\n---\n')
+                layout = []
+                for line in split[0].split('\n'):
+                    layout += [line]
+                map_info = split[1].split('\n')
+                tiles_info = split[2].split('\n')
+                self.loaded_file_path = path
+                self.load(layout, map_info, tiles_info)
 
     def save_map_as_action_triggered(self):
         path = QFileDialog.getSaveFileName(self, 'Save as', '', 'Map files(*.map)')[0]
@@ -275,46 +295,84 @@ class MainAppWindow(QMainWindow):
         self.showMB('Saved!', 'Map maker')
 
     def load(self, layout, map_info, tiles_info):
+        if len(self.labels) != 0:
+            for i in range(self.map_height):
+                for j in range(self.map_width):
+                    self.labels[i][j].hide()
         # map layout
         self.map_height = len(layout)
         self.map_width = len(layout[0])
+
+
+        tiles_data = dict()
+        for line in tiles_info:
+            if line == '':
+                continue
+            s = line.split()
+            key = s[0]
+            s.pop(0)
+            s.pop(0)
+            m = dict()
+            if s[0] == 'hidden_tile':
+                m['is_hidden'] = True
+                m['hidden_tile_info'] = s[1]
+                if len(s) == 2: # is wall
+                    m['tile_info'] = 'wall'
+                    tiles_data[key] = m
+                    continue
+                s = s[3: len(s)]
+            m['tile_info'] = ' '.join(s)
+            tiles_data[key] = m
 
         self.labels = []
         for i in range(self.map_height):
             self.labels += [[]]
             for j in range(self.map_width):
                 tile_info = 'ERR'
+                flag = layout[i][j] in tiles_data.keys()
                 if layout[i][j] == '#':
                     tile_info = 'wall'
+                if layout[i][j] == '@':
+                    tile_info = 'floor spawn_point'
                 if layout[i][j] == ' ':
-                    tile_info = 'floor'
+                    tile_info = 'floor'  
+                if flag:
+                    tile_info = tiles_data[layout[i][j]]['tile_info']
                 label = TileLabel(self, tile_info, i, j, self.right_click_action)
-                label.setGeometry(1 + j * self.tile_width, 1 + i * self.tile_height, self.tile_width, self.tile_height)
+                if flag:
+                    d = tiles_data[layout[i][j]]
+                    if 'is_hidden' in d:
+                        label.is_hidden = True
+                        label.hidden_tile_info = d['hidden_tile_info']
+                        label.set_border_color('green')
+
+                label.setGeometry(1 + j * self.tile_width, 21 + i * self.tile_height, self.tile_width, self.tile_height)
                 self.labels[i] += [label]
+                label.show()
+                #     self.showMB(f'ERR: Tile at y: {i}, x: {j} not recognized', 'Map maker')
+                #     exit()
+                # else:
+                #     pass
+
+                
                 
         self.setFixedWidth(self.tile_width * self.map_width + 200)
-        self.setFixedHeight(self.tile_height * self.map_height + 3)
+        self.setFixedHeight(self.tile_height * self.map_height + 23)
                 
         # map data
-        map_data = map_info.split('\n')
-        for line in map_data:
+        for line in map_info:
             s = line.split('=')
             if s[0] == 'visible_range':
                 self.visible_range_spin_box.setValue(int(s[1]))
 
-        
-
-        # tile data  
-
         # move the ui
-        self.tiles_color_choice.move(self.tile_width * self.map_width + 2, 1)
-        self.visible_range_label.move(self.tile_width * self.map_width + 14, 41)
+        self.tiles_color_choice.move(self.tile_width * self.map_width + 2, 21)
+        self.visible_range_label.move(self.tile_width * self.map_width + 14, 61)
         self.visible_range_spin_box.move(self.tile_width * self.map_width + 105, 41)
 
     def right_click_action(self, tile, event):
         tile_name = tile.tile_info.split()[0]
         context_menu = QMenu(self)
-        context_menu.addSeparator()
         make_visible_act = None
         set_signal_act = None
         make_hidden_tile_act = None
@@ -328,6 +386,7 @@ class MainAppWindow(QMainWindow):
             set_signal_act = context_menu.addAction('Set hidden signal')
         else:
             make_hidden_tile_act = context_menu.addAction('Make a hidden tile')
+        context_menu.addSeparator()
         if tile_name == 'floor' and not tile.is_hidden:
             if len(tile.tile_info.split()) == 1:
                 make_spawn_point_act = context_menu.addAction('Mark as spawn point')
@@ -352,12 +411,12 @@ class MainAppWindow(QMainWindow):
             if ok and result:
                 tile.tile_info = f'{tis[0]} {result}'
         if action == make_hidden_tile_act or action == set_signal_act:
-            tile.is_hidden = True
             value = ''
             if len(tile.hidden_tile_info) != 0:
                 value = tile.hidden_tile_info
             result, ok = QInputDialog.getText(self, 'Hidden tile signal', 'Enter the signal', text=value)
             if ok and result:
+                tile.is_hidden = True
                 tile.hidden_tile_info = result
                 tile.set_border_color('green')
         if action == make_visible_act:

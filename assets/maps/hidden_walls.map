@@ -1,18 +1,31 @@
 ####################
-#            AAAAA2#
+#            ABCDEF#
 #            #######
-#            BBBBB3#
-#D      1    #######
-#            CCCCCC#
+#            GHIJKL#
+#M      N    #######
+#            OPQRST#
 #            #######
 ####################
 ---
 visible_range=10
 ---
-D D door index to_hidden_walls
-1 _ pressure_plate open_a
-2 # hidden_tile open_a _ pressure_plate open_b
-3 # hidden_tile open_b _ pressure_plate open_c
 A # hidden_tile open_a
-B # hidden_tile open_b
-C # hidden_tile open_c
+B # hidden_tile open_a
+C # hidden_tile open_a
+D # hidden_tile open_a
+E # hidden_tile open_a
+F # hidden_tile open_a _ pressure_plate open_b
+G # hidden_tile open_b
+H # hidden_tile open_b
+I # hidden_tile open_b
+J # hidden_tile open_b
+K # hidden_tile open_b
+L # hidden_tile open_b _ pressure_plate open_c
+M D door index to_hidden_walls
+N _ pressure_plate open_a
+O # hidden_tile open_c
+P # hidden_tile open_c
+Q # hidden_tile open_c
+R # hidden_tile open_c
+S # hidden_tile open_c
+T # hidden_tile open_c
