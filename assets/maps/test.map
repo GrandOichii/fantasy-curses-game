@@ -1,17 +1,18 @@
 ##########
-#AA      #
-#A#      #
-#A#      #
-#A#      #
-#A#  B  C#
-#A#      #
-#A#      #
-#D#      #
+#AB     ##
+#A#     ##
+#A#     ##
+#A#     ##
+#A#     C#
+#A#     ##
+#A#     ##
+#D#    E##
 ##########
 ---
-visible_range=5
+visible_range=3
 ---
-A # hidden_tile s
-B _ pressure_plate s
+A # hidden_tile signal
+B # hidden_tile signal
 C D door index testing
-D # hidden_tile s I torch 10
+D # hidden_tile signal I torch 10
+E _ pressure_plate signal

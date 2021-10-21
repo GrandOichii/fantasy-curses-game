@@ -40,8 +40,6 @@ class TileLabel(QLabel):
             tile = self.parent().tile
             if self.tile_info == tile:
                 return
-            self.is_hidden = False
-            self.hidden_tile_info = '' 
             self.tile_info = tile
             tiles_dict = self.parent().tiles_dict
             color = tiles_dict[tile]['color']
