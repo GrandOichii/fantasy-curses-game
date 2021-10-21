@@ -41,9 +41,9 @@ class Game:
         credits_menu.title = 'Credits'
         credits_menu.text = 'https://github.com/GrandOichii/fantasy-curses-game'
 
-        new_game_button = ActionButton('new_game_button', 'New game', self.main_menu, self.new_game_action)
+        ActionButton('new_game_button', 'New game', self.main_menu, self.new_game_action)
 
-        load_button = ActionButton('load_button', 'Load', self.main_menu, self.load_game_action)
+        ActionButton('load_button', 'Load', self.main_menu, self.load_game_action)
 
         main_to_settings_button = Button('settings_button', 'Settings', self.main_menu)
         main_to_settings_button.connect_to(settings_menu)
@@ -51,7 +51,7 @@ class Game:
         main_to_credits_button = Button('credits_button', 'Credits', self.main_menu)
         main_to_credits_button.connect_to(credits_menu)
 
-        exit_button = ActionButton('exit_button', 'Exit', self.main_menu, self.exit_action)
+        ActionButton('exit_button', 'Exit', self.main_menu, self.exit_action)
 
         back_to_main_button = Button('back_to_main_button', 'Back', settings_menu)
         back_to_main_button.connect_to(self.main_menu)
@@ -312,7 +312,7 @@ class Game:
         self.load_menu.choice_symbol = '> '
         self.load_menu.text = 'Choose a save file:'
         for i in range(len(save_desc)):
-            button = ActionButton(f'load_{ch_names[i]}_button', save_desc[i], self.load_menu, self.load_character_pick_action)
+            ActionButton(f'load_{ch_names[i]}_button', save_desc[i], self.load_menu, self.load_character_pick_action)
         button = Button('back_to_main_button', 'Back', self.load_menu)
         button.connect_to(self.main_menu)
         self.current_menu = self.load_menu
@@ -465,7 +465,6 @@ class Game:
         # end of method
         self.tile_window.clear()
         self.tile_window.refresh()
-        # del self.tile_window
         self.stdscr.clear()
         self.stdscr.refresh()
         self.current_menu = self.main_menu
@@ -510,7 +509,6 @@ class Game:
                     self.draw_tiles(i, j, game_map.tiles[i][j].visible_range, game_map)
                 if  isinstance(game_map.tiles[i][j], Map.HiddenTile) and game_map.tiles[i][j].signal in self.emitted_signals and isinstance(game_map.tiles[i][j].actual_tile, Map.TorchTile):
                     self.draw_tiles(i, j, game_map.tiles[i][j].actual_tile.visible_range, game_map)
-
 
     def draw_tiles(self, y, x, visible_range, game_map):
         mid_y = self.mid_y - self.player_y + y
