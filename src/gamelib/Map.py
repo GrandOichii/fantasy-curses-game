@@ -12,7 +12,7 @@ class Tile:
         self.solid = solid
         self.interactable = interactable
 
-    def from_info(tile_char, tiles_data, assets_path):
+    def from_info(tile_char, tiles_data, scripts, assets_path):
         if tile_char == ' ' or tile_char == '@':
             return Tile('floor', ' ', False, False)
         if tile_char == '#':
@@ -29,6 +29,9 @@ class Tile:
                 return PressurePlateTile(tile_name, tile_actual_char, False, False, tile_data)
             if tile_name == 'torch':
                 return TorchTile(tile_name, tile_actual_char, True, False, tile_data)
+            if tile_name == 'script tile':
+                tile_data = tile_data.split()
+                return ScriptTile(tile_data[0], tile_actual_char, scripts[tile_data[1]])
             if tile_name == 'hidden tile':
                 split = tile_data.split()
                 signal = split[0]
@@ -40,11 +43,10 @@ class Tile:
                 actual_tile_tiles_data[actual_tile_tile_char] = [' '.join(split[2].split('_'))]
                 actual_tile_tiles_data[actual_tile_tile_char] += [actual_tile_tile_char]
                 actual_tile_tiles_data[actual_tile_tile_char] += [split[3 : len(split)]]
-                actual_tile = Tile.from_info(actual_tile_tile_char, actual_tile_tiles_data, assets_path)
+                actual_tile = Tile.from_info(actual_tile_tile_char, actual_tile_tiles_data, scripts, assets_path)
                 return HiddenTile(tile_name, tile_actual_char, True, False, actual_tile, signal)
         # in case of unknown tile
         return Tile('ERR', '!', True, False)
-
 
 class DoorTile(Tile):
     def __init__(self, name, char, solid, info):
@@ -73,6 +75,11 @@ class HiddenTile(Tile):
         self.actual_tile = actual_tile
         self.signal = signal
 
+class ScriptTile(Tile):
+    def __init__(self, name, char, script):
+        super().__init__(name, char, True, True)
+        self.script = script
+
 class Map:
     def __init__(self, name, height, width, player_spawn_char='@'):
         self.name = name
@@ -90,18 +97,24 @@ class Map:
             raise Exception(f'ERR: map with name {name} not found in {maps_path}')
         raw_data = open(f'{maps_path}/{name}.map', 'r').read()
         data = raw_data.split('\n---\n')
-        if len(data) != 3:
+        if len(data) != 4:
             raise Exception(f'ERR: Incorrect map file format. Map name: {name}')
         layout_data = data[0]
         map_data = data[1]
         tiles_raw_data = data[2]
+        scripts_data = data[3]
         tiles_data = tiles_raw_data.split('\n')
-        result = Map.from_str(layout_data, tiles_data, '@', assets_path, door_code)
+        result = Map.from_str(layout_data, tiles_data, map_data, scripts_data, '@', assets_path, door_code)
         result.name = name
-        result.add_map_data(map_data)
         return result
 
-    def from_str(layout_data, raw_tiles_data, player_spawn_char, assets_path, door_code):
+    def from_str(layout_data, raw_tiles_data, map_data, scripts_data, player_spawn_char, assets_path, door_code):
+        scripts = dict()
+        for chunk in scripts_data.split('\n \n'):
+            lines = chunk.split('\n')
+            script_name = lines[0][:-1]
+            script_lines = lines[1:len(lines)]
+            scripts[script_name] = script_lines
         lines = layout_data.split('\n')
         height = len(lines)
         width = len(lines[0])
@@ -123,7 +136,7 @@ class Map:
         for i in range(height):
             result.tiles += [[]]
             for j in range(width):
-                result.tiles[i] += [Tile.from_info(lines[i][j], tiles_data, assets_path)]
+                result.tiles[i] += [Tile.from_info(lines[i][j], tiles_data, scripts, assets_path)]
 
         # find the player spawn point
         if not door_code:
@@ -140,11 +153,9 @@ class Map:
                         result.player_spawn_y, result.player_spawn_x = i, j
 
 
-        return result
-
-    def add_map_data(self, map_data):
         split = map_data.split()
         for line in split:
             s = line.split('=')
             if s[0] == 'visible_range':
-                self.visible_range = int(s[1])
+                result.visible_range = int(s[1])
+        return result

@@ -3,11 +3,11 @@ from os import listdir, remove
 from os.path import isfile, join, splitext
 from posixpath import split
 
-def save(player, map_name, saves_path, player_y=-1, player_x=-1, emitted_signals=[]):
+def save(player, map_name, saves_path, player_y=-1, player_x=-1, env_vars=dict()):
     data = dict()
     data['player'] = player.json()
     data['map_name'] = map_name
-    data['emitted_signals'] = emitted_signals
+    data['env_vars'] = env_vars
     if player_y != -1:
         data['player_y'] = player_y
     if player_x != -1:

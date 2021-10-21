@@ -1,18 +1,20 @@
-####################
-#A                ##
-#                 ##
-#                 ##
-#B           C    D#
-#                 ##
-#                 ##
-#                 ##
-#E                ##
-####################
+##########
+#        #
+#        #
+#        #
+#  A  B  #
+#        #
+#       C#
+#     D  #
+#        #
+##########
 ---
 visible_range=5
 ---
-A # hidden_tile s I torch 5
-B # hidden_tile s D door test1 testing1
-C _ pressure_plate s
-D D door index testing
-E # hidden_tile s I torch 5
+A # hidden_tile signal1 I torch 10
+B _ pressure_plate signal1
+C D door index testing
+D | script_tile lever script0
+---
+script0:
+set signal1 false

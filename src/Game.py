@@ -334,8 +334,8 @@ class Game:
         if data == -1:
             raise Exception(f'ERR: save file of character with name {character_name} not found in {self.saves_path}')
         self.player = Player.from_json(data['player'])
+        self.env_vars = data['env_vars']
         game_map = Map.Map.by_name(data['map_name'], self.maps_path, self.assets_path)
-        self.emitted_signals = data['emitted_signals']
         self.player_y, self.player_x = game_map.player_spawn_y, game_map.player_spawn_x
         if 'player_y' in data:
             self.player_y = data['player_y']
@@ -379,9 +379,7 @@ class Game:
             key = self.tile_window.getch()
             self.tile_window.clear()
             if key == 81 and self.message_box('Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
-                SaveFile.save(self.player, game_map.name, self.saves_path, player_y=self.player_y, player_x=self.player_x, emitted_signals=self.emitted_signals)
-                # without emitted signals
-                # SaveFile.save(self.player, game_map.name, self.saves_path, player_y=self.player_y, player_x=self.player_x)
+                SaveFile.save(self.player, game_map.name, self.saves_path, player_y=self.player_y, player_x=self.player_x, env_vars=self.env_vars)
                 break
             if self.debug and key == 32:
                 self.player.add_health(1)
@@ -435,7 +433,8 @@ class Game:
                             flag = True
                             i_tile = o[0]
                     if flag:
-                        self.prompt_display(i_tile.name)
+                        if isinstance(i_tile, Map.ScriptTile) and self.message_box(f'Use {i_tile.name}?', ['No', 'Yes'], width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
+                            self.exec_script(i_tile.script)
                     else:
                         a=1
                         # add to log history
@@ -451,8 +450,8 @@ class Game:
                 door_code = tile.door_code
                 game_map = Map.Map.by_name(destination_map, self.maps_path, self.assets_path, door_code=door_code)
                 self.player_y, self.player_x = game_map.player_spawn_y, game_map.player_spawn_x
-            if isinstance(tile, Map.PressurePlateTile) and not tile.signal in self.emitted_signals:
-                self.emitted_signals += [tile.signal]
+            if isinstance(tile, Map.PressurePlateTile) and self.get_env_var(tile.signal) in [None, False]:
+                self.set_env_var(tile.signal, True)
             self.draw_tiles(self.player_y, self.player_x, game_map.visible_range, game_map)
             self.draw_torches(game_map)
             # last to display
@@ -507,7 +506,8 @@ class Game:
             for j in range(game_map.width):
                 if isinstance(game_map.tiles[i][j], Map.TorchTile):
                     self.draw_tiles(i, j, game_map.tiles[i][j].visible_range, game_map)
-                if  isinstance(game_map.tiles[i][j], Map.HiddenTile) and game_map.tiles[i][j].signal in self.emitted_signals and isinstance(game_map.tiles[i][j].actual_tile, Map.TorchTile):
+                if isinstance(game_map.tiles[i][j], Map.HiddenTile) and self.get_env_var(game_map.tiles[i][j].signal) == True and isinstance(game_map.tiles[i][j].actual_tile, Map.TorchTile):
+                    # !!! BIG ISSUE !!! either rework hidden tiles, or make a work-around
                     self.draw_tiles(i, j, game_map.tiles[i][j].actual_tile.visible_range, game_map)
 
     def draw_tiles(self, y, x, visible_range, game_map):
@@ -527,7 +527,7 @@ class Game:
                             self.tile_window.addch(i, j, game_map.tiles[map_y][map_x].char, curses.A_BLINK)
                         else:
                             tile = game_map.tiles[map_y][map_x]
-                            if isinstance(tile, Map.HiddenTile) and tile.signal in self.emitted_signals:
+                            if isinstance(tile, Map.HiddenTile) and self.get_env_var(tile.signal) == True:
                                 game_map.tiles[map_y][map_x] = tile.actual_tile
                             self.tile_window.addch(i, j, game_map.tiles[map_y][map_x].char)
 
@@ -637,3 +637,74 @@ class Game:
         if not (y >= y_lim and x >= x_lim) and game_map.tiles[y + 1][x + 1].interactable:
             result += [[game_map.tiles[y + 1][x + 1], [110, 51]]]
         return result
+
+    def set_env_var(self, var, value):
+        self.env_vars[var] = value
+
+    def get_env_var(self, var):
+        if not var in self.env_vars.keys():
+            return None
+        return self.env_vars[var]
+        
+    def exec_script(self, script):
+        if self.debug: self.message_box(script[0], ['Ok'], width=self.window_width - 3, ypos=2, xpos=2, additional_lines=script[1:])
+        for script_line in script:
+            words = script_line.split()
+            command = words[0]
+
+            if command == 'set':
+                var = words[1]
+                value = words[2]
+                if var == 'player.health':
+                    self.player.health = min(value, self.player.max_health)                        
+                    continue
+                if var == 'player.mana':
+                    self.player.mana = min(value, self.player.max_mana)                        
+                    continue
+                if value.lower() == 'true':
+                    real_value = True
+                if value.lower() == 'false':
+                    real_value = False
+                if value.isdigit():
+                    real_value = int(value)
+                self.set_env_var(var, real_value)
+                open('result.txt', 'w').write(str(self.env_vars))
+                continue
+            if command == 'add':
+                var = words[1]
+                value = words[2]
+                if not value.isdigit():
+                    raise Exception(f'ERR: {value} is not a digit')
+                value = int(value)
+                if var == 'player.health':
+                    self.player.add_health(int(value))
+                    continue
+                if var == 'player.mana':
+                    self.player.add_mana(int(value))
+                    continue
+                if var in self.env_vars:
+                    self.set_env_var(var, self.get_env_var(var) + value)
+                    continue
+                raise Exception(f'ERR: variable {var} is not in env_vars')
+            if command == 'sub':
+                var = words[1]
+                value = words[2]
+                if not value.isdigit():
+                    raise Exception(f'ERR: {value} is not a digit')
+                value = int(value)
+                if var == 'player.health':
+                    self.player.add_health(-int(value))
+                    continue
+                if var == 'player.mana':
+                    self.player.add_mana(-int(value))
+                    continue
+                if var in self.env_vars:
+                    self.set_env_var(var, self.get_env_var(var) - value)
+                    continue
+                raise Exception(f'ERR: variable {var} is not in env_vars')
+            if command == 'mb':
+                choices = words[1].split('_')
+                message = ' '.join(words[2:])
+                self.message_box(message, choices, width=self.window_width - 3, ypos=2, xpos=2)
+                continue
+            raise Exception(f'ERR: command {words[0]} not recognized')

@@ -14,3 +14,4 @@ D D door index to_chests
 3 C chest {"items": {"Iron Sword"}}
 4 C chest {"items": {"Iron Helmet", "Iron Armor", "Iron Leggins"}}
 5 C chest {"items": {"Mage's Hat", "Mage's Robe"}}
+---

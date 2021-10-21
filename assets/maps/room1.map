@@ -6,3 +6,4 @@ visible_range=10
 ---
 1 D door doors from_doors_to_room1
 2 D door room2 to_room2
+---
