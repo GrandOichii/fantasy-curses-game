@@ -368,7 +368,7 @@ class MainAppWindow(QMainWindow):
         # move the ui
         self.tiles_color_choice.move(self.tile_width * self.map_width + 2, 21)
         self.visible_range_label.move(self.tile_width * self.map_width + 14, 61)
-        self.visible_range_spin_box.move(self.tile_width * self.map_width + 85, 61)
+        self.visible_range_spin_box.move(self.tile_width * self.map_width + 105, 61)
 
     def right_click_action(self, tile, event):
         tile_name = tile.tile_info.split()[0]
