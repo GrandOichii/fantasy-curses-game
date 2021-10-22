@@ -381,12 +381,10 @@ class Game:
             if key == 81 and self.message_box('Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
                 SaveFile.save(self.player, game_map.name, self.saves_path, player_y=self.player_y, player_x=self.player_x, env_vars=self.env_vars)
                 break
-            if self.debug and key == 32:
-                self.player.add_health(1)
-                self.player.add_mana(1)
-            if self.debug and key == 10:
-                self.player.add_health(-1)
-                self.player.add_mana(-1)
+            # if self.debug and key == 126:
+            if key == 126:
+                command = self.get_terminal_command()
+                self.exec_command(command, game_map.scripts)
 
             # movement management
             y_lim = game_map.height
@@ -657,88 +655,133 @@ class Game:
         if not var in self.env_vars.keys():
             return None
         return self.env_vars[var]
+
+    def exec_command(self, command, scripts):
+        words = command.split()
+        command = words[0]
+        if command == 'run':
+            script_name = words[1]
+            self.exec_script(script_name, scripts)
+            return
+        if command == 'set':
+            var = words[1]
+            value = ' '.join(words[2:])
+            if var == 'player.health':
+                self.player.health = min(value, self.player.max_health)                        
+                return
+            if var == 'player.mana':
+                self.player.mana = min(value, self.player.max_mana)                        
+                return
+            if value.lower() == 'true':
+                real_value = True
+            if value.lower() == 'false':
+                real_value = False
+            if value.isdigit():
+                real_value = int(value)
+            if value[0] == '"' and value[len(value) - 1] == '"':
+                real_value = value[1:len(value) - 1]
+            if value in self.env_vars:
+                real_value = self.get_env_var(value)
+            self.set_env_var(var, real_value)
+            open('result.txt', 'w').write(str(self.env_vars))
+            return
+        if command == 'add':
+            var = words[1]
+            value = ' '.join(words[2:])
+            real_value = value
+            if value.isdigit():
+                real_value = int(value)
+            if var == 'player.health':
+                self.player.add_health(int(real_value))
+                return
+            if var == 'player.mana':
+                self.player.add_mana(int(real_value))
+                return
+            if var in self.env_vars:
+                if value[0] == '"' and value[len(value) - 1] == '"':
+                    real_value = value[1:len(value) - 1]
+                if value == 'player.name':
+                    real_value = self.player.name
+                if value in self.env_vars:
+                    real_value = str(self.get_env_var(value))
+                self.set_env_var(var, self.get_env_var(var) + real_value)
+                return
+            raise Exception(f'ERR: variable {var} is not in env_vars')
+        if command == 'sub':
+            var = words[1]
+            value = words[2]
+            if not value.isdigit():
+                raise Exception(f'ERR: {value} is not a digit')
+            value = int(value)
+            if var == 'player.health':
+                self.player.add_health(-int(value))
+                return
+            if var == 'player.mana':
+                self.player.add_mana(-int(value))
+                return
+            if var in self.env_vars:
+                self.set_env_var(var, self.get_env_var(var) - value)
+                return
+            raise Exception(f'ERR: variable {var} is not in env_vars')
+        if command == 'mb':
+            choices = words[1].split('_')
+            var = words[2]
+            if not var in self.env_vars:
+                raise Exception(f'ERR: value {message} not recognized')
+            message = self.get_env_var(var)
+            answer = self.message_box(message, choices, width=self.window_width - 3, ypos=2, xpos=2)
+            self.set_env_var('mb_result', answer)
+            return
+        if command == 'if':
+            words.pop(0)
+            reverse = False
+            do_if = False
+            if words[0] == 'not':
+                reverse = False
+                words.pop(0)
+            if words[0] == 'set':
+                var = words[1]
+                do_if = var in self.env_vars.keys()
+            if words[1] == '==':
+                var1 = words[0]
+                var2 = words[2]
+                if not var1 in self.env_vars.keys():
+                    raise Exception(f'ERR: var {var1} is not set')
+                if not var2 in self.env_vars.keys():
+                    raise Exception(f'ERR: var {var2} is not set')
+                do_if = self.get_env_var(var1) == self.get_env_var(var2)
+
+            if do_if != reverse:
+                self.exec_script(words[-1], scripts)
+            return
         
+        raise Exception(f'ERR: command {words[0]} not recognized')
+
     def exec_script(self, name, scripts):
         script = scripts[name]
-        if self.debug: self.message_box(script[0], ['Ok'], width=self.window_width - 3, ypos=2, xpos=2, additional_lines=script[1:])
+        # if self.debug: self.message_box(script[0], ['Ok'], width=self.window_width - 3, ypos=2, xpos=2, additional_lines=script[1:])
         for script_line in script:
             if script_line == '':
                 continue
-            words = script_line.split()
-            command = words[0]
-
-            if command == 'run':
-                script_name = words[1]
-                self.exec_script(script_name, scripts)
-                continue
-            if command == 'set':
-                var = words[1]
-                value = ' '.join(words[2:])
-                if var == 'player.health':
-                    self.player.health = min(value, self.player.max_health)                        
-                    continue
-                if var == 'player.mana':
-                    self.player.mana = min(value, self.player.max_mana)                        
-                    continue
-                if value.lower() == 'true':
-                    real_value = True
-                if value.lower() == 'false':
-                    real_value = False
-                if value.isdigit():
-                    real_value = int(value)
-                if value[0] == '"' and value[len(value) - 1] == '"':
-                    real_value = value[1:len(value) - 1]
-                if value in self.env_vars:
-                    real_value = self.get_env_var(value)
-                self.set_env_var(var, real_value)
-                open('result.txt', 'w').write(str(self.env_vars))
-                continue
-            if command == 'add':
-                var = words[1]
-                value = ' '.join(words[2:])
-                if value.isdigit():
-                    value = int(value)
-                if var == 'player.health':
-                    self.player.add_health(int(value))
-                    continue
-                if var == 'player.mana':
-                    self.player.add_mana(int(value))
-                    continue
-                if var in self.env_vars:
-                    real_value = value
-                    if value[0] == '"' and value[len(value) - 1] == '"':
-                        real_value = value[1:len(value) - 1]
-                    if value == 'player.name':
-                        real_value = self.player.name
-                    if value in self.env_vars:
-                        real_value = str(self.get_env_var(value))
-                    self.set_env_var(var, self.get_env_var(var) + real_value)
-                    continue
-                raise Exception(f'ERR: variable {var} is not in env_vars')
-            if command == 'sub':
-                var = words[1]
-                value = words[2]
-                if not value.isdigit():
-                    raise Exception(f'ERR: {value} is not a digit')
-                value = int(value)
-                if var == 'player.health':
-                    self.player.add_health(-int(value))
-                    continue
-                if var == 'player.mana':
-                    self.player.add_mana(-int(value))
-                    continue
-                if var in self.env_vars:
-                    self.set_env_var(var, self.get_env_var(var) - value)
-                    continue
-                raise Exception(f'ERR: variable {var} is not in env_vars')
-            if command == 'mb':
-                choices = words[1].split('_')
-                var = words[2]
-                if not var in self.env_vars:
-                    raise Exception(f'ERR: value {message} not recognized')
-                message = self.get_env_var(var)
-                answer = self.message_box(message, choices, width=self.window_width - 3, ypos=2, xpos=2)
-                self.set_env_var('mb_result', answer)
-                continue
+            self.exec_command(script_line, scripts)
             
-            raise Exception(f'ERR: command {words[0]} not recognized')
+    def get_terminal_command(self):
+        self.addstr(self.window_height + 3, 1, '> ')
+        self.stdscr.refresh()
+        w = curses.newwin(1, self.WIDTH, self.window_height + 3, 3)
+        curses.curs_set(1)
+        w.keypad(1)
+        box = textpad.Textbox(w)
+        box.edit(self._terminal_command_validator)
+        result = box.gather()
+        curses.curs_set(0)
+        w.clear()
+        w.refresh()
+        self.addstr(self.window_height + 3, 1, '  ')
+        self.stdscr.refresh()
+        return result
+
+    def _terminal_command_validator(self, ch):
+        if ch in [127, 8]:
+            return 8
+        return ch
