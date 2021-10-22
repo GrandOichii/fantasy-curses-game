@@ -233,6 +233,7 @@ class MainAppWindow(QMainWindow):
                     tile_info += ['5']
                 
                 if tile.is_hidden:
+                    open('floor.txt', 'w').write(f'{tile_name}\t{tile.hidden_tile_info}')
                     if tile_name == 'floor':
                         if tile.hidden_tile_info == '':
                             self.showMB('Hidden tile at y:{tile.map_y}, x:{tile.map_x} doesn\'t catch a signal!', 'Error')
@@ -297,7 +298,7 @@ class MainAppWindow(QMainWindow):
                     script_name = f'script{script_i}'
                     scripts[script_name] = ' '.join(tile_info[3:])
                     result_tile_data += [f'{chr(char_int)} {tile_info[1]} script_tile {tile_info[2]} {script_name}']
-
+        open('floors.txt', 'w').write(str(hidden_floors_chars))
         result = ''
         for line in result_layout:
             result += f'{line}\n'
@@ -328,7 +329,6 @@ class MainAppWindow(QMainWindow):
         self.map_height = len(layout)
         self.map_width = len(layout[0])
 
-
         tiles_data = dict()
         for line in tiles_info:
             if line == '':
@@ -341,8 +341,8 @@ class MainAppWindow(QMainWindow):
             if s[0] == 'hidden_tile':
                 m['is_hidden'] = True
                 m['hidden_tile_info'] = s[1]
-                if len(s) == 2: # is wall
-                    m['tile_info'] = 'wall'
+                if len(s) == 2: # is floor
+                    m['tile_info'] = 'floor'
                     tiles_data[key] = m
                     continue
                 s = s[3: len(s)]

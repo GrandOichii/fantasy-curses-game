@@ -435,6 +435,8 @@ class Game:
                     if flag:
                         if isinstance(i_tile, Map.ScriptTile) and self.message_box(f'Use {i_tile.name}?', ['No', 'Yes'], width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
                             self.exec_script(i_tile.script)
+                        if isinstance(i_tile, Map.HiddenTile) and isinstance(i_tile.actual_tile, Map.ScriptTile) and self.message_box(f'Use {i_tile.actual_tile.name}?', ['No', 'Yes'], width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
+                            self.exec_script(i_tile.actual_tile.script)
                     else:
                         a=1
                         # add to log history
@@ -452,6 +454,8 @@ class Game:
                 self.player_y, self.player_x = game_map.player_spawn_y, game_map.player_spawn_x
             if isinstance(tile, Map.PressurePlateTile) and self.get_env_var(tile.signal) in [None, False]:
                 self.set_env_var(tile.signal, True)
+            if isinstance(tile, Map.HiddenTile) and self.get_env_var(tile.signal) == True and isinstance(tile.actual_tile, Map.PressurePlateTile) and self.get_env_var(tile.actual_tile.signal) in [None, False]:
+                self.set_env_var(tile.actual_tile.signal, True)
             self.draw_tiles(self.player_y, self.player_x, game_map.visible_range, game_map)
             self.draw_torches(game_map)
             # last to display
@@ -527,9 +531,17 @@ class Game:
                             self.tile_window.addch(i, j, game_map.tiles[map_y][map_x].char, curses.A_BLINK)
                         else:
                             tile = game_map.tiles[map_y][map_x]
-                            if isinstance(tile, Map.HiddenTile) and self.get_env_var(tile.signal) == True:
-                                game_map.tiles[map_y][map_x] = tile.actual_tile
-                            self.tile_window.addch(i, j, game_map.tiles[map_y][map_x].char)
+                            if isinstance(tile, Map.HiddenTile):
+                                if self.get_env_var(tile.signal) == True:
+                                    game_map.tiles[map_y][map_x].solid = game_map.tiles[map_y][map_x].actual_tile.solid
+                                    game_map.tiles[map_y][map_x].interactable = game_map.tiles[map_y][map_x].actual_tile.interactable
+                                    self.tile_window.addch(i, j, game_map.tiles[map_y][map_x].actual_tile.char)
+                                else:
+                                    game_map.tiles[map_y][map_x].solid = True
+                                    game_map.tiles[map_y][map_x].interactable = False
+                                    self.tile_window.addch(i, j, game_map.tiles[map_y][map_x].char)
+                            else:
+                                self.tile_window.addch(i, j, game_map.tiles[map_y][map_x].char)
 
     def open_inventory(self):
         inventory_window = curses.newwin(self.window_height, self.window_width, 1, 1)
@@ -649,6 +661,8 @@ class Game:
     def exec_script(self, script):
         if self.debug: self.message_box(script[0], ['Ok'], width=self.window_width - 3, ypos=2, xpos=2, additional_lines=script[1:])
         for script_line in script:
+            if script_line == '':
+                continue
             words = script_line.split()
             command = words[0]
 
@@ -705,6 +719,7 @@ class Game:
             if command == 'mb':
                 choices = words[1].split('_')
                 message = ' '.join(words[2:])
-                self.message_box(message, choices, width=self.window_width - 3, ypos=2, xpos=2)
+                answer = self.message_box(message, choices, width=self.window_width - 3, ypos=2, xpos=2)
+                self.set_env_var('mb_result', answer)
                 continue
             raise Exception(f'ERR: command {words[0]} not recognized')

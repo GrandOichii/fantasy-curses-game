@@ -2,19 +2,19 @@
 #        #
 #        #
 #        #
-#  A  B  #
+#  A  B C#
 #        #
-#       C#
-#     D  #
+#        #
+#        #
 #        #
 ##########
 ---
-visible_range=5
+visible_range=10
 ---
-A # hidden_tile signal1 I torch 10
-B _ pressure_plate signal1
+A # hidden_tile sss | script_tile lever script1
+B _ pressure_plate sss
 C D door index testing
-D | script_tile lever script0
 ---
-script0:
-set signal1 false
+script1:
+mb Ok Hello, world!
+set sss false
