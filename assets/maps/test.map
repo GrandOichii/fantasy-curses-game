@@ -2,7 +2,7 @@
 #        #
 #        #
 #        #
-#  A  B C#
+#       A#
 #        #
 #        #
 #        #
@@ -11,10 +11,5 @@
 ---
 visible_range=10
 ---
-A # hidden_tile sss | script_tile lever script1
-B _ pressure_plate sss
-C D door index testing
+A D door index testing
 ---
-script1:
-set message "Use script?"
-mb Ok message

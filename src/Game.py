@@ -431,10 +431,14 @@ class Game:
                             flag = True
                             i_tile = o[0]
                     if flag:
-                        if isinstance(i_tile, Map.ScriptTile) and self.message_box(f'Use {i_tile.name}?', ['No', 'Yes'], width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
+                        if isinstance(i_tile, Map.ScriptTile):
                             self.exec_script(i_tile.script_name, game_map.scripts)
-                        if isinstance(i_tile, Map.HiddenTile) and isinstance(i_tile.actual_tile, Map.ScriptTile) and self.message_box(f'Use {i_tile.actual_tile.name}?', ['No', 'Yes'], width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
+                        if isinstance(i_tile, Map.HiddenTile) and isinstance(i_tile.actual_tile, Map.ScriptTile):
                             self.exec_script(i_tile.actual_tile.script_name, game_map.scripts)
+                        # if isinstance(i_tile, Map.ScriptTile) and self.message_box(f'Use {i_tile.name}?', ['No', 'Yes'], width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
+                        #     self.exec_script(i_tile.script_name, game_map.scripts)
+                        # if isinstance(i_tile, Map.HiddenTile) and isinstance(i_tile.actual_tile, Map.ScriptTile) and self.message_box(f'Use {i_tile.actual_tile.name}?', ['No', 'Yes'], width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
+                        #     self.exec_script(i_tile.actual_tile.script_name, game_map.scripts)
                     else:
                         a=1
                         # add to log history
@@ -702,6 +706,10 @@ class Game:
                     real_value = value[1:len(value) - 1]
                 if value == 'player.name':
                     real_value = self.player.name
+                if value == 'player.health':
+                    real_value = str(self.player.health)
+                if value == 'player.mana':
+                    real_value = str(self.player.mana)
                 if value in self.env_vars:
                     real_value = str(self.get_env_var(value))
                 self.set_env_var(var, self.get_env_var(var) + real_value)

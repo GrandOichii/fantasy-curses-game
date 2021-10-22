@@ -226,7 +226,7 @@ class MainAppWindow(QMainWindow):
             result_layout += ['']
             for j in range(self.map_width):
                 tile = self.labels[i][j]
-                tile_info = tile.tile_info.split()
+                tile_info = tile.tile_info.split(' ')
                 tile_name = tile_info[0]
                 # if torch visibility is not set
                 if len(tile_info) == 1 and tile_info[0] == 'torch':
