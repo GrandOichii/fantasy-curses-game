@@ -31,7 +31,7 @@ class Tile:
                 return TorchTile(tile_name, tile_actual_char, True, False, tile_data)
             if tile_name == 'script tile':
                 tile_data = tile_data.split()
-                return ScriptTile(tile_data[0], tile_actual_char, scripts[tile_data[1]])
+                return ScriptTile(tile_data[0], tile_actual_char, tile_data[1])
             if tile_name == 'hidden tile':
                 split = tile_data.split()
                 signal = split[0]
@@ -76,9 +76,9 @@ class HiddenTile(Tile):
         self.signal = signal
 
 class ScriptTile(Tile):
-    def __init__(self, name, char, script):
+    def __init__(self, name, char, script_name):
         super().__init__(name, char, True, True)
-        self.script = script
+        self.script_name = script_name
 
 class Map:
     def __init__(self, name, height, width, player_spawn_char='@'):
@@ -109,16 +109,16 @@ class Map:
         return result
 
     def from_str(layout_data, raw_tiles_data, map_data, scripts_data, player_spawn_char, assets_path, door_code):
-        scripts = dict()
-        for chunk in scripts_data.split('\n \n'):
-            lines = chunk.split('\n')
-            script_name = lines[0][:-1]
-            script_lines = lines[1:len(lines)]
-            scripts[script_name] = script_lines
         lines = layout_data.split('\n')
         height = len(lines)
         width = len(lines[0])
         result = Map('', height, width)
+        result.scripts = dict()
+        for chunk in scripts_data.split('\n\n'):
+            l = chunk.split('\n')
+            script_name = l[0][:-1]
+            script_lines = l[1:len(l)]
+            result.scripts[script_name] = script_lines
         
         tiles_data = dict()
         # parse tile data
@@ -136,7 +136,7 @@ class Map:
         for i in range(height):
             result.tiles += [[]]
             for j in range(width):
-                result.tiles[i] += [Tile.from_info(lines[i][j], tiles_data, scripts, assets_path)]
+                result.tiles[i] += [Tile.from_info(lines[i][j], tiles_data, result.scripts, assets_path)]
 
         # find the player spawn point
         if not door_code:

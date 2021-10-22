@@ -16,5 +16,11 @@ B _ pressure_plate sss
 C D door index testing
 ---
 script1:
-mb Ok Hello, world!
+set s "Your name is: "
+add s player.name
+add s ". Hello!"
+run script2
 set sss false
+
+script2:
+mb Ok s
