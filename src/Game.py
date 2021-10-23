@@ -384,7 +384,7 @@ class Game:
             # if self.debug and key == 126:
             if key == 126:
                 command = self.get_terminal_command()
-                self.exec_command(command, game_map.scripts)
+                self.exec_line(command, game_map.scripts)
 
             # movement management
             y_lim = game_map.height
@@ -435,10 +435,6 @@ class Game:
                             self.exec_script(i_tile.script_name, game_map.scripts)
                         if isinstance(i_tile, Map.HiddenTile) and isinstance(i_tile.actual_tile, Map.ScriptTile):
                             self.exec_script(i_tile.actual_tile.script_name, game_map.scripts)
-                        # if isinstance(i_tile, Map.ScriptTile) and self.message_box(f'Use {i_tile.name}?', ['No', 'Yes'], width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
-                        #     self.exec_script(i_tile.script_name, game_map.scripts)
-                        # if isinstance(i_tile, Map.HiddenTile) and isinstance(i_tile.actual_tile, Map.ScriptTile) and self.message_box(f'Use {i_tile.actual_tile.name}?', ['No', 'Yes'], width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
-                        #     self.exec_script(i_tile.actual_tile.script_name, game_map.scripts)
                     else:
                         a=1
                         # add to log history
@@ -658,112 +654,114 @@ class Game:
     def get_env_var(self, var):
         if not var in self.env_vars.keys():
             return None
-        return self.env_vars[var]
+        var = self.env_vars[var]
+        return var
 
-    def exec_command(self, command, scripts):
-        words = command.split()
+    def exec_line(self, line, scripts):
+        words = line.split()
         command = words[0]
         if command == 'run':
             script_name = words[1]
-            self.exec_script(script_name, scripts)
-            return
+            return self.exec_script(script_name, scripts)
         if command == 'set':
             var = words[1]
             value = ' '.join(words[2:])
+            real_value = self.get_true_value(value)
             if var == 'player.health':
-                self.player.health = min(value, self.player.max_health)                        
-                return
+                self.player.health = min(real_value, self.player.max_health)                        
+                return False
             if var == 'player.mana':
-                self.player.mana = min(value, self.player.max_mana)                        
-                return
-            if value.lower() == 'true':
-                real_value = True
-            if value.lower() == 'false':
-                real_value = False
-            if value.isdigit():
-                real_value = int(value)
-            if value[0] == '"' and value[len(value) - 1] == '"':
-                real_value = value[1:len(value) - 1]
-            if value in self.env_vars:
-                real_value = self.get_env_var(value)
+                self.player.mana = min(real_value, self.player.max_mana)                        
+                return False
             self.set_env_var(var, real_value)
-            open('result.txt', 'w').write(str(self.env_vars))
-            return
+            return False
         if command == 'add':
             var = words[1]
             value = ' '.join(words[2:])
-            real_value = value
-            if value.isdigit():
-                real_value = int(value)
+            real_value = self.get_true_value(value)
             if var == 'player.health':
-                self.player.add_health(int(real_value))
-                return
+                self.player.add_health(real_value)
+                return False
             if var == 'player.mana':
-                self.player.add_mana(int(real_value))
-                return
+                self.player.add_mana(real_value)
+                return False
             if var in self.env_vars:
-                if value[0] == '"' and value[len(value) - 1] == '"':
-                    real_value = value[1:len(value) - 1]
-                if value == 'player.name':
-                    real_value = self.player.name
-                if value == 'player.health':
-                    real_value = str(self.player.health)
-                if value == 'player.mana':
-                    real_value = str(self.player.mana)
-                if value in self.env_vars:
-                    real_value = str(self.get_env_var(value))
-                self.set_env_var(var, self.get_env_var(var) + real_value)
-                return
+                if isinstance(self.get_env_var(var), str):
+                    self.set_env_var(var, self.get_env_var(var) + str(real_value))
+                else:
+                    self.set_env_var(var, self.get_env_var(var) + real_value)
+                return False
             raise Exception(f'ERR: variable {var} is not in env_vars')
         if command == 'sub':
             var = words[1]
             value = words[2]
             if not value.isdigit():
                 raise Exception(f'ERR: {value} is not a digit')
-            value = int(value)
+            real_value = int(value)
             if var == 'player.health':
-                self.player.add_health(-int(value))
-                return
+                self.player.add_health(-real_value)
+                return False
             if var == 'player.mana':
-                self.player.add_mana(-int(value))
-                return
+                self.player.add_mana(-real_value)
+                return False
             if var in self.env_vars:
-                self.set_env_var(var, self.get_env_var(var) - value)
-                return
+                self.set_env_var(var, self.get_env_var(var) - real_value)
+                return False
             raise Exception(f'ERR: variable {var} is not in env_vars')
         if command == 'mb':
             choices = words[1].split('_')
             var = words[2]
-            if not var in self.env_vars:
-                raise Exception(f'ERR: value {message} not recognized')
-            message = self.get_env_var(var)
-            answer = self.message_box(message, choices, width=self.window_width - 3, ypos=2, xpos=2)
+            real_var = self.get_true_value(var)
+            if real_var == None:
+                raise Exception(f'ERR: {var} not recognized')  
+            answer = self.message_box(str(real_var), choices, width=self.window_width - 3, ypos=2, xpos=2)
             self.set_env_var('mb_result', answer)
-            return
+            return False
         if command == 'if':
             words.pop(0)
             reverse = False
             do_if = False
             if words[0] == 'not':
-                reverse = False
+                reverse = True
                 words.pop(0)
             if words[0] == 'set':
                 var = words[1]
                 do_if = var in self.env_vars.keys()
             if words[1] == '==':
                 var1 = words[0]
-                var2 = words[2]
-                if not var1 in self.env_vars.keys():
-                    raise Exception(f'ERR: var {var1} is not set')
-                if not var2 in self.env_vars.keys():
-                    raise Exception(f'ERR: var {var2} is not set')
-                do_if = self.get_env_var(var1) == self.get_env_var(var2)
-
-            if do_if != reverse:
-                self.exec_script(words[-1], scripts)
-            return
-        
+                var2 = ' '.join(words[2:])
+                real_var1 = self.get_true_value(var1)
+                real_var2 = self.get_true_value(var2)
+                do_if = real_var1 == real_var2
+            if reverse != do_if:
+                return self.exec_line(' '.join(words[words.index('then') + 1:]), scripts)
+            return False
+        if command == 'stop':
+            return True
+        if command == 'return':
+            var = ' '.join(words[1:])
+            real_var = self.get_true_value(var)
+            self.set_env_var('return_value', real_var)
         raise Exception(f'ERR: command {words[0]} not recognized')
+
+    def get_true_value(self, s):
+        if s.lstrip('-').isdigit():
+            return int(s)
+        if s[0] == '"' and s[len(s) - 1] == '"':
+            return s[1:len(s) - 1]
+        if s.lower() == 'true':
+            return True
+        if s.lower() == 'false':
+            return False
+        if s == 'player.health':
+            return self.player.health
+        if s == 'player.mana':
+            return self.player.mana
+        if s == 'player.name':
+            return self.player.name
+        if s in self.env_vars:
+            return self.get_env_var(s)
+        return None
 
     def exec_script(self, name, scripts):
         script = scripts[name]
@@ -771,7 +769,9 @@ class Game:
         for script_line in script:
             if script_line == '':
                 continue
-            self.exec_command(script_line, scripts)
+            quit = self.exec_line(script_line, scripts)
+            if quit:
+                return True
             
     def get_terminal_command(self):
         self.addstr(self.window_height + 3, 1, '> ')

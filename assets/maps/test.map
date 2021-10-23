@@ -2,7 +2,7 @@
 #        #
 #        #
 #        #
-#       A#
+#   A B C#
 #        #
 #        #
 #        #
@@ -11,5 +11,12 @@
 ---
 visible_range=10
 ---
-A D door index testing
+A # hidden_tile signal | script_tile lever lever_script
+B _ pressure_plate signal
+C D door index testing
 ---
+lever_script:
+if not set value then set value 0
+if value == 10 then stop
+add value 1
+mb ok value

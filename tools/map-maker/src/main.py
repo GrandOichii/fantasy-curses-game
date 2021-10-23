@@ -98,7 +98,7 @@ class MainAppWindow(QMainWindow):
             'char': '_', 
             'action': self.set_tile_to_pressure_plate_action
         }
-        self.tiles_dict['script'] = {
+        self.tiles_dict['script_tile'] = {
             'color': 'blue',
             'char': '|',
             'action': self.set_tile_to_script_action
@@ -130,6 +130,10 @@ class MainAppWindow(QMainWindow):
         save_map_as_action.setStatusTip('Save map as')
         save_map_as_action.triggered.connect(self.save_map_as_action_triggered)
 
+        edit_scripts_act = QAction('Edit scripts', self)
+        edit_scripts_act.setStatusTip('Edit scripts')
+        edit_scripts_act.triggered.connect(self.edit_scripts_action_triggered)
+
         menubar = self.menuBar()
         file_menu = menubar.addMenu('&File')
         file_menu.addAction(new_map_action)
@@ -137,6 +141,9 @@ class MainAppWindow(QMainWindow):
         file_menu.addSeparator()
         file_menu.addAction(save_map_action)
         file_menu.addAction(save_map_as_action)
+
+        edit_menu = menubar.addMenu('&Edit')
+        edit_menu.addAction(edit_scripts_act)
 
         quit_shortcut = QShortcut(QKeySequence('Ctrl+Q'), self)
         quit_shortcut.activated.connect(qApp.quit)
@@ -171,7 +178,7 @@ class MainAppWindow(QMainWindow):
         self.visible_range_spin_box.setMinimum(0)
         self.visible_range_spin_box.setFixedWidth(50)
         
-        self.load(['##########', '#        #', '#        #', '#        #', '#        #', '#        #', '#        #', '#        #', '#        #', '##########'], ['visible_range=10'], [])
+        self.load(['##########', '#        #', '#        #', '#        #', '#        #', '#        #', '#        #', '#        #', '#        #', '##########'], ['visible_range=10'], [], '')
         
     def new_map_action_triggered(self):
         if QMessageBox.question(self, 'Map maker', 'Ensaved changes will be discarded. Continue?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.Yes:
@@ -187,7 +194,8 @@ class MainAppWindow(QMainWindow):
                     layout += ['#' * width]
                     map_info = ['visible_range=10']
                     tiles_info = []
-                    self.load(layout, map_info, tiles_info)
+                    scripts_info = ''
+                    self.load(layout, map_info, tiles_info, scripts_info)
 
     def load_map_action_triggered(self):
         if QMessageBox.question(self, 'Map maker', 'Ensaved changes will be discarded. Continue?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.Yes:
@@ -200,8 +208,9 @@ class MainAppWindow(QMainWindow):
                     layout += [line]
                 map_info = split[1].split('\n')
                 tiles_info = split[2].split('\n')
+                scripts_info = split[3]
                 self.loaded_file_path = path
-                self.load(layout, map_info, tiles_info)
+                self.load(layout, map_info, tiles_info, scripts_info)
 
     def save_map_as_action_triggered(self):
         path = QFileDialog.getSaveFileName(self, 'Save as', '', 'Map files(*.map)')[0]
@@ -220,8 +229,6 @@ class MainAppWindow(QMainWindow):
         result_map_data['visible_range'] = self.visible_range_spin_box.value()
         char_int = 64
         hidden_floors_chars = dict()
-        scripts = dict()
-        script_i = -1
         for i in range(self.map_height):
             result_layout += ['']
             for j in range(self.map_width):
@@ -233,7 +240,6 @@ class MainAppWindow(QMainWindow):
                     tile_info += ['5']
                 
                 if tile.is_hidden:
-                    open('floor.txt', 'w').write(f'{tile_name}\t{tile.hidden_tile_info}')
                     if tile_name == 'floor':
                         if tile.hidden_tile_info == '':
                             self.showMB('Hidden tile at y:{tile.map_y}, x:{tile.map_x} doesn\'t catch a signal!', 'Error')
@@ -243,6 +249,16 @@ class MainAppWindow(QMainWindow):
                             hidden_floors_chars[tile.hidden_tile_info] = f'{chr(char_int)} # hidden_tile {tile.hidden_tile_info}'
                             result_tile_data += [hidden_floors_chars[tile.hidden_tile_info]]
                         result_layout[i] += hidden_floors_chars[tile.hidden_tile_info][0]
+                        continue
+                    if tile_name == 'script_tile':
+                        char_int += 1
+                        result_layout[i] += chr(char_int)
+                        if tile.hidden_tile_info == '':
+                            self.showMB('Hidden tile at y:{tile.map_y}, x:{tile.map_x} doesn\'t catch a signal!', 'Error')
+                            return
+                        line = f'{chr(char_int)} # hidden_tile {tile.hidden_tile_info}'
+                        line += f' {tile_info[1]} {tile_info[0]} {tile_info[2]} {tile_info[3]}'
+                        result_tile_data += [line]
                         continue
                     char_int += 1
                     result_layout[i] += chr(char_int)
@@ -288,16 +304,13 @@ class MainAppWindow(QMainWindow):
                         self.showMB(f'Pressure plate at y:{tile.map_y}, x:{tile.map_x} doesn\'t emit a signal!', 'Error')
                         return
                     result_tile_data += [f'{chr(char_int)} _ pressure_plate {tile_info[1]}']
-                if tile_name == 'script':
+                if tile_name == 'script_tile':
                     char_int += 1
                     result_layout[i] += chr(char_int)
                     if len(tile_info) == 1:
                         self.showMB(f'Script tile at y: {tile.map_y}, x: {tile.map_x} doesn\'t have a script!', 'Error')
                         return
-                    script_i += 1
-                    script_name = f'script{script_i}'
-                    scripts[script_name] = ' '.join(tile_info[3:])
-                    result_tile_data += [f'{chr(char_int)} {tile_info[1]} script_tile {tile_info[2]} {script_name}']
+                    result_tile_data += [f'{chr(char_int)} {tile_info[1]} script_tile {tile_info[2]} {tile_info[3]}']
         open('floors.txt', 'w').write(str(hidden_floors_chars))
         result = ''
         for line in result_layout:
@@ -310,17 +323,41 @@ class MainAppWindow(QMainWindow):
             result += f'{line}\n'
         result += '---\n'
 
-        script_names = list(scripts.keys())
-        scripts = list(scripts.values())
-        for i in range(len(script_names)):
-            result += f'{script_names[i]}:\n{scripts[i]}'
-            if i != len(script_names) - 1:
-                result += '\n\n'
+        result += self.get_scripts_text()
 
         open(self.loaded_file_path, 'w').write(result)
         self.showMB('Saved!', 'Map maker')
 
-    def load(self, layout, map_info, tiles_info):
+    def get_scripts_text(self):
+        result = ''
+        script_names = list(self.scripts.keys())
+        scripts = list(self.scripts.values())
+        for i in range(len(script_names)):
+            result += f'{script_names[i]}:\n{scripts[i]}'
+            if i != len(script_names) - 1:
+                result += '\n\n'
+        return result
+
+    def edit_scripts_action_triggered(self):
+       value = self.get_scripts_text()
+       result, ok = QInputDialog.getMultiLineText(self, 'Script editor', 'Edit the scripts', value)
+       if ok and result:
+           self.set_scripts(result)
+
+    def set_scripts(self, text):
+        self.scripts = dict()
+
+        if len(text) == 0:
+            return
+
+        for script in text.split('\n\n'):
+            lines = script.split('\n')
+            script_name = lines[0][:-1]
+            self.scripts[script_name] = '\n'.join(lines[1:])
+
+    def load(self, layout, map_info, tiles_info, scripts_info):
+        self.set_scripts(scripts_info)
+
         if len(self.labels) != 0:
             for i in range(self.map_height):
                 for j in range(self.map_width):
@@ -336,6 +373,7 @@ class MainAppWindow(QMainWindow):
             s = line.split()
             key = s[0]
             s.pop(0)
+            char = s[0]
             s.pop(0)
             m = dict()
             if s[0] == 'hidden_tile':
@@ -346,7 +384,10 @@ class MainAppWindow(QMainWindow):
                     tiles_data[key] = m
                     continue
                 s = s[3: len(s)]
-            m['tile_info'] = ' '.join(s)
+            if s[0] == 'script_tile':
+                m['tile_info'] = f'script_tile {char} {s[1]} {s[2]}'               
+            else:
+                m['tile_info'] = ' '.join(s)
             tiles_data[key] = m
 
         self.labels = []
@@ -373,13 +414,7 @@ class MainAppWindow(QMainWindow):
 
                 label.setGeometry(1 + j * self.tile_width, 21 + i * self.tile_height, self.tile_width, self.tile_height)
                 self.labels[i] += [label]
-                label.show()
-                #     self.showMB(f'ERR: Tile at y: {i}, x: {j} not recognized', 'Map maker')
-                #     exit()
-                # else:
-                #     pass
-
-                
+                label.show()                
                 
         self.setFixedWidth(self.tile_width * self.map_width + 200)
         self.setFixedHeight(self.tile_height * self.map_height + 23)
@@ -424,7 +459,7 @@ class MainAppWindow(QMainWindow):
             set_door_signal = context_menu.addAction('Set door signal')
         if tile_name == 'pressure_plate':
             set_pressure_plate_signal_act = context_menu.addAction('Set signal')
-        if tile_name == 'script':
+        if tile_name == 'script_tile':
             set_script_act = context_menu.addAction('Set script')
         
         action = context_menu.exec_(self.mapToGlobal(tile.pos() + event.pos()))
@@ -495,17 +530,22 @@ class MainAppWindow(QMainWindow):
             if len(tis) != 1:
                 tile_char = tis[1]
                 real_tile_name = tis[2]
-                script = ' '.join(tis[3:]) # may change later, not sure if scripts are allowed to have spaces
+                script_name = tis[3]
             result, ok = QInputDialog.getText(self, 'Script tile name', 'Enter real name of tile', text=real_tile_name)
             if result and ok:
                 real_tile_name = result
                 result, ok = QInputDialog.getText(self, 'Script tile char', 'Enter the character of tile', text=tile_char)
                 if result and ok:
                     tile_char = result[0]
-                    result, ok = QInputDialog.getMultiLineText(self, 'Script tile script', 'Enter the script', text=script)
+                    script_name = f'{real_tile_name}_script'
+                    script_text = ''
+                    if script_name in self.scripts.keys():
+                        script_text = self.scripts[script_name]
+                    result, ok = QInputDialog.getMultiLineText(self, 'Script tile script', 'Enter the script', text=script_text)
                     if ok and result:
                         script = result
-                        tile.tile_info = f'{tis[0]} {tile_char} {real_tile_name} {script}'
+                        tile.tile_info = f'{tis[0]} {tile_char} {real_tile_name} {script_name}'
+                        self.scripts[script_name] = script
 
     @pyqtSlot()
     def set_tile_to_wall_action(self):
@@ -525,7 +565,7 @@ class MainAppWindow(QMainWindow):
 
     @pyqtSlot()
     def set_tile_to_script_action(self):
-        self.tile = 'script'
+        self.tile = 'script_tile'
 
     @pyqtSlot()
     def set_tile_to_pressure_plate_action(self):

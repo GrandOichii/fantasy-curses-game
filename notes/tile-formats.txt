@@ -1,7 +1,8 @@
 wall: no format
 floor: no format:
-chest: <tile_sym> <actual_sym> chest <contents_as_json>
-door: <tile_sym> <actual_sym> door <destinaton_map> <door_code>
-pressure plate: <tile_sym> <actual_sym> pressure_plate <signal>
-hidden tile: <tile_sym> # hidden_tile <signal> <actual_sym> <actual_name> <rest_of_the_data>
-torch: <tile_sym> <actual_sym> torch <visible_range>
+chest: <tile_char> <actual_char> chest <contents_as_json>
+door: <tile_char> <actual_char> door <destinaton_map> <door_code>
+pressure plate: <tile_char> <actual_char> pressure_plate <signal>
+hidden tile: <tile_char> # hidden_tile <signal> <actual_char> <actual_name> <rest_of_the_data>
+torch: <tile_char> <actual_char> torch <visible_range>
+script: <tile_char> <actual_char> script_tile <script_name>

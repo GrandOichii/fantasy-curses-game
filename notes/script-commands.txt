@@ -1,0 +1,8 @@
+set <var_name> <var_name/value>
+add <var_name> <var_name/value>
+sub <var_name> <var_name/value>
+mb <message_box_choices> <var_name/value>
+if (not) set <var_name> then <command>
+if (not) <var_name> == <var_name/value> then <command>
+return <var_name/value>
+stop
