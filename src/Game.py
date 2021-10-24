@@ -851,7 +851,8 @@ class Game:
     def get_terminal_command(self):
         self.addstr(self.window_height, 1, '> ')
         self.stdscr.refresh()
-        w = curses.newwin(1, self.WIDTH, self.window_height, 3)
+        self.message_box(f'{self.WIDTH} {self.window_height}', ['Ok'])
+        w = curses.newwin(1, self.WIDTH - 3, self.window_height, 3)
         curses.curs_set(1)
         w.keypad(1)
         box = textpad.Textbox(w)
