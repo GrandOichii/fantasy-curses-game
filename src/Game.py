@@ -374,6 +374,10 @@ class Game:
         self.draw_torches(game_map)
         self.tile_window.addstr(self.mid_y, self.mid_x, '@')
 
+        # if 'index' in game_map.scripts:
+        #     self.exec_script('index', game_map.scripts)
+        play_enter_script = False
+
         # main game loop
         while True:
             key = self.tile_window.getch()
@@ -438,7 +442,6 @@ class Game:
                     else:
                         a=1
                         # add to log history
-
             # open inventory
             if key == 105: # i
                 self.open_inventory()
@@ -448,21 +451,30 @@ class Game:
             if isinstance(tile, Map.DoorTile) and self.message_box(f'Use door?', ['No', 'Yes'], width=self.window_width - 3, ypos=2, xpos=2) == 'Yes':
                 destination_map = tile.to
                 door_code = tile.door_code
+                self.set_env_var('last_door_code', door_code)
                 game_map = Map.Map.by_name(destination_map, self.maps_path, self.assets_path, door_code=door_code)
                 self.player_y, self.player_x = game_map.player_spawn_y, game_map.player_spawn_x
+                if '_enter' in game_map.scripts:
+                    self.tile_window.clear()
+                    self.tile_window.refresh()
+                    self.exec_script('_enter', game_map.scripts)
+
             if isinstance(tile, Map.PressurePlateTile) and self.get_env_var(tile.signal) in [None, False]:
                 self.set_env_var(tile.signal, True)
             if isinstance(tile, Map.HiddenTile) and self.get_env_var(tile.signal) == True and isinstance(tile.actual_tile, Map.PressurePlateTile) and self.get_env_var(tile.actual_tile.signal) in [None, False]:
                 self.set_env_var(tile.actual_tile.signal, True)
+
             self.draw_tiles(self.player_y, self.player_x, game_map.visible_range, game_map)
             self.draw_torches(game_map)
             # last to display
             self.tile_window.addstr(self.mid_y, self.mid_x, '@')
 
+
             self.display_player_info()
             self.tile_window.refresh()
             self.stdscr.refresh()
 
+            
         # end of method
         self.tile_window.clear()
         self.tile_window.refresh()
@@ -710,7 +722,7 @@ class Game:
             raise Exception(f'ERR: variable {var} is not in env_vars')
         if command == 'mb':
             choices = words[1].split('_')
-            var = words[2]
+            var = ' '.join(words[2:])
             real_var = self.get_true_value(var)
             if real_var == None:
                 raise Exception(f'ERR: {var} not recognized')  
@@ -729,7 +741,7 @@ class Game:
                 do_if = var in self.env_vars.keys()
             if words[1] == '==':
                 var1 = words[0]
-                var2 = ' '.join(words[2:])
+                var2 = ' '.join(words[2:words.index('then')])
                 real_var1 = self.get_true_value(var1)
                 real_var2 = self.get_true_value(var2)
                 do_if = real_var1 == real_var2

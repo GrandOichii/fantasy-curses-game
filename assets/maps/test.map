@@ -20,3 +20,6 @@ if not set value then set value 0
 if value == 10 then stop
 add value 1
 mb ok value
+
+_enter:
+mb ok "Hello, world"

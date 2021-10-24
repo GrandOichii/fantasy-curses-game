@@ -38,3 +38,5 @@ C D door chests to_chests
 D D door hidden_walls to_hidden_walls
 E D door torches to_torches
 ---
+_enter:
+if set last_door_code then mb ok last_door_code
