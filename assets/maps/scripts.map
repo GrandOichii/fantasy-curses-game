@@ -1,0 +1,28 @@
+##########
+#A   B   #
+##       #
+##       #
+##       #
+##       #
+##C     D#
+##       #
+##   E   #
+##########
+---
+visible_range=5
+---
+A D door index to_scripts
+B _ pressure_plate show_scripts_signal
+C # hidden_tile show_scripts_signal * script_tile button button_script
+D # hidden_tile show_scripts_signal | script_tile lever lever_script
+E I torch 10
+---
+button_script:
+set show_scripts_signal false
+
+lever_script:
+if not set value then set value 0
+add value 1
+set message "value = "
+add message value
+mb Ok message

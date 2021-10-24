@@ -10,6 +10,4 @@
 - whether you can begin an encounter is determined by your range
 - opponents can also begin encounters
 - leave combat for later, now focus on main engine
-
-- add dialog system! (message boxes from the bottom)
--- attach them to scripts
+- cobwebs are burned using a fire source (spell, torch)

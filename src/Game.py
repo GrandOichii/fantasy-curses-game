@@ -3,7 +3,6 @@ import curses.textpad as textpad
 import json
 
 import os
-from typing import KeysView
 import gamelib.SaveFile as SaveFile
 
 from ui.Menu import Menu
@@ -75,7 +74,11 @@ class Game:
     def start(self):
         curses.wrapper(self.main)
 
+    def draw_borders(self, w):
+        w.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE, curses.ACS_ULCORNER, curses.ACS_URCORNER, curses.ACS_LLCORNER, curses.ACS_LRCORNER)
+
     def main(self, stdscr):
+        if self.debug: self.draw_borders(stdscr)
         self.stdscr = stdscr
         self.HEIGHT, self.WIDTH = self.stdscr.getmaxyx()
         self.menu_choice_id = 0
@@ -122,10 +125,55 @@ class Game:
             if self.running:
                 if self.debug: self.addstr(0, 0, f'KEY: |{key}|')
                 self.display_current_menu(1, 1)
+                if self.debug: self.draw_borders(stdscr)
                 stdscr.refresh()
 
     def addstr(self, ypos, xpos, message):
         self.stdscr.addstr(ypos, xpos, message)
+
+    def display_dialog(self, message, replies):
+        width = self.window_width - 2
+        height = self.window_height // 2
+
+        lines = Utility.str_smart_split(message, width - 1)
+        name = '???'
+        if '_say_name' in self.env_vars:
+            name = self.get_env_var('_say_name')
+
+
+        w = curses.newwin(height - 1, width, height + 1, 2)
+        self.draw_borders(w)
+        w.keypad(1)
+        w.addstr(0, 1, name)
+
+        for i in range(len(lines)):
+            w.addstr(1 + i, 1, lines[i])
+        w.addch(height - len(replies) - 3, 0, curses.ACS_LTEE)
+        w.addch(height - len(replies) - 3, width - 1, curses.ACS_RTEE)
+        for i in range(width - 2):
+            w.addch(height - len(replies) - 3, 1 + i, curses.ACS_HLINE)
+        w.addstr(height - len(replies) - 2, 1, '> ')
+        for i in range(len(replies)):
+            w.addstr(height - len(replies) - 2 + i, 3, replies[i])
+        w.refresh()
+        choice_i = 0
+        while True:
+            key = w.getch()
+            if key == 259: # UP
+                choice_i -= 1
+                if choice_i < 0: choice_i = len(replies) - 1
+            if key == 258: # DOWN
+                choice_i += 1
+                if choice_i >= len(replies): choice_i = 0
+            if key == 10: # ENTER
+                break
+
+            for i in range(len(replies)):
+                if i == choice_i:
+                    w.addstr(height - len(replies) - 2 + i, 1, '> ')
+                else:    
+                    w.addstr(height - len(replies) - 2 + i, 1, '  ')
+        return replies[choice_i]
 
     def message_box(self, message, choices, ypos=-1, xpos=-1, height=-1, width=-1, additional_lines=[]):
         # restrict the min and max width of message box
@@ -158,10 +206,8 @@ class Game:
             width = max(width, max_add_len)
             width = min(max_width, width)
     
-
         if height == -1:
             height = 6 + len(additional_lines)
-    
 
         if ypos == -1:
             ypos = (self.HEIGHT - height) // 2
@@ -169,8 +215,10 @@ class Game:
             xpos = (self.WIDTH - width) // 2
         
         # print the message box itself
-        win = curses.newwin(height + 2, width + 2, ypos - 1, xpos - 1)
-        textpad.rectangle(win, 0, 0, height, width + 1)
+        win = curses.newwin(height + 1, width + 1, ypos - 1, xpos)
+        self.draw_borders(win)
+
+        # textpad.rectangle(win, 0, 0, height, width + 1)
         win.addstr(2, 3, message)
         win.keypad(1)
         for i in range(len(additional_lines)):
@@ -209,6 +257,7 @@ class Game:
                 pos += len(choices[i]) + 2
             if key == 10:
                 done = True
+            self.draw_borders(win)
             if self.debug: win.addstr(0, 0, f'KEY: |{key}|\t{height}; {width}')
         win.clear()
         win.refresh()
@@ -351,15 +400,16 @@ class Game:
         self.stdscr.clear()
 
         # set some values
-        self.window_height = self.HEIGHT * 2 // 3
+        self.window_height = self.HEIGHT * 5 // 6
         if self.window_height % 2 == 0: self.window_height -= 1
         self.window_width = self.WIDTH - self.max_name_len - 8
 
-        self.window_height -= 1
         self.window_width -= 1
 
         # permanent display
-        self.tile_window = curses.newwin(self.window_height, self.window_width, 1, 1)
+        self.tile_window = curses.newwin(self.window_height, self.window_width, 0, 1)
+        self.draw_borders(self.tile_window)
+
         self.tile_window.keypad(1)
         self.display_info_ui()
         self.display_player_info()
@@ -374,9 +424,8 @@ class Game:
         self.draw_torches(game_map)
         self.tile_window.addstr(self.mid_y, self.mid_x, '@')
 
-        # if 'index' in game_map.scripts:
-        #     self.exec_script('index', game_map.scripts)
-        play_enter_script = False
+        if '_load' in game_map.scripts:
+            self.exec_script('_load', game_map.scripts)
 
         # main game loop
         while True:
@@ -454,26 +503,25 @@ class Game:
                 self.set_env_var('last_door_code', door_code)
                 game_map = Map.Map.by_name(destination_map, self.maps_path, self.assets_path, door_code=door_code)
                 self.player_y, self.player_x = game_map.player_spawn_y, game_map.player_spawn_x
+                self.tile_window.clear()
+                if '_load' in game_map.scripts:
+                    self.exec_script('_load', game_map.scripts)
                 if '_enter' in game_map.scripts:
-                    self.tile_window.clear()
-                    self.tile_window.refresh()
                     self.exec_script('_enter', game_map.scripts)
-
             if isinstance(tile, Map.PressurePlateTile) and self.get_env_var(tile.signal) in [None, False]:
                 self.set_env_var(tile.signal, True)
             if isinstance(tile, Map.HiddenTile) and self.get_env_var(tile.signal) == True and isinstance(tile.actual_tile, Map.PressurePlateTile) and self.get_env_var(tile.actual_tile.signal) in [None, False]:
                 self.set_env_var(tile.actual_tile.signal, True)
 
+            self.draw_borders(self.tile_window)
             self.draw_tiles(self.player_y, self.player_x, game_map.visible_range, game_map)
             self.draw_torches(game_map)
             # last to display
             self.tile_window.addstr(self.mid_y, self.mid_x, '@')
 
-
             self.display_player_info()
             self.tile_window.refresh()
             self.stdscr.refresh()
-
             
         # end of method
         self.tile_window.clear()
@@ -484,7 +532,6 @@ class Game:
 
     def display_info_ui(self):
         s = '1234567891234567891234'
-        textpad.rectangle(self.stdscr, 0, 0, self.window_height + 2, self.window_width + 1)
         self.addstr(1, self.window_width + 3, f'Name: {self.player.name}')
         self.addstr(2, self.window_width + 3, f'Class: {self.player.class_name}')
         self.addstr(4, self.window_width + 3, f'Health:          (   /   )') # left: 19
@@ -527,11 +574,9 @@ class Game:
     def draw_tiles(self, y, x, visible_range, game_map):
         mid_y = self.mid_y - self.player_y + y
         mid_x = self.mid_x - self.player_x + x
-        for i in range(max(0, mid_y - visible_range), min(self.window_height, mid_y + visible_range + 1)):
-            for j in range(max (0, mid_x - visible_range), min(self.window_width, mid_x + visible_range + 1)):
+        for i in range(max(1, mid_y - visible_range), min(self.window_height - 1, mid_y + visible_range + 1)):
+            for j in range(max (1, mid_x - visible_range), min(self.window_width - 1, mid_x + visible_range + 1)):
                 if Utility.distance(i, j, mid_y, mid_x) < visible_range:
-                    if i == self.window_height - 1 and j == self.window_width - 1:
-                        break
                     map_y = i + y - mid_y
                     map_x = j + x - mid_x
                     if map_y < 0 or map_x < 0 or map_y >= game_map.height or map_x >= game_map.width:
@@ -554,7 +599,9 @@ class Game:
                                 self.tile_window.addch(i, j, game_map.tiles[map_y][map_x].char)
 
     def open_inventory(self):
-        inventory_window = curses.newwin(self.window_height, self.window_width, 1, 1)
+        inventory_window = curses.newwin(self.window_height, self.window_width, 0, 1)
+        self.draw_borders(inventory_window)
+
         inventory_window.keypad(1)
         
         items = list(self.player.items)
@@ -569,15 +616,15 @@ class Game:
                 line += f' ({item.slot})'
             display_names += [line]
 
-        inventory_window.addstr(0, 0, 'Inventory')
+        inventory_window.addstr(1, 1, 'Inventory')
         # initial items print
         choice_id = 0
         for i in range(min(len(display_names), self.window_height - 4)):
             if i == choice_id:
-                inventory_window.addstr(i + 3, 0, '> ')
-            inventory_window.addstr(i + 3, 2, display_names[i])
+                inventory_window.addstr(i + 4, 1, '> ')
+            inventory_window.addstr(i + 4, 3, display_names[i])
         if len(display_names) > self.window_height - 3:
-            inventory_window.addstr(self.window_height - 1, self.mid_x, 'V')
+            inventory_window.addstr(self.window_height, self.mid_x + 1, 'V')
         inventory_window.refresh()
 
         display_length = min(len(display_names), self.window_height - 4)
@@ -596,7 +643,7 @@ class Game:
 
             if len(display_names) > display_length:
                 if choice_id != 0:
-                    inventory_window.addstr(2, self.mid_x, '^')
+                    inventory_window.addstr(3, self.mid_x + 1, '^')
                 if choice_id + display_length > len(display_names):
                     start = len(display_names) - display_length
                 else: 
@@ -606,25 +653,23 @@ class Game:
                 start = 0
                 end = display_length
             
-            inventory_window.addstr(0, 0, 'Inventory')
+            inventory_window.addstr(1, 1, 'Inventory')
 
             if choice_id + display_length < len(display_names):
-                inventory_window.addstr(3, 0, '> ')
+                inventory_window.addstr(4, 1, '> ')
                 if len(display_names) > display_length:
-                    inventory_window.addstr(self.window_height - 1, self.mid_x, 'V')
+                    inventory_window.addstr(self.window_height, self.mid_x + 1, 'V')
 
             for i in range(start, end):
                 if i == choice_id:
                     if len(display_names) > display_length:
                         if choice_id + display_length >= len(display_names):
-                            inventory_window.addstr(i + 3 - start, 0, '> ')
+                            inventory_window.addstr(i + 4 - start, 1, '> ')
                     else:
-                        inventory_window.addstr(i + 3 - start, 0, '> ')
-                inventory_window.addstr(i + 3 - start, 2, display_names[i])
-
+                        inventory_window.addstr(i + 4 - start, 1, '> ')
+                inventory_window.addstr(i + 4 - start, 3, display_names[i])
             
-            inventory_window.refresh()
-
+            self.draw_borders(inventory_window)
             inventory_window.refresh()
         # end of method
         inventory_window.clear()
@@ -679,6 +724,8 @@ class Game:
             var = words[1]
             value = ' '.join(words[2:])
             real_value = self.get_true_value(value)
+            if real_value == None:
+                raise Exception(f'ERR: value {value} not recognized')
             if var == 'player.health':
                 self.player.health = min(real_value, self.player.max_health)                        
                 return False
@@ -686,6 +733,12 @@ class Game:
                 self.player.mana = min(real_value, self.player.max_mana)                        
                 return False
             self.set_env_var(var, real_value)
+            return False
+        if command == 'unset':
+            var = words[1]
+            if not var in self.env_vars:
+                raise Exception(f'ERR: var {var} not recognized')
+            self.env_vars.pop(var, None)
             return False
         if command == 'add':
             var = words[1]
@@ -726,8 +779,17 @@ class Game:
             real_var = self.get_true_value(var)
             if real_var == None:
                 raise Exception(f'ERR: {var} not recognized')  
-            answer = self.message_box(str(real_var), choices, width=self.window_width - 3, ypos=2, xpos=2)
-            self.set_env_var('mb_result', answer)
+            answer = self.message_box(str(real_var), choices, width=self.window_width - 6, ypos=2, xpos=3)
+            self.set_env_var('_mb_result', answer)
+            return False
+        if command == 'say':
+            replies = words[1].split('_')
+            var = ' '.join(words[2:])
+            real_var = self.get_true_value(var)
+            if real_var == None:
+                raise Exception(f'ERR: {var} not recognized')
+            reply = self.display_dialog(str(real_var), replies)
+            self.set_env_var('_reply', reply)
             return False
         if command == 'if':
             words.pop(0)
@@ -754,6 +816,7 @@ class Game:
             var = ' '.join(words[1:])
             real_var = self.get_true_value(var)
             self.set_env_var('return_value', real_var)
+            return False
         raise Exception(f'ERR: command {words[0]} not recognized')
 
     def get_true_value(self, s):
@@ -786,9 +849,9 @@ class Game:
                 return True
             
     def get_terminal_command(self):
-        self.addstr(self.window_height + 3, 1, '> ')
+        self.addstr(self.window_height, 1, '> ')
         self.stdscr.refresh()
-        w = curses.newwin(1, self.WIDTH, self.window_height + 3, 3)
+        w = curses.newwin(1, self.WIDTH, self.window_height, 3)
         curses.curs_set(1)
         w.keypad(1)
         box = textpad.Textbox(w)
@@ -797,7 +860,7 @@ class Game:
         curses.curs_set(0)
         w.clear()
         w.refresh()
-        self.addstr(self.window_height + 3, 1, '  ')
+        self.addstr(self.window_height, 1, '  ')
         self.stdscr.refresh()
         return result
 

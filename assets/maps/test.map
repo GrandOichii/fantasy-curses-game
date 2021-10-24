@@ -1,25 +1,35 @@
-##########
-#        #
-#        #
-#        #
-#   A B C#
-#        #
-#        #
-#        #
-#        #
-##########
+########
+#      #
+#N    D#
+#      #
+########
 ---
-visible_range=10
+visible_range=100
 ---
-A # hidden_tile signal | script_tile lever lever_script
-B _ pressure_plate signal
-C D door index testing
+D D door index testing
+N @ script_tile Oskar npc_script
 ---
-lever_script:
-if not set value then set value 0
-if value == 10 then stop
-add value 1
-mb ok value
+_load:
+set npc_name "Oskar"
 
-_enter:
-mb ok "Hello, world"
+npc_script:
+set _say_name npc_name
+if set is_friends then run already_talked_to
+say Yes_No "Do you like pizza?"
+if _reply == "Yes" then run become_friends
+if _reply == "No" then run become_enemy
+
+already_talked_to:
+if is_friends == true then say Hi! "Hello, friend!"
+if is_friends == false then say Sure... "Begone, pizza-hater."
+stop
+
+become_friends:
+set is_friends true
+say Ok "Yay! You are my friend now"
+stop
+
+become_enemy:
+set is_friends false
+say Ok "What. I can't be friends with you."
+stop

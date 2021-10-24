@@ -311,7 +311,6 @@ class MainAppWindow(QMainWindow):
                         self.showMB(f'Script tile at y: {tile.map_y}, x: {tile.map_x} doesn\'t have a script!', 'Error')
                         return
                     result_tile_data += [f'{chr(char_int)} {tile_info[1]} script_tile {tile_info[2]} {tile_info[3]}']
-        open('floors.txt', 'w').write(str(hidden_floors_chars))
         result = ''
         for line in result_layout:
             result += f'{line}\n'
