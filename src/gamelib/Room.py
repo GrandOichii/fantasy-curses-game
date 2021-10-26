@@ -83,6 +83,7 @@ class ScriptTile(Tile):
 class Room:
     def __init__(self, name, height, width, player_spawn_char='@'):
         self.name = name
+        self.display_name = ''
         self.height = height
         self.width = width
         self.tiles = []
@@ -158,4 +159,6 @@ class Room:
             s = line.split('=')
             if s[0] == 'visible_range':
                 result.visible_range = int(s[1])
+            if s[0] == 'display_name':
+                result.display_name = s[1]
         return result

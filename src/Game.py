@@ -387,9 +387,6 @@ class Game:
         self.player = Player.from_json(data['player'])
         self.env_vars = data['env_vars']
         game_room = Room.Room.by_name(data['room_name'], self.rooms_path, self.assets_path)
-        
-
-
 
         self.player_y, self.player_x = game_room.player_spawn_y, game_room.player_spawn_x
         if 'player_y' in data:
@@ -429,7 +426,6 @@ class Game:
         self.mini_map_window.refresh()
         self.full_map = Map.Map(self.map_path)
 
-
         self.mid_y = self.window_height // 2 
         self.mid_x = self.window_width // 2
 
@@ -444,6 +440,9 @@ class Game:
 
         self.draw_mini_map(game_room.name)
 
+        self.tile_window.refresh()
+        if game_room.display_name != '':
+            self.draw_room_display_name(game_room.display_name)
         # main game loop
         while True:
             key = self.tile_window.getch()
@@ -518,7 +517,8 @@ class Game:
                 
             tile = game_room.tiles[self.player_y][self.player_x]
             # check if is standing on a door
-            if isinstance(tile, Room.DoorTile) and self.message_box(f'Use door?', ['No', 'Yes'], width=self.window_width - 4, ypos=2, xpos=2) == 'Yes':
+            # if isinstance(tile, Room.DoorTile) and self.message_box(f'Use door?', ['No', 'Yes'], width=self.window_width - 4, ypos=2, xpos=2) == 'Yes':
+            if isinstance(tile, Room.DoorTile):
                 destination_room = tile.to
                 door_code = tile.door_code
                 self.set_env_var('last_door_code', door_code)
@@ -543,8 +543,11 @@ class Game:
             self.draw_mini_map(game_room.name)
 
             self.display_player_info()
+            
             self.tile_window.refresh()
             self.stdscr.refresh()
+            if game_room.display_name != '':
+                self.draw_room_display_name(game_room.display_name)
             
         # end of method
         self.tile_window.clear()
@@ -632,6 +635,16 @@ class Game:
                 else:
                     self.mini_map_window.addch(1 + i, 1 + j, mini_map_tiles[i][j])
         self.mini_map_window.refresh()
+
+    def draw_room_display_name(self, display_name):
+        h = 3
+        w = len(display_name) + 2
+        y = self.window_height - 3 - 1
+        x = self.window_width - w -1
+        win = curses.newwin(h, w, y, x)
+        win.addstr(1, 1, display_name)
+        self.draw_borders(win)
+        win.refresh()
 
     def open_inventory(self):
         inventory_window = curses.newwin(self.window_height, self.window_width, 0, 1)
@@ -775,6 +788,9 @@ class Game:
             return False
         if command == 'unset':
             var = words[1]
+            if var == 'all':
+                self.env_vars = dict()
+                return False
             if not var in self.env_vars:
                 raise Exception(f'ERR: var {var} not recognized')
             self.env_vars.pop(var, None)
