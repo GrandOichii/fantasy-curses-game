@@ -3,10 +3,10 @@ from os import listdir, remove
 from os.path import isfile, join, splitext
 from posixpath import split
 
-def save(player, map_name, saves_path, player_y=-1, player_x=-1, env_vars=dict()):
+def save(player, room_name, saves_path, player_y=-1, player_x=-1, env_vars=dict()):
     data = dict()
     data['player'] = player.json()
-    data['map_name'] = map_name
+    data['room_name'] = room_name
     data['env_vars'] = env_vars
     if player_y != -1:
         data['player_y'] = player_y

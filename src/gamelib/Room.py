@@ -80,7 +80,7 @@ class ScriptTile(Tile):
         super().__init__(name, char, True, True)
         self.script_name = script_name
 
-class Map:
+class Room:
     def __init__(self, name, height, width, player_spawn_char='@'):
         self.name = name
         self.height = height
@@ -91,28 +91,28 @@ class Map:
         self.visible_range = 0
         self.player_spawn_char = player_spawn_char
 
-    def by_name(name, maps_path, assets_path, door_code=None):
-        map_names = [f for f in listdir(maps_path) if isfile(join(maps_path, f)) and splitext(f)[1] == '.map']
-        if not f'{name}.map' in map_names:
-            raise Exception(f'ERR: map with name {name} not found in {maps_path}')
-        raw_data = open(f'{maps_path}/{name}.map', 'r').read()
+    def by_name(name, rooms_path, assets_path, door_code=None):
+        room_names = [f for f in listdir(rooms_path) if isfile(join(rooms_path, f)) and splitext(f)[1] == '.room']
+        if not f'{name}.room' in room_names:
+            raise Exception(f'ERR: room with name {name} not found in {rooms_path}')
+        raw_data = open(f'{rooms_path}/{name}.room', 'r').read()
         data = raw_data.split('\n---\n')
         if len(data) != 4:
-            raise Exception(f'ERR: Incorrect map file format. Map name: {name}')
+            raise Exception(f'ERR: Incorrect room file format. Room name: {name}')
         layout_data = data[0]
-        map_data = data[1]
+        room_data = data[1]
         tiles_raw_data = data[2]
         scripts_data = data[3]
         tiles_data = tiles_raw_data.split('\n')
-        result = Map.from_str(layout_data, tiles_data, map_data, scripts_data, '@', assets_path, door_code)
+        result = Room.from_str(layout_data, tiles_data, room_data, scripts_data, '@', assets_path, door_code)
         result.name = name
         return result
 
-    def from_str(layout_data, raw_tiles_data, map_data, scripts_data, player_spawn_char, assets_path, door_code):
+    def from_str(layout_data, raw_tiles_data, room_data, scripts_data, player_spawn_char, assets_path, door_code):
         lines = layout_data.split('\n')
         height = len(lines)
         width = len(lines[0])
-        result = Map('', height, width)
+        result = Room('', height, width)
         result.scripts = dict()
         for chunk in scripts_data.split('\n\n'):
             l = chunk.split('\n')
@@ -153,7 +153,7 @@ class Map:
                         result.player_spawn_y, result.player_spawn_x = i, j
 
 
-        split = map_data.split()
+        split = room_data.split()
         for line in split:
             s = line.split('=')
             if s[0] == 'visible_range':

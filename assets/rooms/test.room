@@ -1,13 +1,14 @@
 ########
-#      #
-#N    D#
-#      #
+#N     #
+#     D#
+#C     #
 ########
 ---
 visible_range=100
 ---
 D D door index testing
 N @ script_tile Oskar npc_script
+C # hidden_tile is_friends C chest {"items": ["Iron Leggins", "Iron Helmet", "Iron Sword"]}
 ---
 _load:
 set npc_name "Oskar"
@@ -21,15 +22,16 @@ if _reply == "No" then run become_enemy
 
 already_talked_to:
 if is_friends == true then say Hi! "Hello, friend!"
-if is_friends == false then say Sure... "Begone, pizza-hater."
+if is_friends == false then say Bye... "Begone, pizza-hater."
 stop
 
 become_friends:
+say Cool! "Yay! You are my friend now"
+say Thanks! "Here, I'll let you take stuff from my chest"
 set is_friends true
-say Ok "Yay! You are my friend now"
 stop
 
 become_enemy:
+say Sure... "What. I can't be friends with you."
 set is_friends false
-say Ok "What. I can't be friends with you."
 stop

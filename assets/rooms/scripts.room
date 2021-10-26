@@ -17,6 +17,16 @@ C # hidden_tile show_scripts_signal * script_tile button button_script
 D # hidden_tile show_scripts_signal | script_tile lever lever_script
 E I torch 10
 ---
+_enter:
+set message "Welcome, "
+add message player.name
+mb ok message
+
+_load:
+if set loaded_scripts then stop
+mb ok "Scripts loaded"
+set loaded_scripts 1
+
 button_script:
 set show_scripts_signal false
 
