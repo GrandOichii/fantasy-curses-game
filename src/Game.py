@@ -13,16 +13,17 @@ from gamelib.Entities import Player
 import Utility
 import gamelib.Room as Room
 import gamelib.Items as Items
+import gamelib.Map as Map
 
 class Game:
-    def __init__(self, saves_path, assets_path, rooms_path, map_path):
+    def __init__(self, saves_path, assets_path, rooms_path, map_path, starting_room='index'):
         self.debug = False
         self.assets_path = assets_path
         self.saves_path = saves_path
         self.rooms_path = rooms_path
         self.map_path = map_path
         self.max_name_len = 20
-        self.starting_room = 'index'
+        self.starting_room = starting_room
 
 
         self.create_folders()
@@ -386,6 +387,10 @@ class Game:
         self.player = Player.from_json(data['player'])
         self.env_vars = data['env_vars']
         game_room = Room.Room.by_name(data['room_name'], self.rooms_path, self.assets_path)
+        
+
+
+
         self.player_y, self.player_x = game_room.player_spawn_y, game_room.player_spawn_x
         if 'player_y' in data:
             self.player_y = data['player_y']
@@ -416,6 +421,15 @@ class Game:
         self.display_player_info()
         self.stdscr.refresh()
 
+
+        self.MINI_MAP_HEIGHT = 7
+        self.MINI_MAP_WIDTH = 7
+        self.mini_map_window = curses.newwin(self.MINI_MAP_HEIGHT + 2, self.MINI_MAP_WIDTH + 2, 13, self.window_width + 4)
+        self.draw_borders(self.mini_map_window)
+        self.mini_map_window.refresh()
+        self.full_map = Map.Map(self.map_path)
+
+
         self.mid_y = self.window_height // 2 
         self.mid_x = self.window_width // 2
 
@@ -427,6 +441,8 @@ class Game:
 
         if '_load' in game_room.scripts:
             self.exec_script('_load', game_room.scripts)
+
+        self.draw_mini_map(game_room.name)
 
         # main game loop
         while True:
@@ -524,6 +540,7 @@ class Game:
             self.draw_torches(game_room)
             # last to display
             self.tile_window.addstr(self.mid_y, self.mid_x, '@')
+            self.draw_mini_map(game_room.name)
 
             self.display_player_info()
             self.tile_window.refresh()
@@ -603,6 +620,18 @@ class Game:
                                     self.tile_window.addch(i, j, game_room.tiles[room_y][room_x].char)
                             else:
                                 self.tile_window.addch(i, j, game_room.tiles[room_y][room_x].char)
+
+    def draw_mini_map(self, room_name):
+        hh = self.MINI_MAP_HEIGHT // 2
+        hw = self.MINI_MAP_WIDTH // 2
+        mini_map_tiles = self.full_map.get_mini_tiles(room_name, self.env_vars, self.MINI_MAP_HEIGHT, self.MINI_MAP_WIDTH, hh, hw)
+        for i in range(self.MINI_MAP_HEIGHT):
+            for j in range(self.MINI_MAP_WIDTH):
+                if i == hh and j == hw:
+                    self.mini_map_window.addch(1 + i, 1 + j, mini_map_tiles[i][j], curses.A_REVERSE)
+                else:
+                    self.mini_map_window.addch(1 + i, 1 + j, mini_map_tiles[i][j])
+        self.mini_map_window.refresh()
 
     def open_inventory(self):
         inventory_window = curses.newwin(self.window_height, self.window_width, 0, 1)

@@ -1,0 +1,16 @@
+#######
+###A###
+##   ##
+## @ B#
+##   ##
+###C###
+#######
+---
+visible_range=10
+---
+A D door room1 14
+B D door room5 45
+C D door room7 47
+---
+_load:
+set room4_loaded true
