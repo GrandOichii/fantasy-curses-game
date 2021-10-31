@@ -2,7 +2,7 @@
 ###A###
 ##   ##
 #B @ ##
-##   ##
+## I ##
 #######
 #######
 ---
@@ -11,6 +11,23 @@ display_name=Hub
 ---
 A D door room2 25
 B D door room4 45
+I I script_tile lever funny_script
 ---
 _load:
 set room5_loaded true
+
+_tick:
+if not set room5_ticks then set room5_ticks 0
+add room5_ticks 1
+
+funny_script:
+move camera -2 0
+sleep 500
+move camera -2 0
+sleep 700
+set _say_name player.name
+mb ok "That's weird"
+sleep 700
+move camera 2 0
+sleep 500
+move camera 2 0

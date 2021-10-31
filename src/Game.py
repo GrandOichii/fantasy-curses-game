@@ -24,6 +24,7 @@ class Game:
         self.map_path = map_path
         self.max_name_len = 20
         self.starting_room = starting_room
+        self.game_speed = 200
 
 
         self.create_folders()
@@ -380,15 +381,16 @@ class Game:
             self.load_menu.remove_button_with_name(f'load_{name}_button')
             
     def load_character(self, character_name):
+        
         # try:
         data = SaveFile.load(character_name, self.saves_path)
         if data == -1:
             raise Exception(f'ERR: save file of character with name {character_name} not found in {self.saves_path}')
         self.player = Player.from_json(data['player'])
         self.env_vars = data['env_vars']
-        game_room = Room.Room.by_name(data['room_name'], self.rooms_path, self.assets_path)
+        self.game_room = Room.Room.by_name(data['room_name'], self.rooms_path, self.assets_path)
 
-        self.player_y, self.player_x = game_room.player_spawn_y, game_room.player_spawn_x
+        self.player_y, self.player_x = self.game_room.player_spawn_y, self.game_room.player_spawn_x
         if 'player_y' in data:
             self.player_y = data['player_y']
         if 'player_x' in data:
@@ -409,15 +411,19 @@ class Game:
 
         self.window_width -= 1
 
+        self.camera_dy = 0
+        self.camera_dx = 0
+
         # permanent display
         self.tile_window = curses.newwin(self.window_height, self.window_width, 0, 1)
         self.draw_borders(self.tile_window)
+        self.tile_window.nodelay(True)
+        self.tile_window.timeout(self.game_speed)
 
         self.tile_window.keypad(1)
         self.display_info_ui()
         self.display_player_info()
         self.stdscr.refresh()
-
 
         self.MINI_MAP_HEIGHT = 7
         self.MINI_MAP_WIDTH = 7
@@ -429,66 +435,75 @@ class Game:
         self.mid_y = self.window_height // 2 
         self.mid_x = self.window_width // 2
 
-        self.tile_window.addstr(self.mid_y, self.mid_x, '@')
+        self.draw_tile_window()
 
-        self.draw_tiles(self.player_y, self.player_x, game_room.visible_range, game_room)
-        self.draw_torches(game_room)
-        self.tile_window.addstr(self.mid_y, self.mid_x, '@')
+        if '_load' in self.game_room.scripts:
+            self.exec_script('_load', self.game_room.scripts)
 
-        if '_load' in game_room.scripts:
-            self.exec_script('_load', game_room.scripts)
-
-        self.draw_mini_map(game_room.name)
+        self.draw_mini_map(self.game_room.name)
 
         self.tile_window.refresh()
-        if game_room.display_name != '':
-            self.draw_room_display_name(game_room.display_name)
+        if self.game_room.display_name != '':
+            self.draw_room_display_name(self.game_room.display_name)
+
+        entered_room = False
+
         # main game loop
         while True:
+            if '_tick' in self.game_room.scripts:
+                self.exec_script('_tick', self.game_room.scripts)
             key = self.tile_window.getch()
             self.tile_window.clear()
             if key == 81 and self.message_box('Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.window_width - 4, ypos=2, xpos=2) == 'Yes':
-                SaveFile.save(self.player, game_room.name, self.saves_path, player_y=self.player_y, player_x=self.player_x, env_vars=self.env_vars)
+                SaveFile.save(self.player, self.game_room.name, self.saves_path, player_y=self.player_y, player_x=self.player_x, env_vars=self.env_vars)
                 break
             # if self.debug and key == 126:
             if key == 126:
                 command = self.get_terminal_command()
-                self.exec_line(command, game_room.scripts)
+                self.exec_line(command, self.game_room.scripts)
 
             # movement management
-            y_lim = game_room.height
-            x_lim = game_room.width
+            y_lim = self.game_room.height
+            x_lim = self.game_room.width
             # North
-            if key in [56, 259] and not self.player_y < 0 and not game_room.tiles[self.player_y - 1][self.player_x].solid:
+            if key in [56, 259] and not self.player_y < 0 and not self.game_room.tiles[self.player_y - 1][self.player_x].solid:
                 self.player_y -= 1
+                entered_room = True
             # South
-            if key in [50, 258] and not self.player_y >= y_lim and not game_room.tiles[self.player_y + 1][self.player_x].solid:
+            if key in [50, 258] and not self.player_y >= y_lim and not self.game_room.tiles[self.player_y + 1][self.player_x].solid:
                 self.player_y += 1
+                entered_room = True
             # West
-            if key in [52, 260] and not self.player_x < 0 and not game_room.tiles[self.player_y][self.player_x - 1].solid:
+            if key in [52, 260] and not self.player_x < 0 and not self.game_room.tiles[self.player_y][self.player_x - 1].solid:
                 self.player_x -= 1
+                entered_room = True
             # East
-            if key in [54, 261] and not self.player_x >= x_lim and not game_room.tiles[self.player_y][self.player_x + 1].solid:
+            if key in [54, 261] and not self.player_x >= x_lim and not self.game_room.tiles[self.player_y][self.player_x + 1].solid:
                 self.player_x += 1
+                entered_room = True
             # NE
-            if key in [117, 57] and not (self.player_y < 0 and not self.player_x >= x_lim) and not game_room.tiles[self.player_y - 1][self.player_x + 1].solid:
+            if key in [117, 57] and not (self.player_y < 0 and not self.player_x >= x_lim) and not self.game_room.tiles[self.player_y - 1][self.player_x + 1].solid:
                 self.player_y -= 1
                 self.player_x += 1
+                entered_room = True
             # NW
-            if key in [121, 55] and not (self.player_y < 0 and self.player_x < 0) and not game_room.tiles[self.player_y - 1][self.player_x - 1].solid:
+            if key in [121, 55] and not (self.player_y < 0 and self.player_x < 0) and not self.game_room.tiles[self.player_y - 1][self.player_x - 1].solid:
                 self.player_y -= 1
                 self.player_x -= 1
+                entered_room = True
             # SW
-            if key in [98, 49] and not (self.player_y >= y_lim and self.player_x < 0) and not game_room.tiles[self.player_y + 1][self.player_x - 1].solid:
+            if key in [98, 49] and not (self.player_y >= y_lim and self.player_x < 0) and not self.game_room.tiles[self.player_y + 1][self.player_x - 1].solid:
                 self.player_y += 1
                 self.player_x -= 1
+                entered_room = True
             # SE
-            if key in [110, 51] and not (self.player_y >= y_lim and self.player_x >= x_lim) and not game_room.tiles[self.player_y + 1][self.player_x + 1].solid:
+            if key in [110, 51] and not (self.player_y >= y_lim and self.player_x >= x_lim) and not self.game_room.tiles[self.player_y + 1][self.player_x + 1].solid:
                 self.player_y += 1
                 self.player_x += 1
+                entered_room = True
             # interact
             if key == 101: # e
-                interactable_tiles = self.get_interactable_tiles(game_room, self.player_y, self.player_x)
+                interactable_tiles = self.get_interactable_tiles(self.player_y, self.player_x)
                 if len(interactable_tiles) == 0:
                     self.message_box('No tiles to interact with nearby!', ['Ok'],width=self.window_width - 4, ypos=2, xpos=2)
                 else:
@@ -505,9 +520,9 @@ class Game:
                         if isinstance(i_tile, Room.HiddenTile) and isinstance(i_tile.actual_tile, Room.ChestTile):
                             self.interact_with_chest(i_tile.actual_tile)
                         if isinstance(i_tile, Room.ScriptTile):
-                            self.exec_script(i_tile.script_name, game_room.scripts)
+                            self.exec_script(i_tile.script_name, self.game_room.scripts)
                         if isinstance(i_tile, Room.HiddenTile) and isinstance(i_tile.actual_tile, Room.ScriptTile):
-                            self.exec_script(i_tile.actual_tile.script_name, game_room.scripts)
+                            self.exec_script(i_tile.actual_tile.script_name, self.game_room.scripts)
                     else:
                         a=1
                         # add to log history
@@ -515,39 +530,35 @@ class Game:
             if key == 105: # i
                 self.open_inventory()
                 
-            tile = game_room.tiles[self.player_y][self.player_x]
+            tile = self.game_room.tiles[self.player_y][self.player_x]
             # check if is standing on a door
             # if isinstance(tile, Room.DoorTile) and self.message_box(f'Use door?', ['No', 'Yes'], width=self.window_width - 4, ypos=2, xpos=2) == 'Yes':
-            if isinstance(tile, Room.DoorTile):
+            if isinstance(tile, Room.DoorTile) and entered_room:
+                entered_room = False
                 destination_room = tile.to
                 door_code = tile.door_code
                 self.set_env_var('last_door_code', door_code)
-                game_room = Room.Room.by_name(destination_room, self.rooms_path, self.assets_path, door_code=door_code)
-                self.player_y, self.player_x = game_room.player_spawn_y, game_room.player_spawn_x
+                self.game_room = Room.Room.by_name(destination_room, self.rooms_path, self.assets_path, door_code=door_code)
+                self.player_y, self.player_x = self.game_room.player_spawn_y, self.game_room.player_spawn_x
                 self.tile_window.clear()
                 self.tile_window.refresh()
-                if '_load' in game_room.scripts:
-                    self.exec_script('_load', game_room.scripts)
-                if '_enter' in game_room.scripts:
-                    self.exec_script('_enter', game_room.scripts)
+                if '_load' in self.game_room.scripts:
+                    self.exec_script('_load', self.game_room.scripts)
+                if '_enter' in self.game_room.scripts:
+                    self.exec_script('_enter', self.game_room.scripts)
             if isinstance(tile, Room.PressurePlateTile) and self.get_env_var(tile.signal) in [None, False]:
                 self.set_env_var(tile.signal, True)
             if isinstance(tile, Room.HiddenTile) and self.get_env_var(tile.signal) == True and isinstance(tile.actual_tile, Room.PressurePlateTile) and self.get_env_var(tile.actual_tile.signal) in [None, False]:
                 self.set_env_var(tile.actual_tile.signal, True)
 
-            self.draw_borders(self.tile_window)
-            self.draw_tiles(self.player_y, self.player_x, game_room.visible_range, game_room)
-            self.draw_torches(game_room)
-            # last to display
-            self.tile_window.addstr(self.mid_y, self.mid_x, '@')
-            self.draw_mini_map(game_room.name)
+            self.draw_tile_window()
 
             self.display_player_info()
             
             self.tile_window.refresh()
             self.stdscr.refresh()
-            if game_room.display_name != '':
-                self.draw_room_display_name(game_room.display_name)
+            if self.game_room.display_name != '':
+                self.draw_room_display_name(self.game_room.display_name)
             
         # end of method
         self.tile_window.clear()
@@ -588,41 +599,52 @@ class Game:
         int_info = ' ' * (3 - len(str(self.player.INT))) + f'{self.player.INT}'
         self.addstr(9, self.window_width + 7, f'{int_info}')
 
-    def draw_torches(self, game_room):
-        for i in range(game_room.height):
-            for j in range(game_room.width):
-                if isinstance(game_room.tiles[i][j], Room.TorchTile):
-                    self.draw_tiles(i, j, game_room.tiles[i][j].visible_range, game_room)
-                if isinstance(game_room.tiles[i][j], Room.HiddenTile) and self.get_env_var(game_room.tiles[i][j].signal) == True and isinstance(game_room.tiles[i][j].actual_tile, Room.TorchTile):
+    def draw_torches(self):
+        for i in range(self.game_room.height):
+            for j in range(self.game_room.width):
+                if isinstance(self.game_room.tiles[i][j], Room.TorchTile):
+                    self.draw_tiles(i, j, self.game_room.tiles[i][j].visible_range)
+                if isinstance(self.game_room.tiles[i][j], Room.HiddenTile) and self.get_env_var(self.game_room.tiles[i][j].signal) == True and isinstance(self.game_room.tiles[i][j].actual_tile, Room.TorchTile):
                     # !!! BIG ISSUE !!! either rework hidden tiles, or make a work-around
-                    self.draw_tiles(i, j, game_room.tiles[i][j].actual_tile.visible_range, game_room)
+                    self.draw_tiles(i, j, self.game_room.tiles[i][j].actual_tile.visible_range)
 
-    def draw_tiles(self, y, x, visible_range, game_room):
-        mid_y = self.mid_y - self.player_y + y
-        mid_x = self.mid_x - self.player_x + x
+    def draw_tiles(self, y, x, visible_range):
+        mid_y = self.mid_y - self.player_y + y + self.camera_dy
+        mid_x = self.mid_x - self.player_x + x + self.camera_dx
         for i in range(max(1, mid_y - visible_range), min(self.window_height - 1, mid_y + visible_range + 1)):
             for j in range(max (1, mid_x - visible_range), min(self.window_width - 1, mid_x + visible_range + 1)):
                 if Utility.distance(i, j, mid_y, mid_x) < visible_range:
                     room_y = i + y - mid_y
                     room_x = j + x - mid_x
-                    if room_y < 0 or room_x < 0 or room_y >= game_room.height or room_x >= game_room.width:
+                    if room_y < 0 or room_x < 0 or room_y >= self.game_room.height or room_x >= self.game_room.width:
                         self.tile_window.addch(i, j, '#')
                     else:
-                        if game_room.tiles[room_y][room_x].char == '!':
-                            self.tile_window.addch(i, j, game_room.tiles[room_y][room_x].char, curses.A_BLINK)
+                        if self.game_room.tiles[room_y][room_x].char == '!':
+                            self.tile_window.addch(i, j, self.game_room.tiles[room_y][room_x].char, curses.A_BLINK)
                         else:
-                            tile = game_room.tiles[room_y][room_x]
+                            tile = self.game_room.tiles[room_y][room_x]
                             if isinstance(tile, Room.HiddenTile):
                                 if self.get_env_var(tile.signal) == True:
-                                    game_room.tiles[room_y][room_x].solid = game_room.tiles[room_y][room_x].actual_tile.solid
-                                    game_room.tiles[room_y][room_x].interactable = game_room.tiles[room_y][room_x].actual_tile.interactable
-                                    self.tile_window.addch(i, j, game_room.tiles[room_y][room_x].actual_tile.char)
+                                    self.game_room.tiles[room_y][room_x].solid = self.game_room.tiles[room_y][room_x].actual_tile.solid
+                                    self.game_room.tiles[room_y][room_x].interactable = self.game_room.tiles[room_y][room_x].actual_tile.interactable
+                                    self.tile_window.addch(i, j, self.game_room.tiles[room_y][room_x].actual_tile.char)
                                 else:
-                                    game_room.tiles[room_y][room_x].solid = True
-                                    game_room.tiles[room_y][room_x].interactable = False
-                                    self.tile_window.addch(i, j, game_room.tiles[room_y][room_x].char)
+                                    self.game_room.tiles[room_y][room_x].solid = True
+                                    self.game_room.tiles[room_y][room_x].interactable = False
+                                    self.tile_window.addch(i, j, self.game_room.tiles[room_y][room_x].char)
                             else:
-                                self.tile_window.addch(i, j, game_room.tiles[room_y][room_x].char)
+                                self.tile_window.addch(i, j, self.game_room.tiles[room_y][room_x].char)
+
+    def draw_tile_window(self):
+        self.draw_borders(self.tile_window)
+        self.draw_tiles(self.player_y, self.player_x, self.game_room.visible_range)
+        self.draw_torches()
+        # last to display
+        real_mid_y = self.mid_y + self.camera_dy
+        real_mid_x = self.mid_x + self.camera_dx
+        if real_mid_y > 0 and real_mid_y < self.window_height - 1 and real_mid_x > 0 and real_mid_x < self.window_width - 1:
+            self.tile_window.addstr(real_mid_y, real_mid_x, '@')
+        self.draw_mini_map(self.game_room.name)
 
     def draw_mini_map(self, room_name):
         hh = self.MINI_MAP_HEIGHT // 2
@@ -727,34 +749,34 @@ class Game:
         message = ' '.join([item.name for item in chest_tile.items])
         self.message_box(message, ['ok'])
 
-    def get_interactable_tiles(self, game_room, y, x):
-        y_lim = game_room.height
-        x_lim = game_room.width
+    def get_interactable_tiles(self, y, x):
+        y_lim = self.game_room.height
+        x_lim = self.game_room.width
         result = []
         # North
-        if not y < 0 and game_room.tiles[y - 1][x].interactable:
-            result += [[game_room.tiles[y - 1][x], [56, 259]]]
+        if not y < 0 and self.game_room.tiles[y - 1][x].interactable:
+            result += [[self.game_room.tiles[y - 1][x], [56, 259]]]
         # South
-        if not y >= y_lim and game_room.tiles[y + 1][x].interactable:
-            result += [[game_room.tiles[y + 1][x], [50, 258]]]
+        if not y >= y_lim and self.game_room.tiles[y + 1][x].interactable:
+            result += [[self.game_room.tiles[y + 1][x], [50, 258]]]
         # West
-        if not x < 0 and game_room.tiles[y][x - 1].interactable:
-            result += [[game_room.tiles[y][x - 1], [52, 260]]]
+        if not x < 0 and self.game_room.tiles[y][x - 1].interactable:
+            result += [[self.game_room.tiles[y][x - 1], [52, 260]]]
         # East
-        if not x >= x_lim and game_room.tiles[y][x + 1].interactable:
-            result += [[game_room.tiles[y][x + 1], [54, 261]]]
+        if not x >= x_lim and self.game_room.tiles[y][x + 1].interactable:
+            result += [[self.game_room.tiles[y][x + 1], [54, 261]]]
         # NE
-        if not (y < 0 and not self.x >= x_lim) and game_room.tiles[y - 1][x + 1].interactable:
-            result += [[game_room.tiles[y - 1][x + 1], [117, 57]]]
+        if not (y < 0 and not self.x >= x_lim) and self.game_room.tiles[y - 1][x + 1].interactable:
+            result += [[self.game_room.tiles[y - 1][x + 1], [117, 57]]]
         # NW
-        if not (y < 0 and x < 0) and game_room.tiles[y - 1][x - 1].interactable:
-            result += [[game_room.tiles[y - 1][x - 1], [121, 55]]]
+        if not (y < 0 and x < 0) and self.game_room.tiles[y - 1][x - 1].interactable:
+            result += [[self.game_room.tiles[y - 1][x - 1], [121, 55]]]
         # SW
-        if not (y >= y_lim and x < 0) and game_room.tiles[y + 1][x - 1].interactable:
-            result += [[game_room.tiles[y + 1][x - 1], [98, 49]]]
+        if not (y >= y_lim and x < 0) and self.game_room.tiles[y + 1][x - 1].interactable:
+            result += [[self.game_room.tiles[y + 1][x - 1], [98, 49]]]
         # SE
-        if not (y >= y_lim and x >= x_lim) and game_room.tiles[y + 1][x + 1].interactable:
-            result += [[game_room.tiles[y + 1][x + 1], [110, 51]]]
+        if not (y >= y_lim and x >= x_lim) and self.game_room.tiles[y + 1][x + 1].interactable:
+            result += [[self.game_room.tiles[y + 1][x + 1], [110, 51]]]
         return result
 
     def set_env_var(self, var, value):
@@ -853,7 +875,17 @@ class Game:
             if entity_name == 'player':
                 self.player_y += move_y
                 self.player_x += move_x
-                return False
+            if entity_name == 'camera':
+                self.camera_dy += move_y
+                self.camera_dx += move_x
+            self.tile_window.clear()
+            self.draw_tile_window()
+            self.tile_window.refresh()
+            return False
+        if command == 'sleep':
+            amount = int(words[1])
+            curses.napms(amount)
+            return False
         if command == 'if':
             words.pop(0)
             reverse = False
@@ -918,7 +950,7 @@ class Game:
     def get_terminal_command(self):
         self.addstr(self.window_height, 1, '> ')
         self.stdscr.refresh()
-        w = curses.newwin(1, self.WIDTH - 3, self.window_height, 3)
+        w = curses.newwin(1, self.window_width - 3, self.window_height, 3)
         curses.curs_set(1)
         w.keypad(1)
         box = textpad.Textbox(w)
