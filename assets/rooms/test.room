@@ -1,6 +1,6 @@
 ########
 #N     #
-#     D#
+#0    D#
 #C     #
 ########
 ---
@@ -9,9 +9,11 @@ visible_range=100
 D D door index testing
 N @ script_tile Oskar npc_script
 C # hidden_tile is_friends C chest {"items": ["Iron Leggins", "Iron Helmet", "Iron Sword"]}
+0 space pressure_plate do_the_thing
 ---
 _load:
 set npc_name "Oskar"
+if set bat then unset bat
 
 npc_script:
 set _say_name npc_name
@@ -35,3 +37,19 @@ become_enemy:
 say Sure... "What. I can't be friends with you."
 set is_friends false
 stop
+
+do_the_thing:
+if set bat then stop
+set bat true
+sleep 500
+move camera 0 -3
+sleep 500
+move camera 0 -3
+sleep 500
+set _say_name player.name
+sleep 500
+say ... "Thats weird."
+sleep 500
+move camera 0 3
+sleep 500
+move camera 0 3

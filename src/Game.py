@@ -381,7 +381,6 @@ class Game:
             self.load_menu.remove_button_with_name(f'load_{name}_button')
             
     def load_character(self, character_name):
-        
         # try:
         data = SaveFile.load(character_name, self.saves_path)
         if data == -1:
@@ -421,8 +420,8 @@ class Game:
         self.tile_window.timeout(self.game_speed)
 
         self.tile_window.keypad(1)
-        self.display_info_ui()
-        self.display_player_info()
+        self.draw_info_ui()
+        self.draw_player_info()
         self.stdscr.refresh()
 
         self.MINI_MAP_HEIGHT = 7
@@ -430,7 +429,9 @@ class Game:
         self.mini_map_window = curses.newwin(self.MINI_MAP_HEIGHT + 2, self.MINI_MAP_WIDTH + 2, 13, self.window_width + 4)
         self.draw_borders(self.mini_map_window)
         self.mini_map_window.refresh()
-        self.full_map = Map.Map(self.map_path)
+        self.full_map = None
+        if os.path.exists(self.map_path):
+            self.full_map = Map.Map(self.map_path)
 
         self.mid_y = self.window_height // 2 
         self.mid_x = self.window_width // 2
@@ -440,15 +441,25 @@ class Game:
         if '_load' in self.game_room.scripts:
             self.exec_script('_load', self.game_room.scripts)
 
-        self.draw_mini_map(self.game_room.name)
+        if self.full_map != None:
+            self.draw_mini_map(self.game_room.name)
 
         self.tile_window.refresh()
         if self.game_room.display_name != '':
             self.draw_room_display_name(self.game_room.display_name)
 
-        entered_room = False
-
         # main game loop
+        self.main_game_loop()
+        
+        # end of method
+        self.tile_window.clear()
+        self.tile_window.refresh()
+        self.stdscr.clear()
+        self.stdscr.refresh()
+        self.current_menu = self.main_menu
+
+    def main_game_loop(self):
+        entered_room = False
         while True:
             if '_tick' in self.game_room.scripts:
                 self.exec_script('_tick', self.game_room.scripts)
@@ -528,11 +539,9 @@ class Game:
                         # add to log history
             # open inventory
             if key == 105: # i
-                self.open_inventory()
-                
+                self.draw_inventory()
+                 
             tile = self.game_room.tiles[self.player_y][self.player_x]
-            # check if is standing on a door
-            # if isinstance(tile, Room.DoorTile) and self.message_box(f'Use door?', ['No', 'Yes'], width=self.window_width - 4, ypos=2, xpos=2) == 'Yes':
             if isinstance(tile, Room.DoorTile) and entered_room:
                 entered_room = False
                 destination_room = tile.to
@@ -546,28 +555,60 @@ class Game:
                     self.exec_script('_load', self.game_room.scripts)
                 if '_enter' in self.game_room.scripts:
                     self.exec_script('_enter', self.game_room.scripts)
-            if isinstance(tile, Room.PressurePlateTile) and self.get_env_var(tile.signal) in [None, False]:
-                self.set_env_var(tile.signal, True)
-            if isinstance(tile, Room.HiddenTile) and self.get_env_var(tile.signal) == True and isinstance(tile.actual_tile, Room.PressurePlateTile) and self.get_env_var(tile.actual_tile.signal) in [None, False]:
-                self.set_env_var(tile.actual_tile.signal, True)
 
             self.draw_tile_window()
-
-            self.display_player_info()
-            
+            self.draw_player_info()
             self.tile_window.refresh()
             self.stdscr.refresh()
             if self.game_room.display_name != '':
                 self.draw_room_display_name(self.game_room.display_name)
+                
             
-        # end of method
-        self.tile_window.clear()
-        self.tile_window.refresh()
-        self.stdscr.clear()
-        self.stdscr.refresh()
-        self.current_menu = self.main_menu
+            if isinstance(tile, Room.PressurePlateTile):
+                self.exec_script(tile.script_name, self.game_room.scripts)
+            if isinstance(tile, Room.HiddenTile) and self.get_env_var(tile.signal) == True and isinstance(tile.actual_tile, Room.PressurePlateTile):
+                self.exec_script(tile.actual_tile.script_name, self.game_room.scripts)
 
-    def display_info_ui(self):
+            
+            
+
+    def interact_with_chest(self, chest_tile):
+        message = ' '.join([item.name for item in chest_tile.items])
+        self.message_box(message, ['ok'])
+
+    def get_interactable_tiles(self, y, x):
+        y_lim = self.game_room.height
+        x_lim = self.game_room.width
+        result = []
+        # North
+        if not y < 0 and self.game_room.tiles[y - 1][x].interactable:
+            result += [[self.game_room.tiles[y - 1][x], [56, 259]]]
+        # South
+        if not y >= y_lim and self.game_room.tiles[y + 1][x].interactable:
+            result += [[self.game_room.tiles[y + 1][x], [50, 258]]]
+        # West
+        if not x < 0 and self.game_room.tiles[y][x - 1].interactable:
+            result += [[self.game_room.tiles[y][x - 1], [52, 260]]]
+        # East
+        if not x >= x_lim and self.game_room.tiles[y][x + 1].interactable:
+            result += [[self.game_room.tiles[y][x + 1], [54, 261]]]
+        # NE
+        if not (y < 0 and not self.x >= x_lim) and self.game_room.tiles[y - 1][x + 1].interactable:
+            result += [[self.game_room.tiles[y - 1][x + 1], [117, 57]]]
+        # NW
+        if not (y < 0 and x < 0) and self.game_room.tiles[y - 1][x - 1].interactable:
+            result += [[self.game_room.tiles[y - 1][x - 1], [121, 55]]]
+        # SW
+        if not (y >= y_lim and x < 0) and self.game_room.tiles[y + 1][x - 1].interactable:
+            result += [[self.game_room.tiles[y + 1][x - 1], [98, 49]]]
+        # SE
+        if not (y >= y_lim and x >= x_lim) and self.game_room.tiles[y + 1][x + 1].interactable:
+            result += [[self.game_room.tiles[y + 1][x + 1], [110, 51]]]
+        return result
+
+    # drawing
+
+    def draw_info_ui(self):
         s = '1234567891234567891234'
         self.addstr(1, self.window_width + 3, f'Name: {self.player.name}')
         self.addstr(2, self.window_width + 3, f'Class: {self.player.class_name}')
@@ -579,7 +620,7 @@ class Game:
         self.addstr(11, self.window_width + 3, 'Prompt: ')
         self.stdscr.refresh()
 
-    def display_player_info(self):
+    def draw_player_info(self):
         health_info =  ' ' * (3 - len(str(self.player.health))) + f'{self.player.health}'
         self.addstr(4, self.window_width + 21, f'{health_info}')
         max_health_info =  ' ' * (3 - len(str(self.player.max_health))) + f'{self.player.max_health}'
@@ -610,7 +651,7 @@ class Game:
 
     def draw_tiles(self, y, x, visible_range):
         mid_y = self.mid_y - self.player_y + y + self.camera_dy
-        mid_x = self.mid_x - self.player_x + x + self.camera_dx
+        mid_x = self.mid_x - self.player_x + x - self.camera_dx
         for i in range(max(1, mid_y - visible_range), min(self.window_height - 1, mid_y + visible_range + 1)):
             for j in range(max (1, mid_x - visible_range), min(self.window_width - 1, mid_x + visible_range + 1)):
                 if Utility.distance(i, j, mid_y, mid_x) < visible_range:
@@ -641,10 +682,11 @@ class Game:
         self.draw_torches()
         # last to display
         real_mid_y = self.mid_y + self.camera_dy
-        real_mid_x = self.mid_x + self.camera_dx
+        real_mid_x = self.mid_x - self.camera_dx
         if real_mid_y > 0 and real_mid_y < self.window_height - 1 and real_mid_x > 0 and real_mid_x < self.window_width - 1:
             self.tile_window.addstr(real_mid_y, real_mid_x, '@')
-        self.draw_mini_map(self.game_room.name)
+        if self.full_map != None:
+            self.draw_mini_map(self.game_room.name)
 
     def draw_mini_map(self, room_name):
         hh = self.MINI_MAP_HEIGHT // 2
@@ -668,7 +710,7 @@ class Game:
         self.draw_borders(win)
         win.refresh()
 
-    def open_inventory(self):
+    def draw_inventory(self):
         inventory_window = curses.newwin(self.window_height, self.window_width, 0, 1)
         self.draw_borders(inventory_window)
 
@@ -745,39 +787,7 @@ class Game:
         inventory_window.clear()
         inventory_window.refresh()
 
-    def interact_with_chest(self, chest_tile):
-        message = ' '.join([item.name for item in chest_tile.items])
-        self.message_box(message, ['ok'])
-
-    def get_interactable_tiles(self, y, x):
-        y_lim = self.game_room.height
-        x_lim = self.game_room.width
-        result = []
-        # North
-        if not y < 0 and self.game_room.tiles[y - 1][x].interactable:
-            result += [[self.game_room.tiles[y - 1][x], [56, 259]]]
-        # South
-        if not y >= y_lim and self.game_room.tiles[y + 1][x].interactable:
-            result += [[self.game_room.tiles[y + 1][x], [50, 258]]]
-        # West
-        if not x < 0 and self.game_room.tiles[y][x - 1].interactable:
-            result += [[self.game_room.tiles[y][x - 1], [52, 260]]]
-        # East
-        if not x >= x_lim and self.game_room.tiles[y][x + 1].interactable:
-            result += [[self.game_room.tiles[y][x + 1], [54, 261]]]
-        # NE
-        if not (y < 0 and not self.x >= x_lim) and self.game_room.tiles[y - 1][x + 1].interactable:
-            result += [[self.game_room.tiles[y - 1][x + 1], [117, 57]]]
-        # NW
-        if not (y < 0 and x < 0) and self.game_room.tiles[y - 1][x - 1].interactable:
-            result += [[self.game_room.tiles[y - 1][x - 1], [121, 55]]]
-        # SW
-        if not (y >= y_lim and x < 0) and self.game_room.tiles[y + 1][x - 1].interactable:
-            result += [[self.game_room.tiles[y + 1][x - 1], [98, 49]]]
-        # SE
-        if not (y >= y_lim and x >= x_lim) and self.game_room.tiles[y + 1][x + 1].interactable:
-            result += [[self.game_room.tiles[y + 1][x + 1], [110, 51]]]
-        return result
+    # script execution
 
     def set_env_var(self, var, value):
         self.env_vars[var] = value
@@ -858,6 +868,8 @@ class Game:
                 raise Exception(f'ERR: {var} not recognized')  
             answer = self.message_box(str(real_var), choices, width=self.window_width - 4, ypos=2, xpos=2)
             self.set_env_var('_mb_result', answer)
+            self.draw_tile_window()
+            self.tile_window.refresh()
             return False
         if command == 'say':
             replies = words[1].split('_')
@@ -867,6 +879,8 @@ class Game:
                 raise Exception(f'ERR: {var} not recognized')
             reply = self.display_dialog(str(real_var), replies)
             self.set_env_var('_reply', reply)
+            self.draw_tile_window()
+            self.tile_window.refresh()
             return False
         if command == 'move':
             entity_name = words[1]

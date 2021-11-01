@@ -20,13 +20,15 @@ class Tile:
         if tile_char in tiles_data.keys():
             tile_name = tiles_data[tile_char][0]
             tile_actual_char = tiles_data[tile_char][1]
+            if tile_actual_char == 'space':
+                tile_actual_char = ' '
             tile_data = ' '.join(tiles_data[tile_char][2])
             if tile_name == 'door':
                 return DoorTile(tile_name, tile_actual_char, False, tile_data)
             if tile_name == 'chest':
                 return ChestTile(tile_name, tile_actual_char, True, tile_data, assets_path)
             if tile_name == 'pressure plate':
-                return PressurePlateTile(tile_name, tile_actual_char, False, False, tile_data)
+                return PressurePlateTile(tile_name, tile_actual_char, tile_data)
             if tile_name == 'torch':
                 return TorchTile(tile_name, tile_actual_char, True, False, tile_data)
             if tile_name == 'script tile':
@@ -65,9 +67,9 @@ class ChestTile(Tile):
         self.items = Items.Item.get_base_items(names, f'{assets_path}/items.json')
 
 class PressurePlateTile(Tile):
-    def __init__(self, name, char, solid, interactable, signal):
-        super().__init__(name, char, solid, interactable)
-        self.signal = signal
+    def __init__(self, name, char, script_name):
+        super().__init__(name, char, False, False)
+        self.script_name = script_name
 
 class HiddenTile(Tile):
     def __init__(self, name, char, solid, interactable, actual_tile, signal):

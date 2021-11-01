@@ -11,3 +11,4 @@
 - opponents can also begin encounters
 - leave combat for later, now focus on main engine
 - cobwebs are burned using a fire source (spell, torch)
+- if leveled enough, enemies will flee (or have an auto kill feature, not decided yet)
