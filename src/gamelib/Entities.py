@@ -47,11 +47,21 @@ class Player(Entity):
         self.class_description = class_data['description']
         self.items = Items.Item.get_base_items(class_data['items'], assets_path)
         self.countable_items = Items.CountableItem.get_base_items(class_data['countable_items'], assets_path)
+        self.equipment = dict()
+        self.equipment['HEAD'] = None
+        self.equipment['BODY'] = None
+        self.equipment['LEGS'] = None
+        self.equipment['ARM1'] = None
+        self.equipment['ARM2'] = None
 
     def json(self):
         result = dict(self.__dict__)
         result['items'] = Items.Item.arr_to_json(self.items)
         result['countable_items'] = Items.Item.arr_to_json(self.countable_items)
+        result['equipment'] = dict()
+        slots = ['HEAD', 'BODY', 'LEGS', 'ARM1', 'ARM2']
+        for slot in slots:
+            result['equipment'][slot] = self.equipment[slot]
         return result
 
     def from_json(js):

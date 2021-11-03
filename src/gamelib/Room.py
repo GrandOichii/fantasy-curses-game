@@ -134,7 +134,7 @@ class Room:
                 item_code = sri[-1]
                 item_name = ' '.join(sri[:-1])
                 item = Items.Item.get_base_items([item_name], f'{assets_path}/items.json')[0]
-                d[item] = item_code
+                d[item] = f'{chest_code}_{item_code}'
             result.chest_contents[chest_code] = d
 
         

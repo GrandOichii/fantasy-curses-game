@@ -28,7 +28,7 @@
             "mods": {
                 "armor": 2
             },
-            "slot": "HEAD",
+            "slot": "LEGS",
             "requires": {
                 "STR": 14
             }

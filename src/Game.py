@@ -87,6 +87,7 @@ class Game:
 
         # remove cursor
         curses.curs_set(0)
+        curses.mousemask(1)
 
         # for testing purposes
         stdscr = curses.initscr()
@@ -539,7 +540,7 @@ class Game:
             # open inventory
             if key == 105: # i
                 self.draw_inventory()
-                 
+            
             tile = self.game_room.tiles[self.player_y][self.player_x]
             if isinstance(tile, Room.DoorTile) and entered_room:
                 entered_room = False
@@ -554,6 +555,10 @@ class Game:
                     self.exec_script('_load', self.game_room.scripts)
                 if '_enter' in self.game_room.scripts:
                     self.exec_script('_enter', self.game_room.scripts)
+            if isinstance(tile, Room.PressurePlateTile):
+                self.exec_script(tile.script_name, self.game_room.scripts)
+            if isinstance(tile, Room.HiddenTile) and self.get_env_var(tile.signal) == True and isinstance(tile.actual_tile, Room.PressurePlateTile):
+                self.exec_script(tile.actual_tile.script_name, self.game_room.scripts)       
 
             self.draw_tile_window()
             self.draw_player_info()
@@ -561,12 +566,68 @@ class Game:
             self.stdscr.refresh()
             if self.game_room.display_name != '':
                 self.draw_room_display_name(self.game_room.display_name)
-                
+
+            if key == 120: # x
+                self.tile_description_mode()                       
             
-            if isinstance(tile, Room.PressurePlateTile):
-                self.exec_script(tile.script_name, self.game_room.scripts)
-            if isinstance(tile, Room.HiddenTile) and self.get_env_var(tile.signal) == True and isinstance(tile.actual_tile, Room.PressurePlateTile):
-                self.exec_script(tile.actual_tile.script_name, self.game_room.scripts)       
+    def tile_description_mode(self):
+        cursor_y = self.mid_y
+        cursor_x = self.mid_x
+
+        cursor_map_y = self.player_y
+        cursor_map_x = self.player_x
+
+        # initial display
+        self.tile_window.addch(cursor_y, cursor_x, '@', curses.A_REVERSE)
+        self.tile_window.addstr(1, 1, f'[{self.player.name}]')
+
+        while True:
+            key = self.tile_window.getch()
+            if key == 27: # ESC
+                break
+            if key == 120: # x
+                break
+            self.tile_window.clear()
+            # North
+            if key in [56, 259] and cursor_map_y != 0:
+                cursor_y -= 1
+                cursor_map_y -= 1
+            # South
+            if key in [50, 258] and cursor_map_y != self.game_room.height - 1:
+                cursor_y += 1
+                cursor_map_y += 1
+            # West
+            if key in [52, 260] and cursor_map_x != 0:
+                cursor_x -= 1
+                cursor_map_x -= 1
+            # East
+            if key in [54, 261] and cursor_map_x != self.game_room.width - 1:
+                cursor_x += 1
+                cursor_map_x += 1
+            
+            self.draw_tiles(self.player_y, self.player_x, self.game_room.visible_range)
+            self.tile_window.addstr(self.mid_y, self.mid_x, '@')
+            if cursor_y == self.mid_y and cursor_x == self.mid_x:
+                self.tile_window.addch(cursor_y, cursor_x, '@', curses.A_REVERSE)
+                self.tile_window.addstr(1, 1, f'[{self.player.name}]')
+            else:
+                tile = self.game_room.tiles[cursor_map_y][cursor_map_x]
+                name = tile.name
+                char = tile.char
+                if name == 'hidden tile':
+                    name = tile.actual_tile.name
+                    char = tile.actual_tile.char
+                    if self.get_env_var(tile.signal) != True:
+                        name = 'wall'
+                        char = '#'
+                if tile.char == ' ':
+                    name = 'floor'
+                self.tile_window.addstr(1, 1, f'[{name}]')
+                self.tile_window.addch(cursor_y, cursor_x, char, curses.A_REVERSE)
+            self.draw_borders(self.tile_window)
+        # clean-up
+        self.tile_window.clear()
+        self.draw_tile_window()
 
     def interact_with_chest(self, chest_tile):
         max_win_height = 9
@@ -579,7 +640,6 @@ class Game:
             if self.get_env_var(items[item]) != True:
                 item_names += [item.name]
                 codes += [items[item]]
-            
 
         if len(item_names) == 0:
             self.message_box('Chest is empty.', ['Ok'])
@@ -613,8 +673,8 @@ class Game:
         taken_codes = []
         page_n = 0
         while True:
-            if self.debug: chest_window.addstr(0, 0, f'pn: {page_n} cid: {choice_id}')
-            if self.debug: chest_window.addstr(win_height - 1, 0, f'curs: {cursor}')
+            # if self.debug: chest_window.addstr(0, 0, f'pn: {page_n} cid: {choice_id}')
+            # if self.debug: chest_window.addstr(win_height - 1, 0, f'curs: {cursor}')
             key = chest_window.getch()
             # input processing
             if key == 27: # ESC
@@ -669,7 +729,6 @@ class Game:
                         cursor -= 1
                         choice_id -= 1
                     pass
-            
                 
             for i in range(displayed_item_count):
                 chest_window.addstr(1 + 2 * i, 1, ' ' * (win_width - 2))
@@ -682,19 +741,11 @@ class Game:
                     chest_window.addch(1, win_width - 1, curses.ACS_UARROW)
                 if page_n != len(item_names) - displayed_item_count:
                     chest_window.addch(win_height - 2, win_width - 1, curses.ACS_DARROW)
-            # if page_n != 0:
             for i in range(min(len(item_names), displayed_item_count)):
                 if i == cursor:
                     chest_window.addstr(1 + 2 * i, 1, item_names[i + page_n], curses.A_REVERSE)
                 else:
                     chest_window.addstr(1 + 2 * i, 1, item_names[i + page_n])
-            # else:
-            #     for i in range(displayed_item_count):
-            #         if i < len(item_names):
-            #             if i == cursor:
-            #                 chest_window.addstr(1 + 2 * i, 1, item_names[i + page_n], curses.A_REVERSE)
-            #             else:
-            #                 chest_window.addstr(1 + 2 * i, 1, item_names[i + page_n])
         # clear off taken items
         for code in taken_codes:
             self.set_env_var(code, True)
@@ -843,31 +894,58 @@ class Game:
         items += self.player.countable_items
 
         display_names = []
-        for item in items:
+        for i in range(len(items)):
+            item = items[i]
             line = f'{item.name}'
             if issubclass(type(item), Items.CountableItem):
                 line += f' x{item.amount}'
             if issubclass(type(item), Items.EquipableItem):
                 line += f' ({item.slot})'
+                for s in self.player.equipment:
+                    if self.player.equipment[s] == i:
+                        if item.slot == 'ARMS':
+                            line += f' -> ARMS'
+                        else:
+                            line += f' -> {s}'
+                        break
             display_names += [line]
 
         win_height = self.window_height
         win_width = self.window_width
         inventory_window = curses.newwin(win_height, win_width, 0, 1)
-        inventory_window.addstr(1, 1, 'Inventory')
         inventory_window.keypad(1)
+        inventory_window.addstr(1, 1, 'Inventory')
+        self.draw_borders(inventory_window)
+
+        selected_tab = 0
+        tabs = ['Items', 'Equipment']
+
+        inventory_window.addch(2, 0, curses.ACS_LTEE)
+        inventory_window.addch(2, win_width - 1, curses.ACS_RTEE)
+        for i in range(win_width - 2):
+            inventory_window.addch(2, 1 + i, curses.ACS_HLINE)
+        # initial tabs display
+        x = 2
+        for i in range(len(tabs)):
+            tab_name = f'[{tabs[i]}]'
+            if i == selected_tab:
+                inventory_window.addstr(2, x, tab_name, curses.A_REVERSE)
+            else:
+                inventory_window.addstr(2, x, tab_name)
+            x += 2 + len(tab_name)
 
         choice_id = 0
+        equip_choice_id = 0
+        slots = ['HEAD', 'BODY', 'LEGS', 'ARM1', 'ARM2']
         cursor = 0
-        displayed_item_count = win_height - 4
+        displayed_item_count = win_height - 5
 
-        self.draw_borders(inventory_window)
-        # initial display
+        # initial items display
         for i in range(min(displayed_item_count, len(display_names))):
             if i == cursor:
-                inventory_window.addstr(3 + i, 3, f'> {display_names[i]}')
+                inventory_window.addstr(4 + i, 3, f'> {display_names[i]}')
             else:
-                inventory_window.addstr(3 + i, 3, f'{display_names[i]}')
+                inventory_window.addstr(4 + i, 3, f'{display_names[i]}')
         if len(display_names) > displayed_item_count:
             inventory_window.addch(win_height - 2, 1, curses.ACS_DARROW)
         
@@ -876,57 +954,203 @@ class Game:
             key = inventory_window.getch()
             if key == 27: # ESC
                 break
+            if key == 105: # i
+                break
             if key == 259: # UP
-                choice_id -= 1
-                cursor -= 1
-                if cursor < 0:
-                    if len(display_names) > displayed_item_count:
-                        if page_n == 0:
-                            cursor = displayed_item_count - 1
-                            choice_id = len(display_names) - 1
-                            page_n = len(display_names) - displayed_item_count
+                if selected_tab == 0:
+                    choice_id -= 1
+                    cursor -= 1
+                    if cursor < 0:
+                        if len(display_names) > displayed_item_count:
+                            if page_n == 0:
+                                cursor = displayed_item_count - 1
+                                choice_id = len(display_names) - 1
+                                page_n = len(display_names) - displayed_item_count
+                            else:
+                                page_n -= 1
+                                cursor += 1
                         else:
-                            page_n -= 1
-                            cursor += 1
-                    else:
-                        cursor = len(display_names) - 1
-                        choice_id = cursor
+                            cursor = len(display_names) - 1
+                            choice_id = cursor
+                if selected_tab == 1:
+                    equip_choice_id -= 1
+                    if equip_choice_id < 0:
+                        equip_choice_id = len(slots) - 1
             if key == 258: # DOWN
-                choice_id += 1
-                cursor += 1
-                if len(display_names) > displayed_item_count:
-                    if cursor >= displayed_item_count:
-                        cursor -= 1
-                        page_n += 1
-                        if choice_id == len(display_names):
+                if selected_tab == 0:
+                    choice_id += 1
+                    cursor += 1
+                    if len(display_names) > displayed_item_count:
+                        if cursor >= displayed_item_count:
+                            cursor -= 1
+                            page_n += 1
+                            if choice_id == len(display_names):
+                                cursor = 0
+                                page_n = 0
+                                choice_id = 0
+                    else:
+                        if cursor >= len(display_names):
                             cursor = 0
-                            page_n = 0
                             choice_id = 0
-                else:
-                    if cursor >= len(display_names):
-                        cursor = 0
-                        choice_id = 0
-            
+                if selected_tab == 1:
+                    equip_choice_id += 1
+                    if equip_choice_id == len(slots):
+                        equip_choice_id = 0
+            if key == 261: # RIGHT
+                selected_tab += 1
+                if selected_tab == len(tabs):
+                    selected_tab = 0
+            if key == 260: # LEFT
+                selected_tab -= 1
+                if selected_tab < 0:
+                    selected_tab = len(tabs) - 1
+            if key == 10: # ENTER
+                if selected_tab == 0:
+                    item = items[choice_id]
+                    if issubclass(type(item), Items.EquipableItem):
+                        begin_s = 'Equip to '
+                        item_slot = item.slot
+                        options = [f'{item_slot}']
+                        if item_slot == 'ARM':
+                            options = ['ARM1', 'ARM2']
+                        height = len(options) + 2
+                        width = max([len(s) for s in options]) + 2 + len(begin_s)
+                        y = 4 + cursor
+                        if y + height > self.window_height:
+                            y -= height
+                        x = 5 + len(display_names[choice_id]) + 1
+                        options_window = curses.newwin(height, width, y, x)
+                        options_window.keypad(1)
+                        self.draw_borders(options_window)
+                        option_choice_id = 0
+                        for i in range(len(options)):
+                            if option_choice_id == i:
+                                options_window.addstr(1 + i, 1, f'{begin_s}{options[i]}', curses.A_REVERSE)
+                            else:
+                                options_window.addstr(1 + i, 1, f'{begin_s}{options[i]}')
+                        while True:
+                            options_key = options_window.getch()
+                            options_window.addstr(0, 0, str(options_key))
+                            if options_key == 259: # UP
+                                option_choice_id -= 1
+                                if option_choice_id < 0:
+                                    option_choice_id = len(options) - 1
+                            if options_key == 258: # DOWN
+                                option_choice_id += 1
+                                if option_choice_id == len(options):
+                                    option_choice_id = 0
+                            if options_key == 27: # ESC
+                                break
+                            if options_key == 10: # ENTER
+                                result_slot = options[option_choice_id]
+                                if result_slot == 'ARMS':
+                                    self.player.equipment['ARM1'] = choice_id
+                                    self.player.equipment['ARM2'] = choice_id
+                                else:
+                                    if result_slot.startswith('ARM'):
+                                        self.player.equipment['ARM1'] = None
+                                        self.player.equipment['ARM2'] = None
+                                    self.player.equipment[result_slot] = choice_id
+                                display_names = []
+                                for i in range(len(items)):
+                                    item = items[i]
+                                    line = f'{item.name}'
+                                    if issubclass(type(item), Items.CountableItem):
+                                        line += f' x{item.amount}'
+                                    if issubclass(type(item), Items.EquipableItem):
+                                        line += f' ({item.slot})'
+                                        for s in self.player.equipment:
+                                            if self.player.equipment[s] == i:
+                                                if item.slot == 'ARMS':
+                                                    line += f' -> ARMS'
+                                                else:
+                                                    line += f' -> {s}'
+                                                break
+                                    display_names += [line]
+                                break
+                            # display
+                            for i in range(len(options)):
+                                options_window.addstr(1 + i, 1, ' ' * (width - 2))
+                            for i in range(len(options)):
+                                if option_choice_id == i:
+                                    options_window.addstr(1 + i, 1, f'{begin_s}{options[i]}', curses.A_REVERSE)
+                                else:
+                                    options_window.addstr(1 + i, 1, f'{begin_s}{options[i]}')
+                if selected_tab == 1:
+                    slot = slots[equip_choice_id]
+                    if slot.startswith('ARM') and self.player.equipment['ARM1'] == self.player.equipment['ARM2']:
+                        self.player.equipment['ARM1'] = None
+                        self.player.equipment['ARM2'] = None
+                    else:
+                        self.player.equipment[slot] = None
             # clear the space
             for i in range(displayed_item_count):
-                inventory_window.addstr(3 + i, 3, ' ' * (win_width - 4))
-            inventory_window.addch(3, 1, ' ')
+                inventory_window.addstr(4 + i, 3, ' ' * (win_width - 4))
+            inventory_window.addch(4, 1, ' ')
             inventory_window.addch(win_height - 2, 1, ' ')
 
-            # displaying the items
-            if len(display_names) > displayed_item_count:
-                if page_n != 0:
-                    inventory_window.addch(3, 1, curses.ACS_UARROW)
-                if page_n != len(display_names) - displayed_item_count:
-                    inventory_window.addch(win_height - 2, 1, curses.ACS_DARROW)
-            for i in range(min(len(display_names), displayed_item_count)):
-                if i == cursor:
-                    inventory_window.addstr(3 + i, 3, f'> {display_names[i + page_n]}')
+            # display the tabs
+            x = 2
+            for i in range(len(tabs)):
+                tab_name = f'[{tabs[i]}]'
+                if i == selected_tab:
+                    inventory_window.addstr(2, x, tab_name, curses.A_REVERSE)
                 else:
-                    inventory_window.addstr(3 + i, 3, f'{display_names[i + page_n]}')
+                    inventory_window.addstr(2, x, tab_name)
+                x += 2 + len(tab_name)
+
+            if selected_tab == 0: # items
+                # displaying the items
+                if len(display_names) > displayed_item_count:
+                    if page_n != 0:
+                        inventory_window.addch(4, 1, curses.ACS_UARROW)
+                    if page_n != len(display_names) - displayed_item_count:
+                        inventory_window.addch(win_height - 2, 1, curses.ACS_DARROW)
+                for i in range(min(len(display_names), displayed_item_count)):
+                    if i == cursor:
+                        inventory_window.addstr(4 + i, 3, f'> {display_names[i + page_n]}')
+                    else:
+                        inventory_window.addstr(4 + i, 3, f'{display_names[i + page_n]}')
+            if selected_tab == 1: # equipment
+                for i in range(len(slots)):
+                    if i == equip_choice_id:
+                        inventory_window.addstr(4 + 2 * i, 3, f'{slots[i]}  -> ', curses.A_REVERSE)
+                    else:
+                        inventory_window.addstr(4 + 2 * i, 3, f'{slots[i]}  -> ')
 
 
+                item_name = 'nothing'
+                if self.player.equipment['HEAD'] != None:
+                    item_name = items[self.player.equipment['HEAD']].name
+                inventory_window.addstr(4, 13, item_name)
 
+                item_name = 'nothing'
+                if self.player.equipment['BODY'] != None:
+                    item_name = items[self.player.equipment['BODY']].name
+                inventory_window.addstr(6, 13, item_name)
+
+                item_name = 'nothing'
+                if self.player.equipment['LEGS'] != None:
+                    item_name = items[self.player.equipment['LEGS']].name
+                inventory_window.addstr(8, 13, item_name)
+                
+                if self.player.equipment['ARM1'] == self.player.equipment['ARM2']:
+                    if self.player.equipment['ARM1'] != None:
+                        item_name = items[self.player.equipment['ARM1']].name
+                        inventory_window.addstr(11, 13, item_name)
+                    else:
+                        inventory_window.addstr(10, 13, 'nothing')
+                        inventory_window.addstr(12, 13, 'nothing')
+                else:
+                    item_name = 'nothing'
+                    if self.player.equipment['ARM1'] != None:
+                        item_name = items[self.player.equipment['ARM1']].name
+                    inventory_window.addstr(10, 13, item_name)
+
+                    item_name = 'nothing'
+                    if self.player.equipment['ARM2'] != None:
+                        item_name = items[self.player.equipment['ARM2']].name
+                    inventory_window.addstr(12, 13, item_name)
 
 
     def draw_inventory1(self):
@@ -1116,6 +1340,8 @@ class Game:
             self.tile_window.refresh()
             return False
         if command == 'sleep':
+            self.draw_tile_window()
+            self.tile_window.refresh()
             amount = int(words[1])
             curses.napms(amount)
             return False
@@ -1124,6 +1350,11 @@ class Game:
             if words[1] == 'player.inventory':
                 self.player.items = []
                 self.player.countable_items = []
+                self.player.equipment['HEAD'] = None
+                self.player.equipment['BODY'] = None
+                self.player.equipment['LEGS'] = None
+                self.player.equipment['ARM1'] = None
+                self.player.equipment['ARM2'] = None
                 return False
             raise Exception(f'ERR: unknown var {var}')
         if command == 'if':
@@ -1175,6 +1406,16 @@ class Game:
             return self.player_x
         if s in self.env_vars:
             return self.get_env_var(s)
+        ss = s.split('.')
+        if ss[0] in self.game_room.chest_contents:
+            if ss[1] == 'length':
+                items = self.game_room.chest_contents[ss[0]]
+                result = 0
+                for item in items:
+                    key = items[item]
+                    if self.get_env_var(key) != True:
+                        result += 1
+                return result
         return None
 
     def exec_script(self, name, scripts):

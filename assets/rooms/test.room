@@ -8,7 +8,7 @@ visible_range=100
 ---
 D D door index testing
 N @ script_tile Oskar npc_script
-C # hidden_tile is_friends C chest {"items": ["Iron Leggins", "Iron Helmet", "Iron Sword"]}
+C # hidden_tile is_friends C chest chests_test_friend_chest
 0 space pressure_plate do_the_thing
 ---
 _load:
@@ -23,9 +23,13 @@ if _reply == "Yes" then run become_friends
 if _reply == "No" then run become_enemy
 
 already_talked_to:
-if is_friends == true then say Hi! "Hello, friend!"
+if is_friends == true then run friend_talk
 if is_friends == false then say Bye... "Begone, pizza-hater."
 stop
+
+friend_talk:
+say Hi! "Hello, friend!"
+if not chests_test_friend_chest.length == 0 then say Ok "Don't be shy, I don't need the stuff in the chest anyway"
 
 become_friends:
 say Cool! "Yay! You are my friend now"
@@ -54,3 +58,7 @@ move camera 0 3
 sleep 500
 move camera 0 3
 ---
+chests_test_friend_chest:
+Iron Helmet iron_helmet
+Iron Armor iron_armor
+Iron Leggins iron_leggins
