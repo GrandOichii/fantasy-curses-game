@@ -9,9 +9,34 @@
 visible_range=10
 ---
 D D door index to_chests
-1 C chest {"items": []}
-2 C chest {"items": ["Hood"]}
-3 C chest {"items": {"Iron Sword"}}
-4 C chest {"items": {"Iron Helmet", "Iron Armor", "Iron Leggins"}}
-5 C chest {"items": {"Mage's Hat", "Mage's Robe"}}
+1 C chest chests_chest1
+2 C chest chests_chest2
+3 C chest chests_chest3
+4 C chest chests_chest4
+5 C chest chests_chest5
 ---
+reset:
+unset all
+clear player.inventory
+---
+chests_chest1:
+
+chests_chest2:
+Hood chests_chest2_hood
+
+chests_chest3:
+Iron Sword chests_chest3_iron_sword
+
+chests_chest4:
+Iron Helmet chests_chest4_iron_helmet
+Iron Armor chests_chest4_iron_armor
+Iron Leggins chests_chest4_iron_leggins
+
+chests_chest5:
+Mage's Hat chests_chest5_mages_hat
+Mage's Robe chests_chest5_mages_robe
+Hood chests_chest5_hood
+Iron Sword chests_chest5_iron_sword
+Iron Helmet chests_chest5_iron_helmet
+Iron Armor chests_chest5_iron_armor
+Iron Leggins chests_chest5_iron_leggins

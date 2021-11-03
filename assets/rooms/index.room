@@ -48,3 +48,4 @@ F D door scripts to_scripts
 ---
 _enter:
 if set last_door_code then mb ok last_door_code
+---

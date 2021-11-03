@@ -36,3 +36,4 @@ add value 1
 set message "value = "
 add message value
 mb Ok message
+---

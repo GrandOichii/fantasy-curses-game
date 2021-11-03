@@ -12,7 +12,7 @@ class Tile:
         self.solid = solid
         self.interactable = interactable
 
-    def from_info(tile_char, tiles_data, scripts, assets_path):
+    def from_info(tile_char, tiles_data, scripts, chest_content_info, assets_path):
         if tile_char == ' ' or tile_char == '@':
             return Tile('floor', ' ', False, False)
         if tile_char == '#':
@@ -26,7 +26,7 @@ class Tile:
             if tile_name == 'door':
                 return DoorTile(tile_name, tile_actual_char, False, tile_data)
             if tile_name == 'chest':
-                return ChestTile(tile_name, tile_actual_char, True, tile_data, assets_path)
+                return ChestTile(tile_name, tile_actual_char, True, tile_data)
             if tile_name == 'pressure plate':
                 return PressurePlateTile(tile_name, tile_actual_char, tile_data)
             if tile_name == 'torch':
@@ -45,7 +45,7 @@ class Tile:
                 actual_tile_tiles_data[actual_tile_tile_char] = [' '.join(split[2].split('_'))]
                 actual_tile_tiles_data[actual_tile_tile_char] += [actual_tile_tile_char]
                 actual_tile_tiles_data[actual_tile_tile_char] += [split[3 : len(split)]]
-                actual_tile = Tile.from_info(actual_tile_tile_char, actual_tile_tiles_data, scripts, assets_path)
+                actual_tile = Tile.from_info(actual_tile_tile_char, actual_tile_tiles_data, scripts, chest_content_info, assets_path)
                 return HiddenTile(tile_name, tile_actual_char, True, False, actual_tile, signal)
         # in case of unknown tile
         return Tile('ERR', '!', True, False)
@@ -62,9 +62,9 @@ class TorchTile(Tile):
         self.visible_range = int(visible_range)
 
 class ChestTile(Tile):
-    def __init__(self, name, char, solid, names, assets_path):
+    def __init__(self, name, char, solid, chest_code):
         super().__init__(name, char, solid, True)
-        self.items = Items.Item.get_base_items(names, f'{assets_path}/items.json')
+        self.chest_code = chest_code
 
 class PressurePlateTile(Tile):
     def __init__(self, name, char, script_name):
@@ -100,18 +100,19 @@ class Room:
             raise Exception(f'ERR: room with name {name} not found in {rooms_path}')
         raw_data = open(f'{rooms_path}/{name}.room', 'r').read()
         data = raw_data.split('\n---\n')
-        if len(data) != 4:
+        if len(data) != 5:
             raise Exception(f'ERR: Incorrect room file format. Room name: {name}')
         layout_data = data[0]
         room_data = data[1]
         tiles_raw_data = data[2]
         scripts_data = data[3]
+        chest_content_data = data[4]
         tiles_data = tiles_raw_data.split('\n')
-        result = Room.from_str(layout_data, tiles_data, room_data, scripts_data, '@', assets_path, door_code)
+        result = Room.from_str(layout_data, tiles_data, room_data, scripts_data, chest_content_data, '@', assets_path, door_code)
         result.name = name
         return result
 
-    def from_str(layout_data, raw_tiles_data, room_data, scripts_data, player_spawn_char, assets_path, door_code):
+    def from_str(layout_data, raw_tiles_data, room_data, scripts_data, chest_content_data, player_spawn_char, assets_path, door_code):
         lines = layout_data.split('\n')
         height = len(lines)
         width = len(lines[0])
@@ -120,8 +121,22 @@ class Room:
         for chunk in scripts_data.split('\n\n'):
             l = chunk.split('\n')
             script_name = l[0][:-1]
-            script_lines = l[1:len(l)]
+            script_lines = l[1:]
             result.scripts[script_name] = script_lines
+        result.chest_contents = dict()
+        for chunk in chest_content_data.split('\n\n'):
+            l = chunk.split('\n')
+            chest_code = l[0][:-1]
+            raw_chest_content = l[1:]
+            d = dict()
+            for raw_item in raw_chest_content:
+                sri = raw_item.split(' ')
+                item_code = sri[-1]
+                item_name = ' '.join(sri[:-1])
+                item = Items.Item.get_base_items([item_name], f'{assets_path}/items.json')[0]
+                d[item] = item_code
+            result.chest_contents[chest_code] = d
+
         
         tiles_data = dict()
         # parse tile data
@@ -139,7 +154,7 @@ class Room:
         for i in range(height):
             result.tiles += [[]]
             for j in range(width):
-                result.tiles[i] += [Tile.from_info(lines[i][j], tiles_data, result.scripts, assets_path)]
+                result.tiles[i] += [Tile.from_info(lines[i][j], tiles_data, result.scripts, result.chest_contents, assets_path)]
 
         # find the player spawn point
         if not door_code:

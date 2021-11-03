@@ -1,19 +1,18 @@
 import curses
 import curses.textpad as textpad
 import json
-
 import os
-import gamelib.SaveFile as SaveFile
 
 from ui.Menu import Menu
 from ui.Buttons import Button, ActionButton
-
-from gamelib.Entities import Player
 
 import Utility
 import gamelib.Room as Room
 import gamelib.Items as Items
 import gamelib.Map as Map
+import gamelib.SaveFile as SaveFile
+
+from gamelib.Entities import Player
 
 class Game:
     def __init__(self, saves_path, assets_path, rooms_path, map_path, starting_room='index'):
@@ -535,8 +534,8 @@ class Game:
                         if isinstance(i_tile, Room.HiddenTile) and isinstance(i_tile.actual_tile, Room.ScriptTile):
                             self.exec_script(i_tile.actual_tile.script_name, self.game_room.scripts)
                     else:
-                        a=1
                         # add to log history
+                        a=1
             # open inventory
             if key == 105: # i
                 self.draw_inventory()
@@ -546,7 +545,7 @@ class Game:
                 entered_room = False
                 destination_room = tile.to
                 door_code = tile.door_code
-                self.set_env_var('last_door_code', door_code)
+                self.set_env_var('_last_door_code', door_code)
                 self.game_room = Room.Room.by_name(destination_room, self.rooms_path, self.assets_path, door_code=door_code)
                 self.player_y, self.player_x = self.game_room.player_spawn_y, self.game_room.player_spawn_x
                 self.tile_window.clear()
@@ -567,14 +566,143 @@ class Game:
             if isinstance(tile, Room.PressurePlateTile):
                 self.exec_script(tile.script_name, self.game_room.scripts)
             if isinstance(tile, Room.HiddenTile) and self.get_env_var(tile.signal) == True and isinstance(tile.actual_tile, Room.PressurePlateTile):
-                self.exec_script(tile.actual_tile.script_name, self.game_room.scripts)
-
-            
-            
+                self.exec_script(tile.actual_tile.script_name, self.game_room.scripts)       
 
     def interact_with_chest(self, chest_tile):
-        message = ' '.join([item.name for item in chest_tile.items])
-        self.message_box(message, ['ok'])
+        max_win_height = 9
+
+        items = self.game_room.chest_contents[chest_tile.chest_code]
+
+        item_names = []
+        codes = []
+        for item in items:
+            if self.get_env_var(items[item]) != True:
+                item_names += [item.name]
+                codes += [items[item]]
+            
+
+        if len(item_names) == 0:
+            self.message_box('Chest is empty.', ['Ok'])
+            return
+        win_height = min(max_win_height, len(item_names) * 2 + 1)
+        win_width = max([len(ls) for ls in item_names]) + 2
+        chest_window = curses.newwin(win_height, win_width, self.mid_y, self.mid_x + 3)
+        chest_window.keypad(1)
+
+        choice_id = 0
+        cursor = 0
+        displayed_item_count = win_height // 2
+
+        self.draw_borders(chest_window)
+        # initial display
+        # lines
+        for i in range(1, displayed_item_count):
+            chest_window.addch(2 * i, 0, curses.ACS_LTEE)
+            chest_window.addch(2 * i, win_width - 1, curses.ACS_RTEE)
+            for j in range(1, win_width - 1):
+                chest_window.addch(2 * i, j, curses.ACS_HLINE)
+        # initial item display
+        for i in range(displayed_item_count):
+            if i == cursor:
+                chest_window.addstr(1 + 2 * i, 1, item_names[i], curses.A_REVERSE)
+            else:
+                chest_window.addstr(1 + 2 * i, 1, item_names[i])
+        if len(item_names) > displayed_item_count:
+            chest_window.addch(win_height - 2, win_width - 1, curses.ACS_DARROW)
+
+        taken_codes = []
+        page_n = 0
+        while True:
+            if self.debug: chest_window.addstr(0, 0, f'pn: {page_n} cid: {choice_id}')
+            if self.debug: chest_window.addstr(win_height - 1, 0, f'curs: {cursor}')
+            key = chest_window.getch()
+            # input processing
+            if key == 27: # ESC
+                break
+            if key == 259: # UP
+                choice_id -= 1
+                cursor -= 1
+                if cursor < 0:
+                    if len(item_names) > displayed_item_count:
+                        if page_n == 0:
+                            cursor = displayed_item_count - 1
+                            choice_id = len(item_names) - 1
+                            page_n = len(item_names) - displayed_item_count
+                        else:
+                            page_n -= 1
+                            cursor += 1
+                    else:
+                        cursor = len(item_names) - 1
+                        choice_id = cursor
+            if key == 258: # DOWN
+                choice_id += 1
+                cursor += 1
+                if len(item_names) > displayed_item_count:
+                    if cursor >= displayed_item_count:
+                        cursor -= 1
+                        page_n += 1
+                        if choice_id == len(item_names):
+                            choice_id = 0
+                            cursor = 0
+                            page_n = 0
+                else:
+                    if cursor >= len(item_names):
+                        cursor = 0
+                        choice_id = 0
+            if key == 10: # ENTER
+                if choice_id == -1:
+                    break
+                item_code = codes[choice_id]
+                taken_codes += [item_code]
+                item_names.pop(choice_id)
+                codes.pop(choice_id)
+                if len(item_names) > displayed_item_count:
+                    if page_n == len(item_names) - displayed_item_count + 1:
+                        page_n -= 1
+                        choice_id -= 1
+                else:
+                    if page_n == 1:
+                        page_n = 0
+                        # cursor += 1
+                        choice_id -= 1
+                    if choice_id == len(item_names):
+                        cursor -= 1
+                        choice_id -= 1
+                    pass
+            
+                
+            for i in range(displayed_item_count):
+                chest_window.addstr(1 + 2 * i, 1, ' ' * (win_width - 2))
+            # clear the arrows
+            chest_window.addch(1, win_width - 1, curses.ACS_VLINE)
+            chest_window.addch(win_height - 2, win_width - 1, curses.ACS_VLINE)
+            # displaying the items
+            if len(item_names) > displayed_item_count:
+                if page_n != 0:
+                    chest_window.addch(1, win_width - 1, curses.ACS_UARROW)
+                if page_n != len(item_names) - displayed_item_count:
+                    chest_window.addch(win_height - 2, win_width - 1, curses.ACS_DARROW)
+            # if page_n != 0:
+            for i in range(min(len(item_names), displayed_item_count)):
+                if i == cursor:
+                    chest_window.addstr(1 + 2 * i, 1, item_names[i + page_n], curses.A_REVERSE)
+                else:
+                    chest_window.addstr(1 + 2 * i, 1, item_names[i + page_n])
+            # else:
+            #     for i in range(displayed_item_count):
+            #         if i < len(item_names):
+            #             if i == cursor:
+            #                 chest_window.addstr(1 + 2 * i, 1, item_names[i + page_n], curses.A_REVERSE)
+            #             else:
+            #                 chest_window.addstr(1 + 2 * i, 1, item_names[i + page_n])
+        # clear off taken items
+        for code in taken_codes:
+            self.set_env_var(code, True)
+        # add taken items to inventory
+        for code in taken_codes:
+            for item in items:
+                if items[item] == code:
+                    self.player.items += [item]
 
     def get_interactable_tiles(self, y, x):
         y_lim = self.game_room.height
@@ -711,6 +839,97 @@ class Game:
         win.refresh()
 
     def draw_inventory(self):
+        items = list(self.player.items)
+        items += self.player.countable_items
+
+        display_names = []
+        for item in items:
+            line = f'{item.name}'
+            if issubclass(type(item), Items.CountableItem):
+                line += f' x{item.amount}'
+            if issubclass(type(item), Items.EquipableItem):
+                line += f' ({item.slot})'
+            display_names += [line]
+
+        win_height = self.window_height
+        win_width = self.window_width
+        inventory_window = curses.newwin(win_height, win_width, 0, 1)
+        inventory_window.addstr(1, 1, 'Inventory')
+        inventory_window.keypad(1)
+
+        choice_id = 0
+        cursor = 0
+        displayed_item_count = win_height - 4
+
+        self.draw_borders(inventory_window)
+        # initial display
+        for i in range(min(displayed_item_count, len(display_names))):
+            if i == cursor:
+                inventory_window.addstr(3 + i, 3, f'> {display_names[i]}')
+            else:
+                inventory_window.addstr(3 + i, 3, f'{display_names[i]}')
+        if len(display_names) > displayed_item_count:
+            inventory_window.addch(win_height - 2, 1, curses.ACS_DARROW)
+        
+        page_n = 0
+        while True:
+            key = inventory_window.getch()
+            if key == 27: # ESC
+                break
+            if key == 259: # UP
+                choice_id -= 1
+                cursor -= 1
+                if cursor < 0:
+                    if len(display_names) > displayed_item_count:
+                        if page_n == 0:
+                            cursor = displayed_item_count - 1
+                            choice_id = len(display_names) - 1
+                            page_n = len(display_names) - displayed_item_count
+                        else:
+                            page_n -= 1
+                            cursor += 1
+                    else:
+                        cursor = len(display_names) - 1
+                        choice_id = cursor
+            if key == 258: # DOWN
+                choice_id += 1
+                cursor += 1
+                if len(display_names) > displayed_item_count:
+                    if cursor >= displayed_item_count:
+                        cursor -= 1
+                        page_n += 1
+                        if choice_id == len(display_names):
+                            cursor = 0
+                            page_n = 0
+                            choice_id = 0
+                else:
+                    if cursor >= len(display_names):
+                        cursor = 0
+                        choice_id = 0
+            
+            # clear the space
+            for i in range(displayed_item_count):
+                inventory_window.addstr(3 + i, 3, ' ' * (win_width - 4))
+            inventory_window.addch(3, 1, ' ')
+            inventory_window.addch(win_height - 2, 1, ' ')
+
+            # displaying the items
+            if len(display_names) > displayed_item_count:
+                if page_n != 0:
+                    inventory_window.addch(3, 1, curses.ACS_UARROW)
+                if page_n != len(display_names) - displayed_item_count:
+                    inventory_window.addch(win_height - 2, 1, curses.ACS_DARROW)
+            for i in range(min(len(display_names), displayed_item_count)):
+                if i == cursor:
+                    inventory_window.addstr(3 + i, 3, f'> {display_names[i + page_n]}')
+                else:
+                    inventory_window.addstr(3 + i, 3, f'{display_names[i + page_n]}')
+
+
+
+
+
+    def draw_inventory1(self):
         inventory_window = curses.newwin(self.window_height, self.window_width, 0, 1)
         self.draw_borders(inventory_window)
 
@@ -900,6 +1119,13 @@ class Game:
             amount = int(words[1])
             curses.napms(amount)
             return False
+        if command == 'clear':
+            var = words[1]
+            if words[1] == 'player.inventory':
+                self.player.items = []
+                self.player.countable_items = []
+                return False
+            raise Exception(f'ERR: unknown var {var}')
         if command == 'if':
             words.pop(0)
             reverse = False
@@ -926,7 +1152,7 @@ class Game:
             real_var = self.get_true_value(var)
             self.set_env_var('return_value', real_var)
             return False
-        raise Exception(f'ERR: command {words[0]} not recognized')
+        raise Exception(f'ERR: command {command} not recognized')
 
     def get_true_value(self, s):
         if s.lstrip('-').isdigit():
