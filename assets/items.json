@@ -9,7 +9,8 @@
             "slot": "HEAD",
             "requires": {
                 "STR": 14
-            }
+            },
+            "description": "An iron helmet."
         },
         {
             "name": "Iron Armor",
@@ -20,7 +21,8 @@
             "slot": "BODY",
             "requires": {
                 "STR": 14
-            }
+            },
+            "description": "An iron plated armor."
         },
         {
             "name": "Iron Leggins",
@@ -31,7 +33,8 @@
             "slot": "LEGS",
             "requires": {
                 "STR": 14
-            }
+            },
+            "description": "A pair of iron leggins."
         },
         {
             "name": "Mage's Hat",
@@ -41,7 +44,8 @@
                 "mana": 3
             },
             "slot": "HEAD",
-            "requires": {}
+            "requires": {},
+            "description": "A silly hat, pulsates with magical energy."
         },
         {
             "name": "Mage's Robe",
@@ -51,7 +55,8 @@
                 "mana": 5
             },
             "slot": "BODY",
-            "requires": {}
+            "requires": {},
+            "description": "A long, brown robe, pulsates with magical energy."
         },
         {
             "name": "Hood",
@@ -60,7 +65,8 @@
                 "armor": 1
             },
             "requires": {},
-            "slot": "HEAD"
+            "slot": "HEAD",
+            "description": "A regular hood."
         },
         {
             "name": "Leather Armor",
@@ -71,7 +77,8 @@
             "slot": "BODY",
             "requires": {
                 "STR": 10
-            }
+            },
+            "description": "A piece of lether. Protects the wearer's body somewhat."
         }
     ],
     "melee": [
@@ -85,7 +92,8 @@
             "mods": {},
             "requires": {
                 "STR": 14
-            }
+            },
+            "description": "A trusty iron sword. Deals moderate damage."
         },
         {
             "name": "Iron Dagger",
@@ -97,7 +105,8 @@
             "mods": {},
             "requires": {
                 "STR": 10
-            }
+            },
+            "description": "A regular iron dagger. Used for stealthfully slitting throats."
         },
         {
             "name": "Iron Shield",
@@ -111,7 +120,8 @@
             },
             "requires": {
                 "STR": 14
-            }
+            },
+            "description": "An iron shield. A bit unwieldy."
         }
     ],
     "ranged":[
@@ -125,7 +135,9 @@
             "ammo_type": "arrow",
             "requires": {
                 "STR": 12
-            }
+            },
+            "mods": {},
+            "description": "Just a regular long bow. Can use any type of arrow."
         }
     ],
     "ammo": [
@@ -134,7 +146,8 @@
             "itype": "ammo",
             "base_damage": 1,
             "max_mod": 1,
-            "type": "arrow"
+            "type": "arrow",
+            "description": "The simplest type of arrow there could be."
         }
     ]
 }

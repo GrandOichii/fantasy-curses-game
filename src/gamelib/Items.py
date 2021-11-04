@@ -1,4 +1,5 @@
 import json
+import Utility
 
 class Item:
     def get_base_items(names, path):
@@ -34,6 +35,7 @@ class Item:
     def __init__(self):
         self.name = ''
         self.itype = 'item'
+        self.description = ''
 
     def __str__(self):
         result = f'Name: {self.name}'
@@ -42,11 +44,28 @@ class Item:
     def json(self):
         return self.__dict__
 
+    def get_description(self, max_width):
+        result = []
+        result += [f'{self.name}']
+        result += ['']
+        result += [f'Type: {self.itype}']
+        
+        desc = Utility.str_smart_split(self.description, max_width)
+        for d in desc:
+            result += [d]
+        return result
+
 class EquipableItem(Item):
     def __init__(self):
         super().__init__()
         self.slot = ''
 
+    def get_description(self, max_width):
+        result = super().get_description(max_width)
+        result.insert(3, f'Slot: {self.slot}')
+        result.insert(4, '')
+        return result
+        
 class Armor(EquipableItem):
     def __init__(self):
         super().__init__()
@@ -64,6 +83,25 @@ class Armor(EquipableItem):
             result += f'\nRequirements:'
             for key in self.requires:
                 result += f'\n  {key}: {self.requires[key]}'
+        return result
+
+    def get_description(self, max_width):
+        result = super().get_description(max_width)
+        app = 6
+        if len(self.requires) != 0:
+            result.insert(app - 1, 'Requirements: ')
+        else:
+            app -= 3
+        i = 0
+        for i in range(len(self.requires)):
+            result.insert(i + app, f'{list(self.requires.keys())[i]}: {list(self.requires.values())[i]}')
+        if len(self.requires) != 0:
+            result.insert(i + app + 1, '')
+        app = i + app + 2
+        for i in range(len(self.mods)):
+            result.insert(i + app, f'{list(self.mods.keys())[i]}: {Utility.pos_neg_int(list(self.mods.values())[i])}')
+        if len(self.mods) != 0:
+            result.insert(i + app + 1, '')
         return result
 
 class CountableItem(Item):
@@ -110,6 +148,29 @@ class MeleeWeapon(EquipableItem):
             result += f'\nRequirements:'
             for key in self.requires:
                 result += f'\n  {key}: {self.requires[key]}'
+        return result
+
+    def get_description(self, max_width):
+        result = super().get_description(max_width)
+        app = 6
+        result.insert(app - 1, f'Damage: {self.base_damage} - {self.base_damage + self.max_mod}')
+        result.insert(app, f'Range: {self.range}')
+        result.insert(app + 1, '')
+        app += 3
+        if len(self.requires) != 0:
+            result.insert(app - 1, 'Requirements: ')
+        else:
+            app -= 3
+        i = 0
+        for i in range(len(self.requires)):
+            result.insert(i + app, f'{list(self.requires.keys())[i]}: {list(self.requires.values())[i]}')
+        if len(self.requires) != 0:
+            result.insert(i + app + 1, '')
+        app = i + app + 2
+        for i in range(len(self.mods)):
+            result.insert(i + app, f'{list(self.mods.keys())[i]}: {Utility.pos_neg_int(list(self.mods.values())[i])}')
+        if len(self.mods) != 0:
+            result.insert(i + app + 1, '')
         return result
 
 class RangedWeapon(MeleeWeapon):

@@ -1,6 +1,11 @@
 from math import ceil
 import math
 
+def pos_neg_int(n):
+    if n > 0:
+        return f'+{n}'
+    return str(n)
+
 def str_smart_split(message, max_width):
     words = message.split()
     result = []

@@ -35,6 +35,12 @@ class Player(Entity):
         self.class_description = ''
         self.class_name = ''
 
+    def add_item(self, item):
+        if isinstance(item, Items.CountableItem):
+            pass
+        else:
+            self.items += [item]
+
     def load_class(self, class_data, assets_path):
         self.max_health = class_data['max_health']
         self.health = self.max_health
@@ -53,6 +59,15 @@ class Player(Entity):
         self.equipment['LEGS'] = None
         self.equipment['ARM1'] = None
         self.equipment['ARM2'] = None
+
+    def meets_requirements(self, requires):
+        if 'STR' in requires and requires['STR'] > self.STR:
+            return False
+        if 'DEX' in requires and requires['DEX'] > self.DEX:
+            return False
+        if 'INT' in requires and requires['INT'] > self.INT:
+            return False
+        return True
 
     def json(self):
         result = dict(self.__dict__)

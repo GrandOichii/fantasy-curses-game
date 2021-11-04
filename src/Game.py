@@ -789,35 +789,35 @@ class Game:
 
     def draw_info_ui(self):
         s = '1234567891234567891234'
-        self.addstr(1, self.window_width + 3, f'Name: {self.player.name}')
-        self.addstr(2, self.window_width + 3, f'Class: {self.player.class_name}')
-        self.addstr(4, self.window_width + 3, f'Health:          (   /   )') # left: 19
-        self.addstr(5, self.window_width + 3, f'Mana:            (   /   )') # left: 21
-        self.addstr(7, self.window_width + 3, f'STR:') # left: 22
-        self.addstr(8, self.window_width + 3, f'DEX:') # left: 22
-        self.addstr(9, self.window_width + 3, f'INT:') # left: 22
-        self.addstr(11, self.window_width + 3, 'Prompt: ')
+        self.addstr(0, self.window_width + 2, f'Name: {self.player.name}')
+        self.addstr(1, self.window_width + 2, f'Class: {self.player.class_name}')
+        self.addstr(3, self.window_width + 2, f'Health:          (   /   )') # left: 19
+        self.addstr(4, self.window_width + 2, f'Mana:            (   /   )') # left: 21
+        self.addstr(6, self.window_width + 2, f'STR:') # left: 22
+        self.addstr(7, self.window_width + 2, f'DEX:') # left: 22
+        self.addstr(8, self.window_width + 2, f'INT:') # left: 22
+        self.addstr(10, self.window_width + 2, 'Prompt: ')
         self.stdscr.refresh()
 
     def draw_player_info(self):
-        health_info =  ' ' * (3 - len(str(self.player.health))) + f'{self.player.health}'
-        self.addstr(4, self.window_width + 21, f'{health_info}')
+        health_info = ' ' * (3 - len(str(self.player.health))) + f'{self.player.health}'
+        self.addstr(3, self.window_width + 20, f'{health_info}')
         max_health_info =  ' ' * (3 - len(str(self.player.max_health))) + f'{self.player.max_health}'
-        self.addstr(4, self.window_width + 25, f'{max_health_info}')
-        self.addstr(4, self.window_width + 10, Utility.calc_pretty_bars(self.player.health, self.player.max_health, 10))
+        self.addstr(3, self.window_width + 24, f'{max_health_info}')
+        self.addstr(3, self.window_width + 9, Utility.calc_pretty_bars(self.player.health, self.player.max_health, 10))
         
         mana_info =  ' ' * (3 - len(str(self.player.mana))) + f'{self.player.mana}'
-        self.addstr(5, self.window_width + 21, f'{mana_info}')
+        self.addstr(4, self.window_width + 20, f'{mana_info}')
         max_mana_info =  ' ' * (3 - len(str(self.player.max_mana))) + f'{self.player.max_mana}'
-        self.addstr(5, self.window_width + 25, f'{max_mana_info}')
-        self.addstr(5, self.window_width + 10, Utility.calc_pretty_bars(self.player.mana, self.player.max_mana, 10))
+        self.addstr(4, self.window_width + 24, f'{max_mana_info}')
+        self.addstr(4, self.window_width + 9, Utility.calc_pretty_bars(self.player.mana, self.player.max_mana, 10))
 
         str_info = ' ' * (3 - len(str(self.player.STR))) + f'{self.player.STR}'
-        self.addstr(7, self.window_width + 7, f'{str_info}')
+        self.addstr(6, self.window_width + 6, f'{str_info}')
         dex_info = ' ' * (3 - len(str(self.player.DEX))) + f'{self.player.DEX}'
-        self.addstr(8, self.window_width + 7, f'{dex_info}')
+        self.addstr(7, self.window_width + 6, f'{dex_info}')
         int_info = ' ' * (3 - len(str(self.player.INT))) + f'{self.player.INT}'
-        self.addstr(9, self.window_width + 7, f'{int_info}')
+        self.addstr(8, self.window_width + 6, f'{int_info}')
 
     def draw_torches(self):
         for i in range(self.game_room.height):
@@ -935,10 +935,21 @@ class Game:
             x += 2 + len(tab_name)
 
         choice_id = 0
+        page_n = 0
         equip_choice_id = 0
         slots = ['HEAD', 'BODY', 'LEGS', 'ARM1', 'ARM2']
         cursor = 0
         displayed_item_count = win_height - 5
+
+        # item description window
+        item_description_window = curses.newwin(self.HEIGHT, self.WIDTH - self.window_width - 3, 0, self.window_width + 2)
+        desc = []
+        if len(display_names) != 0:
+            desc = items[cursor + page_n].get_description(self.WIDTH - self.window_width - 3)
+        for i in range(len(desc)):
+            item_description_window.addstr(1 + i, 1, desc[i])
+        self.draw_borders(item_description_window)
+        item_description_window.refresh()
 
         # initial items display
         for i in range(min(displayed_item_count, len(display_names))):
@@ -949,7 +960,6 @@ class Game:
         if len(display_names) > displayed_item_count:
             inventory_window.addch(win_height - 2, 1, curses.ACS_DARROW)
         
-        page_n = 0
         while True:
             key = inventory_window.getch()
             if key == 27: # ESC
@@ -1043,31 +1053,48 @@ class Game:
                                 break
                             if options_key == 10: # ENTER
                                 result_slot = options[option_choice_id]
-                                if result_slot == 'ARMS':
-                                    self.player.equipment['ARM1'] = choice_id
-                                    self.player.equipment['ARM2'] = choice_id
+                                item = items[choice_id]
+                                if not self.player.meets_requirements(item.requires):
+                                    self.message_box('You do not meet the requirements to equip this item', ['Ok'], width=self.window_width - 4, ypos=2, xpos=2)
+                                    inventory_window.addstr(1, 1, 'Inventory')
+                                    # redraw missing textures
+                                    for i in range(win_width - 2):
+                                        inventory_window.addch(2, 1 + i, curses.ACS_HLINE)
+                                    x = 2
+                                    for i in range(len(tabs)):
+                                        tab_name = f'[{tabs[i]}]'
+                                        if i == selected_tab:
+                                            inventory_window.addstr(2, x, tab_name, curses.A_REVERSE)
+                                        else:
+                                            inventory_window.addstr(2, x, tab_name)
+                                        x += 2 + len(tab_name)
+                                    break
                                 else:
-                                    if result_slot.startswith('ARM'):
-                                        self.player.equipment['ARM1'] = None
-                                        self.player.equipment['ARM2'] = None
-                                    self.player.equipment[result_slot] = choice_id
-                                display_names = []
-                                for i in range(len(items)):
-                                    item = items[i]
-                                    line = f'{item.name}'
-                                    if issubclass(type(item), Items.CountableItem):
-                                        line += f' x{item.amount}'
-                                    if issubclass(type(item), Items.EquipableItem):
-                                        line += f' ({item.slot})'
-                                        for s in self.player.equipment:
-                                            if self.player.equipment[s] == i:
-                                                if item.slot == 'ARMS':
-                                                    line += f' -> ARMS'
-                                                else:
-                                                    line += f' -> {s}'
-                                                break
-                                    display_names += [line]
-                                break
+                                    if result_slot == 'ARMS':
+                                        self.player.equipment['ARM1'] = choice_id
+                                        self.player.equipment['ARM2'] = choice_id
+                                    else:
+                                        if result_slot.startswith('ARM') and items[self.player.equipment['ARM1']].slot == 'ARMS':
+                                            self.player.equipment['ARM1'] = None
+                                            self.player.equipment['ARM2'] = None
+                                        self.player.equipment[result_slot] = choice_id
+                                    display_names = []
+                                    for i in range(len(items)):
+                                        item = items[i]
+                                        line = f'{item.name}'
+                                        if issubclass(type(item), Items.CountableItem):
+                                            line += f' x{item.amount}'
+                                        if issubclass(type(item), Items.EquipableItem):
+                                            line += f' ({item.slot})'
+                                            for s in self.player.equipment:
+                                                if self.player.equipment[s] == i:
+                                                    if item.slot == 'ARMS':
+                                                        line += f' -> ARMS'
+                                                    else:
+                                                        line += f' -> {s}'
+                                                    break
+                                        display_names += [line]
+                                    break
                             # display
                             for i in range(len(options)):
                                 options_window.addstr(1 + i, 1, ' ' * (width - 2))
@@ -1083,6 +1110,22 @@ class Game:
                         self.player.equipment['ARM2'] = None
                     else:
                         self.player.equipment[slot] = None
+                        display_names = []
+                        for i in range(len(items)):
+                            item = items[i]
+                            line = f'{item.name}'
+                            if issubclass(type(item), Items.CountableItem):
+                                line += f' x{item.amount}'
+                            if issubclass(type(item), Items.EquipableItem):
+                                line += f' ({item.slot})'
+                                for s in self.player.equipment:
+                                    if self.player.equipment[s] == i:
+                                        if item.slot == 'ARMS':
+                                            line += f' -> ARMS'
+                                        else:
+                                            line += f' -> {s}'
+                                        break
+                            display_names += [line]
             # clear the space
             for i in range(displayed_item_count):
                 inventory_window.addstr(4 + i, 3, ' ' * (win_width - 4))
@@ -1111,6 +1154,13 @@ class Game:
                         inventory_window.addstr(4 + i, 3, f'> {display_names[i + page_n]}')
                     else:
                         inventory_window.addstr(4 + i, 3, f'{display_names[i + page_n]}')
+                item_description_window.clear()
+                if len(display_names) != 0:
+                    desc = items[cursor + page_n].get_description(self.WIDTH - self.window_width - 3)
+                for i in range(len(desc)):
+                    item_description_window.addstr(1 + i, 1, desc[i])
+                self.draw_borders(item_description_window)
+                item_description_window.refresh()
             if selected_tab == 1: # equipment
                 for i in range(len(slots)):
                     if i == equip_choice_id:
@@ -1152,84 +1202,10 @@ class Game:
                         item_name = items[self.player.equipment['ARM2']].name
                     inventory_window.addstr(12, 13, item_name)
 
-
-    def draw_inventory1(self):
-        inventory_window = curses.newwin(self.window_height, self.window_width, 0, 1)
-        self.draw_borders(inventory_window)
-
-        inventory_window.keypad(1)
-        
-        items = list(self.player.items)
-        items += self.player.countable_items
-
-        display_names = []
-        for item in items:
-            line = f'{item.name}'
-            if issubclass(type(item), Items.CountableItem):
-                line += f' x{item.amount}'
-            if issubclass(type(item), Items.EquipableItem):
-                line += f' ({item.slot})'
-            display_names += [line]
-
-        inventory_window.addstr(1, 1, 'Inventory')
-        # initial items print
-        choice_id = 0
-        for i in range(min(len(display_names), self.window_height - 4)):
-            if i == choice_id:
-                inventory_window.addstr(i + 4, 1, '> ')
-            inventory_window.addstr(i + 4, 3, display_names[i])
-        if len(display_names) > self.window_height - 3:
-            inventory_window.addstr(self.window_height, self.mid_x + 1, 'V')
-        inventory_window.refresh()
-
-        display_length = min(len(display_names), self.window_height - 4)
-        while True:
-            key = inventory_window.getch()
-            inventory_window.clear()
-
-            if key == 27: # ESC
-                break
-            if key == 259: # UP
-                choice_id -= 1
-                if choice_id < 0: choice_id = len(display_names) - 1
-            if key == 258: # DOWN
-                choice_id += 1
-                if choice_id >= len(display_names): choice_id = 0
-
-            if len(display_names) > display_length:
-                if choice_id != 0:
-                    inventory_window.addstr(3, self.mid_x + 1, '^')
-                if choice_id + display_length > len(display_names):
-                    start = len(display_names) - display_length
-                else: 
-                    start = choice_id
-                end = start + display_length
-            else:
-                start = 0
-                end = display_length
-            
-            inventory_window.addstr(1, 1, 'Inventory')
-
-            if choice_id + display_length < len(display_names):
-                inventory_window.addstr(4, 1, '> ')
-                if len(display_names) > display_length:
-                    inventory_window.addstr(self.window_height, self.mid_x + 1, 'V')
-
-            for i in range(start, end):
-                if i == choice_id:
-                    if len(display_names) > display_length:
-                        if choice_id + display_length >= len(display_names):
-                            inventory_window.addstr(i + 4 - start, 1, '> ')
-                    else:
-                        inventory_window.addstr(i + 4 - start, 1, '> ')
-                inventory_window.addstr(i + 4 - start, 3, display_names[i])
-            
-            self.draw_borders(inventory_window)
-            inventory_window.refresh()
-        # end of method
-        inventory_window.clear()
-        inventory_window.refresh()
-
+        self.stdscr.clear()
+        self.draw_info_ui()
+        self.draw_player_info()
+        self.stdscr.refresh()
     # script execution
 
     def set_env_var(self, var, value):
@@ -1279,6 +1255,9 @@ class Game:
                 return False
             if var == 'player.mana':
                 self.player.add_mana(real_value)
+                return False
+            if var == 'player.inventory':
+                self.player.add_item(Items.Item.get_base_items([real_value], f'{self.assets_path}/items.json')[0])
                 return False
             if var in self.env_vars:
                 if isinstance(self.get_env_var(var), str):
