@@ -28,7 +28,6 @@ class Item:
             result = Armor()
         if t == 'ammo':
             result = Ammo()
-
         result.__dict__ = js
         return result
 
@@ -124,6 +123,13 @@ class Ammo(CountableItem):
         result = super().__str__()     
         result += f'\nType: {self.type}'
         result += f'\nAmount: {self.amount}'
+        return result
+
+    def get_description(self, max_width):
+        result = super().get_description(max_width)
+        result.insert(3, '')
+        result.insert(4, f'Amount: {self.amount}')
+        result.insert(5, '')
         return result
 
 class MeleeWeapon(EquipableItem):

@@ -638,7 +638,10 @@ class Game:
         codes = []
         for item in items:
             if self.get_env_var(items[item]) != True:
-                item_names += [item.name]
+                if isinstance(item, Items.CountableItem):
+                    item_names += [f'{item.name} x{item.amount}']
+                else:
+                    item_names += [item.name]
                 codes += [items[item]]
 
         if len(item_names) == 0:
@@ -753,7 +756,7 @@ class Game:
         for code in taken_codes:
             for item in items:
                 if items[item] == code:
-                    self.player.items += [item]
+                    self.player.add_item(item)
 
     def get_interactable_tiles(self, y, x):
         y_lim = self.game_room.height
@@ -1206,7 +1209,6 @@ class Game:
         self.draw_info_ui()
         self.draw_player_info()
         self.stdscr.refresh()
-    # script execution
 
     def set_env_var(self, var, value):
         self.env_vars[var] = value
@@ -1257,7 +1259,16 @@ class Game:
                 self.player.add_mana(real_value)
                 return False
             if var == 'player.inventory':
-                self.player.add_item(Items.Item.get_base_items([real_value], f'{self.assets_path}/items.json')[0])
+                sp = value.split(' ')
+                item = None
+                if sp[0].isdigit():
+                    amount = int(sp[0])
+                    item_name = self.get_true_value(' '.join(sp[1:]))
+                    item = Items.Item.get_base_items([item_name], f'{self.assets_path}/items.json')[0]
+                    item.amount = amount
+                else:
+                    item = Items.Item.get_base_items([real_value], f'{self.assets_path}/items.json')[0]
+                self.player.add_item(item)
                 return False
             if var in self.env_vars:
                 if isinstance(self.get_env_var(var), str):

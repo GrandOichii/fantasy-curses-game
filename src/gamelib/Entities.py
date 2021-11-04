@@ -36,8 +36,14 @@ class Player(Entity):
         self.class_name = ''
 
     def add_item(self, item):
+        if item == None:
+            raise Exception(f'ERR: add_item item is None')
         if isinstance(item, Items.CountableItem):
-            pass
+            for i in self.countable_items:
+                if i.name == item.name:
+                    i.amount += item.amount
+                    return
+            self.countable_items += [item]
         else:
             self.items += [item]
 

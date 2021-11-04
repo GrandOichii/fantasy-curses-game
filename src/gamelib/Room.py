@@ -132,9 +132,20 @@ class Room:
             for raw_item in raw_chest_content:
                 sri = raw_item.split(' ')
                 item_code = sri[-1]
-                item_name = ' '.join(sri[:-1])
-                item = Items.Item.get_base_items([item_name], f'{assets_path}/items.json')[0]
-                d[item] = f'{chest_code}_{item_code}'
+                item = None
+                if sri[0].isdigit():
+                    amount = int(sri[0])
+                    item_name = ' '.join(sri[1:-1])
+                    item = Items.Item.get_base_items([item_name], f'{assets_path}/items.json')[0]
+                    item.amount = amount
+                    d[item] = f'{chest_code}_{item_code}'
+                else: 
+                    item_name = ' '.join(sri[:-1])
+                    item = Items.Item.get_base_items([item_name], f'{assets_path}/items.json')[0]
+                    d[item] = f'{chest_code}_{item_code}'
+                if item == None:
+                    data = ' '.join(sri)
+                    raise Exception(f'ERR: item with data {data} not parsable')
             result.chest_contents[chest_code] = d
 
         
