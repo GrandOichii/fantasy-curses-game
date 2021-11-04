@@ -22,22 +22,22 @@ clear player.inventory
 chests_chest1:
 
 chests_chest2:
-Hood hood
-100 Wooden Arrow wooden_arrows
+Hood
+100 Wooden Arrow
 
 chests_chest3:
-Iron Sword iron_sword
+Iron Sword
 
 chests_chest4:
-Iron Helmet iron_helmet
-Iron Armor iron_armor
-Iron Leggins iron_leggins
+Iron Helmet
+Iron Armor
+Iron Leggins
 
 chests_chest5:
-Mage's Hat mages_hat
-Mage's Robe mages_robe
-Hood hood
-Iron Sword iron_sword
-Iron Helmet iron_helmet
-Iron Armor iron_armor
-Iron Leggins iron_leggins
+Mage's Hat
+Mage's Robe
+Hood
+Iron Sword
+Iron Helmet
+Iron Armor
+Iron Leggins

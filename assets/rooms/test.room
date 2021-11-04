@@ -59,6 +59,6 @@ sleep 500
 move camera 0 3
 ---
 chests_test_friend_chest:
-Iron Helmet iron_helmet
-Iron Armor iron_armor
-Iron Leggins iron_leggins
+Iron Helmet
+Iron Armor
+Iron Leggins

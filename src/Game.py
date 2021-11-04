@@ -1077,9 +1077,15 @@ class Game:
                                         self.player.equipment['ARM1'] = choice_id
                                         self.player.equipment['ARM2'] = choice_id
                                     else:
-                                        if result_slot.startswith('ARM') and items[self.player.equipment['ARM1']].slot == 'ARMS':
-                                            self.player.equipment['ARM1'] = None
-                                            self.player.equipment['ARM2'] = None
+                                        if result_slot.startswith('ARM'):
+                                            if self.player.equipment['ARM1'] != None and items[self.player.equipment['ARM1']].slot == 'ARMS':
+                                                self.player.equipment['ARM1'] = None
+                                                self.player.equipment['ARM2'] = None
+                                            else:
+                                                if self.player.equipment['ARM1'] == choice_id:
+                                                    self.player.equipment['ARM1'] = None
+                                                if self.player.equipment['ARM2'] == choice_id:
+                                                    self.player.equipment['ARM2'] = None
                                         self.player.equipment[result_slot] = choice_id
                                     display_names = []
                                     for i in range(len(items)):
@@ -1113,22 +1119,22 @@ class Game:
                         self.player.equipment['ARM2'] = None
                     else:
                         self.player.equipment[slot] = None
-                        display_names = []
-                        for i in range(len(items)):
-                            item = items[i]
-                            line = f'{item.name}'
-                            if issubclass(type(item), Items.CountableItem):
-                                line += f' x{item.amount}'
-                            if issubclass(type(item), Items.EquipableItem):
-                                line += f' ({item.slot})'
-                                for s in self.player.equipment:
-                                    if self.player.equipment[s] == i:
-                                        if item.slot == 'ARMS':
-                                            line += f' -> ARMS'
-                                        else:
-                                            line += f' -> {s}'
-                                        break
-                            display_names += [line]
+                    display_names = []
+                    for i in range(len(items)):
+                        item = items[i]
+                        line = f'{item.name}'
+                        if issubclass(type(item), Items.CountableItem):
+                            line += f' x{item.amount}'
+                        if issubclass(type(item), Items.EquipableItem):
+                            line += f' ({item.slot})'
+                            for s in self.player.equipment:
+                                if self.player.equipment[s] == i:
+                                    if item.slot == 'ARMS':
+                                        line += f' -> ARMS'
+                                    else:
+                                        line += f' -> {s}'
+                                    break
+                        display_names += [line]
             # clear the space
             for i in range(displayed_item_count):
                 inventory_window.addstr(4 + i, 3, ' ' * (win_width - 4))
@@ -1171,7 +1177,6 @@ class Game:
                     else:
                         inventory_window.addstr(4 + 2 * i, 3, f'{slots[i]}  -> ')
 
-
                 item_name = 'nothing'
                 if self.player.equipment['HEAD'] != None:
                     item_name = items[self.player.equipment['HEAD']].name
@@ -1204,6 +1209,19 @@ class Game:
                     if self.player.equipment['ARM2'] != None:
                         item_name = items[self.player.equipment['ARM2']].name
                     inventory_window.addstr(12, 13, item_name)
+
+                # desc = []
+                # desc = items[cursor + page_n].get_description(self.WIDTH - self.window_width - 3)
+                # for i in range(len(desc)):
+                #     item_description_window.addstr(1 + i, 1, desc[i])
+                item_description_window.clear()
+                item_id = self.player.equipment[slots[equip_choice_id]]
+                if item_id != None:
+                    desc = self.player.items[item_id].get_description(self.WIDTH - self.window_width - 3)
+                    for i in range(len(desc)):
+                        item_description_window.addstr(1 + i, 1, desc[i])
+                self.draw_borders(item_description_window)
+                item_description_window.refresh()
 
         self.stdscr.clear()
         self.draw_info_ui()
