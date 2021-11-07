@@ -1,4 +1,4 @@
-from math import ceil
+from math import ceil, sqrt
 import math
 
 def pos_neg_int(n):

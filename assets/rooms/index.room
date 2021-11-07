@@ -35,6 +35,13 @@
 ##      #    ##  # #  ###  #     #    #           #        ##
 ##                                                         ##
 ##                                                         ##
+##     ###  ###   ##  # #  ###                    #        ##
+##     #     #   #    # #   #                     ###      ##
+##     ##    #   # #  ###   #              ###########     G#
+##     #     #   # #  # #   #                     ###      ##
+##     #    ###   ##  # #   #                     #        ##
+##                                                         ##
+##                                                         ##
 #############################################################
 ---
 visible_range=20
@@ -45,7 +52,10 @@ C D door chests to_chests
 D D door hidden_walls to_hidden_walls
 E D door torches to_torches
 F D door scripts to_scripts
+G D door enemies to_enemies
 ---
 _enter:
 if set last_door_code then mb ok last_door_code
+---
+
 ---

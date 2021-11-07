@@ -1,6 +1,7 @@
 import json
 from os import listdir
 from os.path import isfile, join, splitext
+from gamelib.Entities import Enemy
 
 import gamelib.Items as Items
 
@@ -94,29 +95,30 @@ class Room:
         self.visible_range = 0
         self.player_spawn_char = player_spawn_char
 
-    def by_name(name, rooms_path, assets_path, door_code=None):
+    def by_name(name, rooms_path, assets_path, env_vars, door_code=None):
         room_names = [f for f in listdir(rooms_path) if isfile(join(rooms_path, f)) and splitext(f)[1] == '.room']
         if not f'{name}.room' in room_names:
             raise Exception(f'ERR: room with name {name} not found in {rooms_path}')
         raw_data = open(f'{rooms_path}/{name}.room', 'r').read()
         data = raw_data.split('\n---\n')
-        if len(data) != 5:
+        if len(data) != 6:
             raise Exception(f'ERR: Incorrect room file format. Room name: {name}')
         layout_data = data[0]
         room_data = data[1]
         tiles_raw_data = data[2]
         scripts_data = data[3]
         chest_content_data = data[4]
+        enemies_data = data[5]
         tiles_data = tiles_raw_data.split('\n')
-        result = Room.from_str(layout_data, tiles_data, room_data, scripts_data, chest_content_data, '@', assets_path, door_code)
-        result.name = name
+        result = Room.from_str(name, layout_data, tiles_data, room_data, scripts_data, chest_content_data, enemies_data, '@', assets_path, door_code, env_vars)
         return result
 
-    def from_str(layout_data, raw_tiles_data, room_data, scripts_data, chest_content_data, player_spawn_char, assets_path, door_code):
+    def from_str(name, layout_data, raw_tiles_data, room_data, scripts_data, chest_content_data, enemies_data, player_spawn_char, assets_path, door_code, env_vars):
         lines = layout_data.split('\n')
         height = len(lines)
         width = len(lines[0])
         result = Room('', height, width)
+        result.name = name
         result.scripts = dict()
         for chunk in scripts_data.split('\n\n'):
             l = chunk.split('\n')
@@ -147,8 +149,54 @@ class Room:
                     data = ' '.join(sri)
                     raise Exception(f'ERR: item with data {data} not parsable')
             result.chest_contents[chest_code] = d
+        result.enemies_data = dict()
+        if len(enemies_data) != 0:
+            for chunk in enemies_data.split('\n\n'):
+                l = chunk.split('\n')
+                enemy_code = l[0][:-1]
+                enemy_data = l[1:]
+                y = -1
+                x = -1
+                enemy = Enemy()
+                for line in enemy_data:
+                    d = line.split('=')
+                    if d[0] == 'e_type':
+                        enemy = Enemy.from_enemy_name(d[1], assets_path)
+                    if d[0] == 'y':
+                        y = int(d[1])
+                    if d[0] == 'x':
+                        x = int(d[1])
+                if y == -1:
+                    raise Exception(f'ERR: y not defined when defining enemy')
+                if x == -1:
+                    raise Exception(f'ERR: x not defined when defining enemy')
+                enemy.y = y
+                enemy.x = x
+                var_start = f'enemies_{name}_{enemy_code}_'
+                # fill the values from env_vars
+                # y pos
+                var = f'{var_start}y'
+                if var in env_vars:
+                    enemy.y = env_vars[var]
+                env_vars[var] = enemy.y
+                # x pos
+                var = f'{var_start}x'
+                if var in env_vars:
+                    enemy.x = env_vars[var]
+                env_vars[var] = enemy.x
+                # health
+                var = f'{var_start}health'
+                if var in env_vars:
+                    enemy.health = env_vars[var]
+                env_vars[var] = enemy.health
+                # mana
+                var = f'{var_start}mana'
+                if var in env_vars:
+                    enemy.mana = env_vars[var]
+                env_vars[var] = enemy.mana
 
-        
+                result.enemies_data[enemy_code] = enemy
+
         tiles_data = dict()
         # parse tile data
         for data_line in raw_tiles_data:

@@ -1,6 +1,7 @@
 import curses
 import curses.textpad as textpad
 import json
+from math import sqrt
 import os
 
 from ui.Menu import Menu
@@ -13,6 +14,7 @@ import gamelib.Map as Map
 import gamelib.SaveFile as SaveFile
 
 from gamelib.Entities import Player
+from Combat import CombatEncounter
 
 class Game:
     def __init__(self, saves_path, assets_path, rooms_path, map_path, starting_room='index'):
@@ -75,9 +77,6 @@ class Game:
 
     def start(self):
         curses.wrapper(self.main)
-
-    def draw_borders(self, w):
-        w.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE, curses.ACS_ULCORNER, curses.ACS_URCORNER, curses.ACS_LLCORNER, curses.ACS_LRCORNER)
 
     def main(self, stdscr):
         if self.debug: self.draw_borders(stdscr)
@@ -387,7 +386,7 @@ class Game:
             raise Exception(f'ERR: save file of character with name {character_name} not found in {self.saves_path}')
         self.player = Player.from_json(data['player'])
         self.env_vars = data['env_vars']
-        self.game_room = Room.Room.by_name(data['room_name'], self.rooms_path, self.assets_path)
+        self.game_room = Room.Room.by_name(data['room_name'], self.rooms_path, self.assets_path, self.env_vars)
 
         self.player_y, self.player_x = self.game_room.player_spawn_y, self.game_room.player_spawn_x
         if 'player_y' in data:
@@ -416,8 +415,8 @@ class Game:
         # permanent display
         self.tile_window = curses.newwin(self.window_height, self.window_width, 0, 1)
         self.draw_borders(self.tile_window)
-        self.tile_window.nodelay(True)
-        self.tile_window.timeout(self.game_speed)
+        # self.tile_window.nodelay(True)
+        # self.tile_window.timeout(self.game_speed)
 
         self.tile_window.keypad(1)
         self.draw_info_ui()
@@ -460,12 +459,15 @@ class Game:
 
     def main_game_loop(self):
         entered_room = False
+        encounter_ready, encounter_enemy_code = self.check_for_encounters()
+
         while True:
             if '_tick' in self.game_room.scripts:
                 self.exec_script('_tick', self.game_room.scripts)
             key = self.tile_window.getch()
             self.tile_window.clear()
             if key == 81 and self.message_box('Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.window_width - 4, ypos=2, xpos=2) == 'Yes':
+                self.save_enemy_env_vars()
                 SaveFile.save(self.player, self.game_room.name, self.saves_path, player_y=self.player_y, player_x=self.player_x, env_vars=self.env_vars)
                 break
             # if self.debug and key == 126:
@@ -540,14 +542,20 @@ class Game:
             # open inventory
             if key == 105: # i
                 self.draw_inventory()
-            
+            # initiate combat
+            if key == 99: # c
+                if encounter_ready:
+                    self.initiate_encounter_with(self.game_room.enemies_data[encounter_enemy_code])
+                else:
+                    self.message_box('You are not within range to attack anybody!', ['Ok'], width=self.window_width - 4, ypos=2, xpos=2)
+
             tile = self.game_room.tiles[self.player_y][self.player_x]
             if isinstance(tile, Room.DoorTile) and entered_room:
                 entered_room = False
                 destination_room = tile.to
                 door_code = tile.door_code
                 self.set_env_var('_last_door_code', door_code)
-                self.game_room = Room.Room.by_name(destination_room, self.rooms_path, self.assets_path, door_code=door_code)
+                self.game_room = Room.Room.by_name(destination_room, self.rooms_path, self.assets_path, door_code=door_code, env_vars=self.env_vars)
                 self.player_y, self.player_x = self.game_room.player_spawn_y, self.game_room.player_spawn_x
                 self.tile_window.clear()
                 self.tile_window.refresh()
@@ -560,6 +568,10 @@ class Game:
             if isinstance(tile, Room.HiddenTile) and self.get_env_var(tile.signal) == True and isinstance(tile.actual_tile, Room.PressurePlateTile):
                 self.exec_script(tile.actual_tile.script_name, self.game_room.scripts)       
 
+            self.update_enemies()
+
+            # check if encounters are available
+
             self.draw_tile_window()
             self.draw_player_info()
             self.tile_window.refresh()
@@ -567,9 +579,45 @@ class Game:
             if self.game_room.display_name != '':
                 self.draw_room_display_name(self.game_room.display_name)
 
-            if key == 120: # x
-                self.tile_description_mode()                       
+            encounter_ready, encounter_enemy_code = self.check_for_encounters()
             
+            if key == 120: # x
+                self.tile_description_mode()      
+
+    def check_for_encounters(self):
+        encounter_ready = False
+        enemy_code = None
+        min_d = -1
+        min_enemy_code = None
+        for enemy_code in self.game_room.enemies_data:
+            enemy = self.game_room.enemies_data[enemy_code]
+            d = Utility.distance(enemy.y, enemy.x, self.player_y, self.player_x)
+            if d <= self.player.get_range(self.game_room.visible_range):
+                if min_d == -1 or d < min_d:
+                    min_d = d
+                    min_enemy_code = enemy_code
+        if min_enemy_code != None:
+            enemy = self.game_room.enemies_data[min_enemy_code]
+            encounter_ready = True
+            s = f'[ Press [c] to initiate combat with {enemy.name} ]'
+            y = self.window_height - 2
+            x = self.window_width // 2 - len(s) // 2
+            self.tile_window.addstr(y, x, s)
+        return (encounter_ready, enemy_code)                 
+
+    def update_enemies(self):
+        for enemy_code in self.game_room.enemies_data:
+            enemy = self.game_room.enemies_data[enemy_code]
+
+    def save_enemy_env_vars(self):
+        for enemy_code in self.game_room.enemies_data:
+            enemy = self.game_room.enemies_data[enemy_code]
+            f = f'enemies_{self.game_room.name}_{enemy_code}_'
+            self.set_env_var(f'{f}health', enemy.health)
+            self.set_env_var(f'{f}mana', enemy.mana)
+            self.set_env_var(f'{f}y', enemy.y)
+            self.set_env_var(f'{f}x', enemy.x)
+
     def tile_description_mode(self):
         cursor_y = self.mid_y
         cursor_x = self.mid_x
@@ -589,27 +637,28 @@ class Game:
                 break
             self.tile_window.clear()
             # North
-            if key in [56, 259] and cursor_map_y != 0:
+            if key in [56, 259] and cursor_map_y != 0 and Utility.distance(cursor_map_y - 1, cursor_map_x, self.player_y, self.player_x) < self.game_room.visible_range:
                 cursor_y -= 1
                 cursor_map_y -= 1
             # South
-            if key in [50, 258] and cursor_map_y != self.game_room.height - 1:
+            if key in [50, 258] and cursor_map_y != self.game_room.height - 1 and Utility.distance(cursor_map_y + 1, cursor_map_x, self.player_y, self.player_x) < self.game_room.visible_range:
                 cursor_y += 1
                 cursor_map_y += 1
             # West
-            if key in [52, 260] and cursor_map_x != 0:
+            if key in [52, 260] and cursor_map_x != 0 and Utility.distance(cursor_map_y, cursor_map_x - 1, self.player_y, self.player_x) < self.game_room.visible_range:
                 cursor_x -= 1
                 cursor_map_x -= 1
             # East
-            if key in [54, 261] and cursor_map_x != self.game_room.width - 1:
+            if key in [54, 261] and cursor_map_x != self.game_room.width - 1 and Utility.distance(cursor_map_y, cursor_map_x + 1, self.player_y, self.player_x) < self.game_room.visible_range:
                 cursor_x += 1
                 cursor_map_x += 1
             
             self.draw_tiles(self.player_y, self.player_x, self.game_room.visible_range)
             self.tile_window.addstr(self.mid_y, self.mid_x, '@')
+            display_name = ''
             if cursor_y == self.mid_y and cursor_x == self.mid_x:
                 self.tile_window.addch(cursor_y, cursor_x, '@', curses.A_REVERSE)
-                self.tile_window.addstr(1, 1, f'[{self.player.name}]')
+                display_name = self.player.name
             else:
                 tile = self.game_room.tiles[cursor_map_y][cursor_map_x]
                 name = tile.name
@@ -622,8 +671,19 @@ class Game:
                         char = '#'
                 if tile.char == ' ':
                     name = 'floor'
-                self.tile_window.addstr(1, 1, f'[{name}]')
+                display_name = name
                 self.tile_window.addch(cursor_y, cursor_x, char, curses.A_REVERSE)
+            for enemy in list(self.game_room.enemies_data.values()):
+                y = enemy.y + self.mid_y - self.player_y
+                x = enemy.x + self.mid_x - self.player_x
+                if Utility.distance(self.player_y, self.player_x, enemy.y, enemy.x) < self.game_room.visible_range:
+                    if y == cursor_y and x == cursor_x:
+                        self.tile_window.addch(y, x, enemy.char, curses.A_REVERSE)
+                        display_name = enemy.name
+                    else:
+                        self.tile_window.addch(y, x, enemy.char)
+            if len(display_name) != 0:
+                self.tile_window.addstr(1, 1, f'[{display_name}]')
             self.draw_borders(self.tile_window)
         # clean-up
         self.tile_window.clear()
@@ -790,6 +850,9 @@ class Game:
 
     # drawing
 
+    def draw_borders(self, w):
+        w.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE, curses.ACS_ULCORNER, curses.ACS_URCORNER, curses.ACS_LLCORNER, curses.ACS_LRCORNER)
+
     def draw_info_ui(self):
         s = '1234567891234567891234'
         self.addstr(0, self.window_width + 2, f'Name: {self.player.name}')
@@ -821,6 +884,13 @@ class Game:
         self.addstr(7, self.window_width + 6, f'{dex_info}')
         int_info = ' ' * (3 - len(str(self.player.INT))) + f'{self.player.INT}'
         self.addstr(8, self.window_width + 6, f'{int_info}')
+
+    def draw_enemies(self):
+        for enemy in list(self.game_room.enemies_data.values()):
+            if enemy.health > 0 and sqrt((self.player_y - enemy.y) * (self.player_y - enemy.y) + (self.player_x - enemy.x) * (self.player_x - enemy.x)) < self.game_room.visible_range:
+                y = enemy.y + self.mid_y - self.player_y
+                x = enemy.x + self.mid_x - self.player_x
+                self.tile_window.addch(y, x, enemy.char)
 
     def draw_torches(self):
         for i in range(self.game_room.height):
@@ -869,6 +939,7 @@ class Game:
             self.tile_window.addstr(real_mid_y, real_mid_x, '@')
         if self.full_map != None:
             self.draw_mini_map(self.game_room.name)
+        self.draw_enemies()
 
     def draw_mini_map(self, room_name):
         hh = self.MINI_MAP_HEIGHT // 2
@@ -1227,6 +1298,33 @@ class Game:
         self.draw_info_ui()
         self.draw_player_info()
         self.stdscr.refresh()
+
+    # combat
+
+    def initiate_encounter_with(self, enemy):
+        distance = Utility.distance(self.player_y, self.player_x, enemy.y, enemy.x)
+        encounter = CombatEncounter(self.player, enemy, distance, self.HEIGHT, self.WIDTH)
+        encounter.start()
+
+        # clean-up
+        self.stdscr.clear()
+        self.draw_borders(self.tile_window)
+        self.draw_info_ui()
+        self.draw_player_info()
+        self.draw_borders(self.mini_map_window)
+        self.mini_map_window.refresh()
+        self.stdscr.refresh()
+        self.draw_tile_window()
+        if self.full_map != None:
+            self.draw_mini_map(self.game_room.name)
+
+        self.tile_window.refresh()
+        if self.game_room.display_name != '':
+            self.draw_room_display_name(self.game_room.display_name)
+
+
+
+    # env vars
 
     def set_env_var(self, var, value):
         self.env_vars[var] = value

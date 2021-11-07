@@ -1,0 +1,11 @@
+{
+    "rat": {
+        "name": "Rat",
+        "char": "r",
+        "health": 10,
+        "max_health": 10,
+        "mana": 0,
+        "max_mana": 0,
+        "description": "A stinky sewer rat."
+    }
+}

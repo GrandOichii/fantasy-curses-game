@@ -8,12 +8,7 @@ class Entity:
         self.max_health = 0
         self.mana = 0
         self.max_mana = 0
-        self.STR = 0
-        self.DEX = 0
-        self.INT = 0
         self.description = ''
-        self.items = []
-        self.countable_items = []
 
     def add_health(self, amount):
         self.health += amount
@@ -29,11 +24,35 @@ class Entity:
         if self.mana < 0:
             self.mana = 0
 
+class Enemy(Entity):
+    def __init__(self):
+        self.char = '?'
+        self.possible_item_ids = []
+        self.y = 0
+        self.x = 0
+
+    def from_enemy_name(name, assets_path):
+        enemy_schemas_path = f'{assets_path}/enemy_schemas.json'
+        result = Enemy()
+        data = json.loads(open(enemy_schemas_path, 'r').read())[name]
+        vals = ['name', 'health', 'max_health', 'mana', 'max_mana', 'description', 'char']
+        for val in vals:
+            result.__dict__[val] = data[val]
+            
+        return result
+        
+
 class Player(Entity):
     def __init__(self):
         super().__init__()
         self.class_description = ''
         self.class_name = ''
+        self.STR = 0
+        self.DEX = 0
+        self.INT = 0
+        self.items = []
+        self.countable_items = []
+        self.equipment = dict()
 
     def add_item(self, item):
         if item == None:
@@ -75,6 +94,14 @@ class Player(Entity):
             return False
         return True
 
+    def get_range(self, visible_range):
+        highest_range = 3 # fist fighting range
+        if self.equipment['ARM1'] != None and self.items[self.equipment['ARM1']].range > highest_range:
+            highest_range = self.items[self.equipment['ARM1']].range
+        if self.equipment['ARM2'] != None and self.items[self.equipment['ARM2']].range > highest_range:
+            highest_range = self.items[self.equipment['ARM2']].range
+        return highest_range + visible_range // 3
+    
     def json(self):
         result = dict(self.__dict__)
         result['items'] = Items.Item.arr_to_json(self.items)
@@ -84,6 +111,8 @@ class Player(Entity):
         for slot in slots:
             result['equipment'][slot] = self.equipment[slot]
         return result
+
+    # static methods
 
     def from_json(js):
         result = Player()

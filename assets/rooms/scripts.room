@@ -12,11 +12,14 @@
 visible_range=5
 ---
 A D door index to_scripts
-B _ pressure_plate show_scripts_signal
+B _ pressure_plate show_scripts
 C # hidden_tile show_scripts_signal * script_tile button button_script
 D # hidden_tile show_scripts_signal | script_tile lever lever_script
 E I torch 10
 ---
+show_scripts:
+set show_scripts_signal true
+
 _enter:
 set message "Welcome, "
 add message player.name
@@ -36,4 +39,6 @@ add value 1
 set message "value = "
 add message value
 mb Ok message
+---
+
 ---
