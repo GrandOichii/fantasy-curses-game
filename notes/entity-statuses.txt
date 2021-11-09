@@ -1,0 +1,7 @@
+!!! all statuses that start with _ will not be displayed during combat !!!
+
+slow: can move only with speed 1
+fast: can move with speed 3
+clumsy: can fall more easily
+sturdy: can't fall easily
+fallen: temporary status, will have to wait a turn, then is removed

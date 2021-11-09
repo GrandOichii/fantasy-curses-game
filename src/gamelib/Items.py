@@ -58,6 +58,7 @@ class EquipableItem(Item):
     def __init__(self):
         super().__init__()
         self.slot = ''
+        self.gives_statuses = []
 
     def get_description(self, max_width):
         result = super().get_description(max_width)
@@ -118,6 +119,7 @@ class Ammo(CountableItem):
     def __init__(self):
         super().__init__()
         self.type = ''
+        self.damage = 0
 
     def __str__(self):
         result = super().__str__()     

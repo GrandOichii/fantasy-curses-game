@@ -2,10 +2,14 @@
     "rat": {
         "name": "Rat",
         "char": "r",
+        "damage": 1,
+        "damage_mod": 2,
+        "range": 1,
         "health": 10,
         "max_health": 10,
         "mana": 0,
         "max_mana": 0,
-        "description": "A stinky sewer rat."
+        "description": "A stinky sewer rat.",
+        "statuses": ["slow"]
     }
 }

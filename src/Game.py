@@ -1322,8 +1322,6 @@ class Game:
         if self.game_room.display_name != '':
             self.draw_room_display_name(self.game_room.display_name)
 
-
-
     # env vars
 
     def set_env_var(self, var, value):
@@ -1502,8 +1500,12 @@ class Game:
             return False
         if s == 'player.health':
             return self.player.health
+        if s == 'player.max_health':
+            return self.player.max_health
         if s == 'player.mana':
             return self.player.mana
+        if s == 'player.max_mana':
+            return self.player.max_mana
         if s == 'player.name':
             return self.player.name
         if s == 'player.y':

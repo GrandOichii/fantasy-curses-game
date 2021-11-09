@@ -7,6 +7,7 @@
                 "armor": 3
             },
             "slot": "HEAD",
+            "gives_statuses": [],
             "requires": {
                 "STR": 14
             },
@@ -19,6 +20,7 @@
                 "armor": 4
             },
             "slot": "BODY",
+            "gives_statuses": [],
             "requires": {
                 "STR": 14
             },
@@ -31,6 +33,7 @@
                 "armor": 2
             },
             "slot": "LEGS",
+            "gives_statuses": [],
             "requires": {
                 "STR": 14
             },
@@ -44,6 +47,7 @@
                 "mana": 3
             },
             "slot": "HEAD",
+            "gives_statuses": [],
             "requires": {},
             "description": "A silly hat, pulsates with magical energy."
         },
@@ -55,6 +59,7 @@
                 "mana": 5
             },
             "slot": "BODY",
+            "gives_statuses": [],
             "requires": {},
             "description": "A long, brown robe, pulsates with magical energy."
         },
@@ -66,6 +71,9 @@
             },
             "requires": {},
             "slot": "HEAD",
+            "gives_statuses": [
+                "fast"
+            ],
             "description": "A regular hood."
         },
         {
@@ -75,6 +83,7 @@
                 "armor": 2
             },
             "slot": "BODY",
+            "gives_statuses": [],
             "requires": {
                 "STR": 10
             },
@@ -89,6 +98,7 @@
             "max_mod": 3,
             "range": 2,
             "slot": "ARM",
+            "gives_statuses": [],
             "mods": {},
             "requires": {
                 "STR": 14
@@ -102,6 +112,7 @@
             "max_mod": 3,
             "range": 1,
             "slot": "ARM",
+            "gives_statuses": [],
             "mods": {},
             "requires": {
                 "STR": 10
@@ -115,6 +126,7 @@
             "max_mod": 1,
             "range": 1,
             "slot": "ARM",
+            "gives_statuses": [],
             "mods": {
                 "armor": 2
             },
@@ -132,6 +144,7 @@
             "base_damage": 6,
             "max_mod": 1,
             "range": 5,
+            "gives_statuses": [],
             "ammo_type": "arrow",
             "requires": {
                 "STR": 12
@@ -144,8 +157,7 @@
         {
             "name": "Wooden Arrow",
             "itype": "ammo",
-            "base_damage": 1,
-            "max_mod": 1,
+            "damage": 1,
             "type": "arrow",
             "description": "The simplest type of arrow there could be."
         }

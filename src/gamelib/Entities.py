@@ -9,6 +9,10 @@ class Entity:
         self.mana = 0
         self.max_mana = 0
         self.description = ''
+        self.statuses = []
+
+    def has_status(self, status):
+        return False
 
     def add_health(self, amount):
         self.health += amount
@@ -27,18 +31,24 @@ class Entity:
 class Enemy(Entity):
     def __init__(self):
         self.char = '?'
+        self.range = 0
+        self.damage = 0
+        self.damage_mod = 0
         self.possible_item_ids = []
         self.y = 0
         self.x = 0
+
+    def has_status(self, status):
+        return status in self.statuses
 
     def from_enemy_name(name, assets_path):
         enemy_schemas_path = f'{assets_path}/enemy_schemas.json'
         result = Enemy()
         data = json.loads(open(enemy_schemas_path, 'r').read())[name]
-        vals = ['name', 'health', 'max_health', 'mana', 'max_mana', 'description', 'char']
-        for val in vals:
-            result.__dict__[val] = data[val]
-            
+        result.__dict__ = data
+        # vals = ['name', 'health', 'max_health', 'mana', 'max_mana', 'description', 'char']
+        # for val in vals:
+        #     result.__dict__[val] = data[val]
         return result
         
 
@@ -53,6 +63,19 @@ class Player(Entity):
         self.items = []
         self.countable_items = []
         self.equipment = dict()
+
+    def get_equipped_items(self):
+        result = []
+        for key in self.equipment:
+            if self.equipment[key] != None:
+                result += [self.items[self.equipment[key]]]
+        return result
+
+    def has_status(self, status):
+        for item in self.get_equipped_items():
+            if status in item.gives_statuses:
+                return True
+        return False
 
     def add_item(self, item):
         if item == None:
