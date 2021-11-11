@@ -460,8 +460,9 @@ class Game:
     def main_game_loop(self):
         entered_room = False
         encounter_ready, encounter_enemy_code = self.check_for_encounters()
+        self.game_running = True
 
-        while True:
+        while self.game_running:
             if '_tick' in self.game_room.scripts:
                 self.exec_script('_tick', self.game_room.scripts)
             key = self.tile_window.getch()
@@ -545,44 +546,44 @@ class Game:
             # initiate combat
             if key == 99: # c
                 if encounter_ready:
-                    self.initiate_encounter_with(self.game_room.enemies_data[encounter_enemy_code])
+                    self.initiate_encounter_with(encounter_enemy_code)
                 else:
                     self.message_box('You are not within range to attack anybody!', ['Ok'], width=self.window_width - 4, ypos=2, xpos=2)
+            if self.game_running:
+                tile = self.game_room.tiles[self.player_y][self.player_x]
+                if isinstance(tile, Room.DoorTile) and entered_room:
+                    entered_room = False
+                    destination_room = tile.to
+                    door_code = tile.door_code
+                    self.set_env_var('_last_door_code', door_code)
+                    self.game_room = Room.Room.by_name(destination_room, self.rooms_path, self.assets_path, door_code=door_code, env_vars=self.env_vars)
+                    self.player_y, self.player_x = self.game_room.player_spawn_y, self.game_room.player_spawn_x
+                    self.tile_window.clear()
+                    self.tile_window.refresh()
+                    if '_load' in self.game_room.scripts:
+                        self.exec_script('_load', self.game_room.scripts)
+                    if '_enter' in self.game_room.scripts:
+                        self.exec_script('_enter', self.game_room.scripts)
+                if isinstance(tile, Room.PressurePlateTile):
+                    self.exec_script(tile.script_name, self.game_room.scripts)
+                if isinstance(tile, Room.HiddenTile) and self.get_env_var(tile.signal) == True and isinstance(tile.actual_tile, Room.PressurePlateTile):
+                    self.exec_script(tile.actual_tile.script_name, self.game_room.scripts)       
 
-            tile = self.game_room.tiles[self.player_y][self.player_x]
-            if isinstance(tile, Room.DoorTile) and entered_room:
-                entered_room = False
-                destination_room = tile.to
-                door_code = tile.door_code
-                self.set_env_var('_last_door_code', door_code)
-                self.game_room = Room.Room.by_name(destination_room, self.rooms_path, self.assets_path, door_code=door_code, env_vars=self.env_vars)
-                self.player_y, self.player_x = self.game_room.player_spawn_y, self.game_room.player_spawn_x
-                self.tile_window.clear()
+                self.update_enemies()
+
+                # check if encounters are available
+
+                self.draw_tile_window()
+                self.draw_player_info()
                 self.tile_window.refresh()
-                if '_load' in self.game_room.scripts:
-                    self.exec_script('_load', self.game_room.scripts)
-                if '_enter' in self.game_room.scripts:
-                    self.exec_script('_enter', self.game_room.scripts)
-            if isinstance(tile, Room.PressurePlateTile):
-                self.exec_script(tile.script_name, self.game_room.scripts)
-            if isinstance(tile, Room.HiddenTile) and self.get_env_var(tile.signal) == True and isinstance(tile.actual_tile, Room.PressurePlateTile):
-                self.exec_script(tile.actual_tile.script_name, self.game_room.scripts)       
+                self.stdscr.refresh()
+                if self.game_room.display_name != '':
+                    self.draw_room_display_name(self.game_room.display_name)
 
-            self.update_enemies()
-
-            # check if encounters are available
-
-            self.draw_tile_window()
-            self.draw_player_info()
-            self.tile_window.refresh()
-            self.stdscr.refresh()
-            if self.game_room.display_name != '':
-                self.draw_room_display_name(self.game_room.display_name)
-
-            encounter_ready, encounter_enemy_code = self.check_for_encounters()
-            
-            if key == 120: # x
-                self.tile_description_mode()      
+                encounter_ready, encounter_enemy_code = self.check_for_encounters()
+                
+                if key == 120: # x
+                    self.tile_description_mode()      
 
     def check_for_encounters(self):
         encounter_ready = False
@@ -1301,11 +1302,22 @@ class Game:
 
     # combat
 
-    def initiate_encounter_with(self, enemy):
+    def initiate_encounter_with(self, encounter_enemy_code):
+        enemy = self.game_room.enemies_data[encounter_enemy_code]
         distance = Utility.distance(self.player_y, self.player_x, enemy.y, enemy.x)
         encounter = CombatEncounter(self.player, enemy, distance, self.HEIGHT, self.WIDTH)
         encounter.start()
 
+        if self.player.health == 0:
+            answer = self.message_box('PLAYER DEAD', ['Load last', 'Back to menu'], width=self.window_width - 4, ypos=2, xpos=2)
+            if answer == 'Back to menu':
+                self.game_running = False
+                return
+            self.load_character(self.player.name)
+            self.game_running = False
+            return
+        if enemy.health == 0:
+            self.game_room.enemies_data.pop(encounter_enemy_code, None)
         # clean-up
         self.stdscr.clear()
         self.draw_borders(self.tile_window)

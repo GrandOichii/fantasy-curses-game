@@ -6,6 +6,7 @@ from curses.textpad import rectangle
 import Utility
 
 from gamelib.Entities import Player, Enemy
+from gamelib.Items import MeleeWeapon, RangedWeapon
 
 class Action:
     def __init__(self, parent, char, caption, picture, user, other):
@@ -61,6 +62,15 @@ class MoveAction(Action):
         result = f'{self.user.name} {action} {self.other.name}.'
         return result
 
+class AttackWithoutWeaponEnemyAction(Action):
+    def __init__(self, parent, char, caption, user, other):
+        super().__init__(parent, char, caption, 'XX', user, other)
+
+    def run(self):
+        damage = self.user.STR // 5
+        self.other.add_health(-damage)
+        return f'{self.user.name} punches {self.other.name} and deals {damage}'
+
 class AttackMeleeEnemyAction(Action):
     def __init__(self, parent, char, caption, user, other, weapon):
         super().__init__(parent, char, caption, 'XX', user, other)
@@ -82,6 +92,8 @@ class AttackRangedEnemyAction(Action):
         damage = self.weapon.base_damage
         damage += self.ammo.damage
         damage += random.randint(0, self.weapon.max_mod)
+        self.ammo.amount -= 1
+        self.other.add_health(-damage)
         return f'{self.user.name} attacks with {self.weapon.name} and hits {self.other.name} for {damage} damage.'
 
 class AttackPlayerAction(Action):
@@ -93,6 +105,10 @@ class AttackPlayerAction(Action):
         damage += random.randint(0, self.user.damage_mod)
         self.other.add_health(-damage)
         return f'{self.user.name} attacks and deals {damage} damage to {self.other.name}.'
+
+class CustomAction(Action):
+    def __init__(self, parent, char, caption, picture, user, other):
+        super().__init__(parent, char, caption, picture, user, other)
 
 class CombatEncounter:
     def __init__(self, attacker, defender, distance, height, width):
@@ -144,42 +160,13 @@ class CombatEncounter:
     def draw_borders(self, w):
         w.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE, curses.ACS_ULCORNER, curses.ACS_URCORNER, curses.ACS_LLCORNER, curses.ACS_LRCORNER)
 
-    def initial_draw(self):
-        self.draw_borders(self.window)
-
-        # player
-        self.draw_borders(self.player_window)
-        self.player_window.addstr(0, 1, self.get_player().name)
-        self.draw_option_boxes()
-
-        # enemy
-        self.draw_borders(self.enemy_window)
-        self.enemy_window.addstr(0, 1, self.get_enemy().name)
-
-        # combat
-        self.draw_borders(self.combat_info_window)
-        self.combat_info_window.addstr(0, 1, 'Combat info')
-        self.combat_info_window.addstr(3, 1, ' DISTANCE: ')
-
-        self.draw()
-
     def update_player_options(self):
         self.player_actions = []
         player = self.get_player()
         enemy = self.get_enemy()
-        ARM1_i = player.equipment['ARM1']
-        ARM2_i = player.equipment['ARM2']
-        has_arm1 = ARM1_i != None
-        has_arm2 = ARM2_i != None
         char_i = 0
-        # if not has_arm1 and not has_arm2:
-        #     self.player_options += [f'({self.chars[char_i]}) Hit with arms']
-        #     char_i += 1
-        # if has_arm1:
-        #     self.player_options += [f'({self.chars[char_i]}) {player.items[ARM1_i].name}']
-        #     char_i += 1
-        # if has_arm2 and ARM1_i != ARM2_i:
-        #     self.player_options += [f'({self.chars[char_i]}) {player.items[ARM2_i].name}']
+        if player.get_range() >= self.distance:
+            self.player_actions += [CustomAction(self, self.chars[char_i], 'Attack', 'XX', player, enemy)]
         char_i = 2
         self.player_actions += [MoveAction(self, self.chars[char_i], 'Flee', player, enemy, -2)]
         char_i += 1
@@ -222,7 +209,6 @@ class CombatEncounter:
         for i in range(len(enemy.statuses)):
             self.enemy_window.addstr(y_first + 1 + i, 1, enemy.statuses[i])
 
-
     def draw_option_boxes(self):
         rectangle(self.player_window, 1, 1, self.action_box_height, self.action_box_width)
         rectangle(self.enemy_window, 1, 1, self.action_box_height, self.action_box_width)
@@ -241,6 +227,16 @@ class CombatEncounter:
         self.draw_player_actions()
         self.draw_last_pictures()
         self.draw_enemy_info()
+
+        self.draw_borders(self.window)
+        self.draw_borders(self.player_window)
+        self.player_window.addstr(0, 1, self.get_player().name)
+        self.draw_option_boxes()
+        self.draw_borders(self.enemy_window)
+        self.enemy_window.addstr(0, 1, self.get_enemy().name)
+        self.draw_borders(self.combat_info_window)
+        self.combat_info_window.addstr(0, 1, 'Combat info')
+        self.combat_info_window.addstr(3, 1, ' DISTANCE: ')
 
         self.window.refresh()
         self.player_window.refresh()
@@ -275,7 +271,7 @@ class CombatEncounter:
         self.player_window = curses.newwin(self.box_height, self.box_width, 1, 1)
         self.enemy_window = curses.newwin(self.box_height, self.box_width - 1, 1, self.WIDTH - self.box_width)
         self.update_player_options()
-        self.initial_draw()
+        self.draw()
         self.main_loop()
        
     def main_loop(self):
@@ -309,18 +305,27 @@ class CombatEncounter:
             if key == 10: # ENTER
                 # execute player action
                 action = self.player_actions[self.action_id]
-                self.last_player_picture = action.picture
-                self.add_to_combat_log(action.run())
-                self.action_id = 0
-                # execute enemy action
-                action = self.get_enemy_action()
-                self.last_enemy_picture = action.picture
-                self.add_to_combat_log(action.run())
-                # last
-                self.update_player_options()
+                if action.caption == 'Attack':
+                    action = self.get_player_attack_action()
+                if action != None:
+                    self.last_player_picture = action.picture
+                    self.add_to_combat_log(action.run())
+                    self.action_id = 0
+                    # execute enemy action
+                    action = self.get_enemy_action()
+                    self.last_enemy_picture = action.picture
+                    self.add_to_combat_log(action.run())
+                    # last
+                    self.update_player_options()
             index = self.index_by_key(key)
             if index != -1:
                 self.action_id = index
+            if self.get_player().health == 0:
+                self.player_lost()
+                break
+            if self.get_enemy().health == 0:
+                self.player_won()
+                break
             self.draw()
 
     def add_to_combat_log(self, message):
@@ -335,6 +340,108 @@ class CombatEncounter:
     def get_enemy(self):
         return self.entities[1 - self.player_id]
 
+    def get_player_attack_action(self):
+        player = self.get_player()
+        enemy = self.get_enemy()
+        ARM1_i = player.equipment['ARM1']
+        ARM2_i = player.equipment['ARM2']
+        has_arm1 = ARM1_i != None
+        has_arm2 = ARM2_i != None
+        if not has_arm1 and not has_arm2:
+            return AttackWithoutWeaponEnemyAction(self, 'a', '-', player, enemy)
+        weapon = None
+        w_width = 0
+        if has_arm1 and has_arm2 and ARM1_i == ARM2_i:
+            weapon = player.items[ARM1_i]
+        else:
+            # player has two weapons
+            weapon1 = player.items[ARM1_i]
+            weapon2 = player.items[ARM2_i]
+            display_name1 = f'{weapon1.name} (range: {weapon1.range})'
+            display_name2 = f'{weapon2.name} (range: {weapon2.range})'
+            display_names = [display_name1, display_name2]
+            w_height = 4
+            w_width = max(len(display_name1), len(display_name2)) + 2
+            w_choice_window = curses.newwin(w_height, w_width, 5, 12)
+            w_choice_window.keypad(1)
+            self.draw_borders(w_choice_window)
+            choice_i = 0
+            for i in range(w_height - 2):
+                if i == choice_i:
+                    w_choice_window.addstr(1 + i, 1, display_names[i], curses.A_REVERSE)
+                else:
+                    w_choice_window.addstr(1 + i, 1, display_names[i])
+            while True:
+                key = w_choice_window.getch()
+                for i in range(w_height - 2):
+                    w_choice_window.addstr(1 + i, 1, ' ' * (w_width - 2))
+                if key == 259: # UP
+                    choice_i -= 1
+                    if choice_i < 0:
+                        choice_i = 1
+                if key == 258: # DOWN
+                    choice_i += 1
+                    if choice_i == 2:
+                        choice_i = 0
+                if key == 10: # ENTER
+                    break
+                if key == 27: # ESC
+                    return None
+                for i in range(w_height - 2):
+                    if i == choice_i:
+                        w_choice_window.addstr(1 + i, 1, display_names[i], curses.A_REVERSE)
+                    else:
+                        w_choice_window.addstr(1 + i, 1, display_names[i])
+            if choice_i == 0:
+                weapon = weapon1
+            else:
+                weapon = weapon2
+            if weapon.range < self.distance:
+                return None
+        # we have the weapon
+        if isinstance(weapon, MeleeWeapon) and not isinstance(weapon, RangedWeapon):
+            return AttackMeleeEnemyAction(self, 'a', '-', player, enemy, weapon)
+        # this is a ranged weapon
+        ammo_items = player.get_ammo_of_type(weapon.ammo_type)
+        if len(ammo_items) == 0: # BAD
+            return None
+        if len(ammo_items) == 1:
+            return AttackRangedEnemyAction(self, 'a', '-', player, enemy, weapon, ammo_items[0])
+        display_names = [f'{item.name} ({item.amount})' for item in ammo_items]
+        a_w_height = len(ammo_items) + 2
+        a_w_width = max([len(d) for d in display_names]) + 2
+        a_window = curses.newwin(a_w_height, a_w_width, 5, 12 + w_width)
+        a_window.keypad(1)
+        self.draw_borders(a_window)
+        choice_i = 0
+        for i in range(len(display_names)):
+            if i == choice_i:
+                a_window.addstr(1 + i, 1, display_names[i], curses.A_REVERSE)
+            else:
+                a_window.addstr(1 + i, 1, display_names[i])
+        while True:
+            key = a_window.getch()
+            if key == 259: # UP
+                choice_i -= 1
+                if choice_i < 0:
+                    choice_i = len(display_names) - 1
+            if key == 258: # DOWN
+                choice_i += 1
+                if choice_i >= len(display_names):
+                    choice_i = 0
+            if key == 10: # ENTER
+                break
+            if key == 27: # ESC
+                return
+            for i in range(len(display_names)):
+                if i == choice_i:
+                    a_window.addstr(1 + i, 1, display_names[i], curses.A_REVERSE)
+                else:
+                    a_window.addstr(1 + i, 1, display_names[i])
+        # a_window.getch()
+        ammo = ammo_items[choice_i]
+        return AttackRangedEnemyAction(self, 'a', '-', player, enemy, weapon, ammo)
+
     def get_enemy_action(self):
         enemy = self.get_enemy()
         if enemy.range >= self.distance:
@@ -347,6 +454,12 @@ class CombatEncounter:
         if self.distance > 1:
             return MoveAction(self, 'a', '-', enemy, self.get_player(), 1)
         return WaitAction(self, '?', enemy)
+
+    def player_won(self):
+        pass
+
+    def player_lost(self):
+        pass
 
     def index_by_key(self, key):
         c = chr(key)

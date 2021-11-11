@@ -46,11 +46,7 @@ class Enemy(Entity):
         result = Enemy()
         data = json.loads(open(enemy_schemas_path, 'r').read())[name]
         result.__dict__ = data
-        # vals = ['name', 'health', 'max_health', 'mana', 'max_mana', 'description', 'char']
-        # for val in vals:
-        #     result.__dict__[val] = data[val]
         return result
-        
 
 class Player(Entity):
     def __init__(self):
@@ -117,7 +113,7 @@ class Player(Entity):
             return False
         return True
 
-    def get_range(self, visible_range):
+    def get_range(self, visible_range=0):
         highest_range = 3 # fist fighting range
         if self.equipment['ARM1'] != None and self.items[self.equipment['ARM1']].range > highest_range:
             highest_range = self.items[self.equipment['ARM1']].range
@@ -125,6 +121,13 @@ class Player(Entity):
             highest_range = self.items[self.equipment['ARM2']].range
         return highest_range + visible_range // 3
     
+    def get_ammo_of_type(self, type):
+        result = []
+        for item in self.countable_items:
+            if isinstance(item, Items.Ammo) and item.type == type:
+                result += [item]
+        return result
+
     def json(self):
         result = dict(self.__dict__)
         result['items'] = Items.Item.arr_to_json(self.items)

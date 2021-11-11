@@ -151,6 +151,19 @@
             },
             "mods": {},
             "description": "Just a regular long bow. Can use any type of arrow."
+        },
+        {
+            "name": "temp",
+            "itype": "ranged",
+            "slot": "ARM",
+            "base_damage": 0,
+            "max_mod": 0,
+            "range": 10,
+            "gives_statuses": [],
+            "ammo_type": "arrow",
+            "requires": {},
+            "mods": {},
+            "description": "temp weapon"
         }
     ],
     "ammo": [
@@ -160,6 +173,13 @@
             "damage": 1,
             "type": "arrow",
             "description": "The simplest type of arrow there could be."
+        },
+        {
+            "name": "Iron Arrow",
+            "itype": "ammo",
+            "damage": 3,
+            "type": "arrow",
+            "description": "An arrow with a serrated iron tip. Deals moderate damage."
         }
     ]
 }
