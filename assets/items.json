@@ -181,5 +181,28 @@
             "type": "arrow",
             "description": "An arrow with a serrated iron tip. Deals moderate damage."
         }
+    ],
+    "usable": [
+        {
+            "name": "Small Health Potion",
+            "itype": "health potion",
+            "restores": 10,
+            "description": "A small bottle of eliksir, restores a little amount of health."
+        },
+        {
+            "name": "Small Mana Potion",
+            "itype": "mana potion",
+            "restores": 15,
+            "description": "A small bottle of eliksir, restores a little amount of mana."
+        }
+    ],
+    "spell_books": [
+        {
+            "name": "Spellbook of Fireball",
+            "itype": "spell book",
+            "description": "Read this spell book to learn Fireball",
+            "spell_names": ["Fireball"],
+            "int_to_learn": 12
+        }
     ]
 }

@@ -1,5 +1,6 @@
 import json
 import gamelib.Items as Items
+from gamelib.Spells import BloodSpell, CombatSpell, ManaSpell, Spell
 
 class Entity:
     def __init__(self):
@@ -11,8 +12,14 @@ class Entity:
         self.description = ''
         self.statuses = []
 
+    def regenerate_mana(self):
+        self.add_mana(1)
+
     def has_status(self, status):
         return False
+
+    def add_statuses(self, statuses):
+        pass
 
     def add_health(self, amount):
         self.health += amount
@@ -28,6 +35,11 @@ class Entity:
         if self.mana < 0:
             self.mana = 0
 
+    def can_cast(self, spell):
+        if issubclass(type(spell), BloodSpell):
+            return self.health > spell.bloodcost
+        return self.mana >= spell.manacost
+
 class Enemy(Entity):
     def __init__(self):
         self.char = '?'
@@ -35,8 +47,12 @@ class Enemy(Entity):
         self.damage = 0
         self.damage_mod = 0
         self.possible_item_ids = []
+        self.statuses = []
         self.y = 0
         self.x = 0
+
+    def add_statuses(self, statuses):
+        self.statuses += statuses
 
     def has_status(self, status):
         return status in self.statuses
@@ -59,6 +75,28 @@ class Player(Entity):
         self.items = []
         self.countable_items = []
         self.equipment = dict()
+        self.spells = []
+        self.temporary_statuses = []
+
+    def get_statuses(self):
+        result = list(self.temporary_statuses)
+        for key in self.equipment:
+            item_i = self.equipment[key]
+            if item_i != None:
+                result += self.items[item_i].gives_statuses
+        return result 
+
+    def learn_spells(self, spell_names, assets_path):
+        spells = Spell.get_base_spells(spell_names, f'{assets_path}/spells.json')
+        spell_names = [spell.name for spell in self.spells]
+        for spell in spells:
+            if not spell.name in spell_names:
+                self.spells += [spell]
+
+    def add_statuses(self, statuses):
+        for status in statuses:
+            if not status in self.temporary_statuses:
+                self.temporary_statuses += [status]
 
     def get_equipped_items(self):
         result = []
@@ -71,6 +109,8 @@ class Player(Entity):
         for item in self.get_equipped_items():
             if status in item.gives_statuses:
                 return True
+        if status in self.temporary_statuses:
+            return True
         return False
 
     def add_item(self, item):
@@ -114,13 +154,26 @@ class Player(Entity):
         return True
 
     def get_range(self, visible_range=0):
-        highest_range = 3 # fist fighting range
-        if self.equipment['ARM1'] != None and self.items[self.equipment['ARM1']].range > highest_range:
-            highest_range = self.items[self.equipment['ARM1']].range
-        if self.equipment['ARM2'] != None and self.items[self.equipment['ARM2']].range > highest_range:
-            highest_range = self.items[self.equipment['ARM2']].range
+        highest_range = 2 # fist fighting range
+        if self.equipment['ARM1'] != None:
+            highest_range = max(self.items[self.equipment['ARM1']].range, highest_range)
+        if self.equipment['ARM2'] != None:
+            highest_range = max(self.items[self.equipment['ARM2']].range, highest_range)
+        for spell in self.spells:
+            if issubclass(type(spell), CombatSpell) and spell.range > highest_range:
+                highest_range = spell.range
         return highest_range + visible_range // 3
     
+    def get_combat_range(self):
+        result = 2
+        ARM1 = self.equipment['ARM1']
+        ARM2 = self.equipment['ARM2']
+        if ARM1 != None:
+            result = max(self.items[ARM1].range, 0)
+        if ARM2 != None:
+            result = max(self.items[ARM2].range, 0)
+        return result
+
     def get_ammo_of_type(self, type):
         result = []
         for item in self.countable_items:
@@ -131,6 +184,7 @@ class Player(Entity):
     def json(self):
         result = dict(self.__dict__)
         result['items'] = Items.Item.arr_to_json(self.items)
+        result['spells'] = Spell.arr_to_json(self.spells)
         result['countable_items'] = Items.Item.arr_to_json(self.countable_items)
         result['equipment'] = dict()
         slots = ['HEAD', 'BODY', 'LEGS', 'ARM1', 'ARM2']
@@ -143,14 +197,21 @@ class Player(Entity):
     def from_json(js):
         result = Player()
         result.__dict__ = js
+
         items = result.items
         result.items = []
         for item in items:
             result.items += [Items.Item.from_json(item)]
+        
         countable_items = result.countable_items
         result.countable_items = []
         for item in countable_items:
             result.countable_items += [Items.Item.from_json(item)]
+        
+        spells = result.spells
+        result.spells = []
+        for spell in spells:
+            result.spells += [Spell.from_js(spell)]
 
         return result
 

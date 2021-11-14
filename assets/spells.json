@@ -1,0 +1,43 @@
+{
+    "normal_spells": [
+        {
+            "name": "Heal",
+            "type": "heal_spell",
+            "restores": 20,
+            "manacost": 10
+        },
+        {
+            "name": "Convert",
+            "type": "blood_spell_mana",
+            "restores": 20,
+            "bloodcost": 10
+        }
+    ],
+    "combat_spells": [
+        {
+            "name": "Fireball",
+            "type": "damage_spell",
+            "user_statuses": [],
+            "enemy_statuses": [],
+            "damage": 20,
+            "manacost": 10,
+            "range": 6
+        },
+        {
+            "name": "Boost",
+            "type": "combat_spell",
+            "user_statuses": ["fast"],
+            "enemy_statuses": [],
+            "manacost": 8,
+            "range": -1
+        },
+        {
+            "name": "Slow Down",
+            "type": "combat_spell",
+            "user_statuses": [],
+            "enemy_statuses": ["slow"],
+            "manacost": 8,
+            "range": 4
+        }
+    ]
+}

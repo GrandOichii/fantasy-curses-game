@@ -22,6 +22,8 @@ def str_smart_split(message, max_width):
     return result
 
 def calc_pretty_bars(amount, max_amount, bar_length):
+    if max_amount == 0:
+        return ''
     times = ceil(amount * bar_length / max_amount)
     return times * '|' + (bar_length - times) * ' '
 

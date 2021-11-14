@@ -11,3 +11,7 @@
 - if leveled enough, enemies will flee (or have an auto kill feature, not decided yet)
 - when running in combat the player (and enemies) can fall, requiring to wait for a turn
 - items/potions can grant statuses indefinately or temporarily
+- a - attack
+- u - use items
+- c - cast spell
+- w - wait

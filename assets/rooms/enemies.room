@@ -6,18 +6,21 @@
 #D                #
 ##                #
 ##                #
-##                #
+##C               #
 ###################
 ---
 visible_range=12
 ---
 D D door index to_enemies
+C C chest potion_chest
 ---
 
 ---
-
+potion_chest:
+10 Small Health Potion
+10 Small Mana Potion
 ---
 r1:
 e_type=rat
 y=5
-x=17
+x=16

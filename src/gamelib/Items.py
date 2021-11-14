@@ -1,5 +1,6 @@
 import json
 import Utility
+from gamelib.Spells import Spell
 
 class Item:
     def get_base_items(names, path):
@@ -28,6 +29,12 @@ class Item:
             result = Armor()
         if t == 'ammo':
             result = Ammo()
+        if t == 'health potion':
+            result = HealthPotion()
+        if t == 'mana potion':
+            result = ManaPotion()
+        if t == 'spell book':
+            result = SpellBook()
         result.__dict__ = js
         return result
 
@@ -191,3 +198,35 @@ class RangedWeapon(MeleeWeapon):
         result += f'\nType of ammo: {self.ammo_type}'
         return result
     
+class UsableItem(CountableItem):
+    def __init__(self):
+        super().__init__()
+
+    def use(self, entity):
+        self.amount -= 1
+
+class HealthPotion(UsableItem):
+    def __init__(self):
+        super().__init__()
+        self.restores = 0
+
+    def use(self, entity):
+        super().use(entity)
+        entity.add_health(self.restores)
+        return [f'{entity.name} drinks {self.name} and restores {self.restores} health']
+
+class ManaPotion(UsableItem):
+    def __init__(self):
+        super().__init__()
+        self.restores = 0
+
+    def use(self, entity):
+        super().use(entity)
+        entity.add_mana(self.restores)
+        return [f'{entity.name} drinks {self.name} and restores {self.restores} mana']
+
+class SpellBook(Item):
+    def __init__(self):
+        super().__init__()
+        self.spell_names = []
+        self.int_to_learn = 0

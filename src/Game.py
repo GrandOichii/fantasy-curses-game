@@ -3,6 +3,7 @@ import curses.textpad as textpad
 import json
 from math import sqrt
 import os
+from gamelib.Spells import BloodSpell, NormalSpell
 
 from ui.Menu import Menu
 from ui.Buttons import Button, ActionButton
@@ -14,7 +15,7 @@ import gamelib.Map as Map
 import gamelib.SaveFile as SaveFile
 
 from gamelib.Entities import Player
-from Combat import CombatEncounter
+from gamelib.Combat import CombatEncounter
 
 class Game:
     def __init__(self, saves_path, assets_path, rooms_path, map_path, starting_room='index'):
@@ -569,7 +570,7 @@ class Game:
                 if isinstance(tile, Room.HiddenTile) and self.get_env_var(tile.signal) == True and isinstance(tile.actual_tile, Room.PressurePlateTile):
                     self.exec_script(tile.actual_tile.script_name, self.game_room.scripts)       
 
-                self.update_enemies()
+                self.update_entities()
 
                 # check if encounters are available
 
@@ -592,11 +593,12 @@ class Game:
         min_enemy_code = None
         for enemy_code in self.game_room.enemies_data:
             enemy = self.game_room.enemies_data[enemy_code]
-            d = Utility.distance(enemy.y, enemy.x, self.player_y, self.player_x)
-            if d <= self.player.get_range(self.game_room.visible_range):
-                if min_d == -1 or d < min_d:
-                    min_d = d
-                    min_enemy_code = enemy_code
+            if enemy.health > 0:
+                d = Utility.distance(enemy.y, enemy.x, self.player_y, self.player_x)
+                if d <= self.player.get_range(self.game_room.visible_range):
+                    if min_d == -1 or d < min_d:
+                        min_d = d
+                        min_enemy_code = enemy_code
         if min_enemy_code != None:
             enemy = self.game_room.enemies_data[min_enemy_code]
             encounter_ready = True
@@ -606,9 +608,11 @@ class Game:
             self.tile_window.addstr(y, x, s)
         return (encounter_ready, enemy_code)                 
 
-    def update_enemies(self):
+    def update_entities(self):
+        self.player.regenerate_mana()
         for enemy_code in self.game_room.enemies_data:
             enemy = self.game_room.enemies_data[enemy_code]
+            enemy.regenerate_mana()
 
     def save_enemy_env_vars(self):
         for enemy_code in self.game_room.enemies_data:
@@ -859,7 +863,7 @@ class Game:
         self.addstr(0, self.window_width + 2, f'Name: {self.player.name}')
         self.addstr(1, self.window_width + 2, f'Class: {self.player.class_name}')
         self.addstr(3, self.window_width + 2, f'Health:          (   /   )') # left: 19
-        self.addstr(4, self.window_width + 2, f'Mana:            (   /   )') # left: 21
+        self.addstr(4, self.window_width + 2, f'  Mana:          (   /   )') # left: 21
         self.addstr(6, self.window_width + 2, f'STR:') # left: 22
         self.addstr(7, self.window_width + 2, f'DEX:') # left: 22
         self.addstr(8, self.window_width + 2, f'INT:') # left: 22
@@ -964,10 +968,7 @@ class Game:
         self.draw_borders(win)
         win.refresh()
 
-    def draw_inventory(self):
-        items = list(self.player.items)
-        items += self.player.countable_items
-
+    def get_display_names(self, items):
         display_names = []
         for i in range(len(items)):
             item = items[i]
@@ -984,6 +985,13 @@ class Game:
                             line += f' -> {s}'
                         break
             display_names += [line]
+        return display_names
+
+    def draw_inventory(self):
+        items = list(self.player.items)
+        items += self.player.countable_items
+
+        display_names = self.get_display_names(items)
 
         win_height = self.window_height
         win_width = self.window_width
@@ -993,7 +1001,7 @@ class Game:
         self.draw_borders(inventory_window)
 
         selected_tab = 0
-        tabs = ['Items', 'Equipment']
+        tabs = ['Items', 'Equipment', 'Spells']
 
         inventory_window.addch(2, 0, curses.ACS_LTEE)
         inventory_window.addch(2, win_width - 1, curses.ACS_RTEE)
@@ -1016,15 +1024,23 @@ class Game:
         cursor = 0
         displayed_item_count = win_height - 5
 
+        spell_choice_id = 0
+        spell_page_n = 0
+        spell_cursor = 0
+        spell_display_names = [spell.name for spell in self.player.spells]
+        displayed_spell_count = displayed_item_count
+
         # item description window
-        item_description_window = curses.newwin(self.HEIGHT, self.WIDTH - self.window_width - 3, 0, self.window_width + 2)
+        d_window_height = self.HEIGHT
+        d_window_width = self.WIDTH - self.window_width - 1
+        description_window = curses.newwin(d_window_height, d_window_width, 0, self.window_width + 1)
         desc = []
         if len(display_names) != 0:
-            desc = items[cursor + page_n].get_description(self.WIDTH - self.window_width - 3)
+            desc = items[cursor + page_n].get_description(d_window_width - 2)
         for i in range(len(desc)):
-            item_description_window.addstr(1 + i, 1, desc[i])
-        self.draw_borders(item_description_window)
-        item_description_window.refresh()
+            description_window.addstr(1 + i, 1, desc[i])
+        self.draw_borders(description_window)
+        description_window.refresh()
 
         # initial items display
         for i in range(min(displayed_item_count, len(display_names))):
@@ -1061,6 +1077,21 @@ class Game:
                     equip_choice_id -= 1
                     if equip_choice_id < 0:
                         equip_choice_id = len(slots) - 1
+                if selected_tab == 2:
+                    spell_choice_id -= 1
+                    spell_cursor -= 1
+                    if spell_cursor < 0:
+                        if len(spell_display_names) > displayed_spell_count:
+                            if spell_page_n == 0:
+                                cursor = displayed_spell_count - 1
+                                spell_choice_id = len(spell_display_names) - 1
+                                spell_page_n = len(display_names) - displayed_spell_count
+                            else:
+                                spell_page_n -= 1
+                                spell_cursor += 1
+                        else:
+                            spell_cursor = len(spell_display_names) - 1
+                            spell_choice_id = spell_cursor
             if key == 258: # DOWN
                 if selected_tab == 0:
                     choice_id += 1
@@ -1081,6 +1112,21 @@ class Game:
                     equip_choice_id += 1
                     if equip_choice_id == len(slots):
                         equip_choice_id = 0
+                if selected_tab == 2:
+                    spell_choice_id += 1
+                    spell_cursor += 1
+                    if len(spell_display_names) > displayed_spell_count:
+                        if spell_cursor >= displayed_spell_count:
+                            spell_cursor -= 1
+                            spell_page_n += 1
+                            if spell_choice_id == len(spell_display_names):
+                                spell_cursor = 0
+                                spell_page_n = 0
+                                spell_choice_id = 0
+                    else:
+                        if spell_cursor >= len(spell_display_names):
+                            spell_cursor = 0
+                            spell_choice_id = 0
             if key == 261: # RIGHT
                 selected_tab += 1
                 if selected_tab == len(tabs):
@@ -1090,8 +1136,28 @@ class Game:
                 if selected_tab < 0:
                     selected_tab = len(tabs) - 1
             if key == 10: # ENTER
-                if selected_tab == 0:
+                if selected_tab == 0: # ITEMS
                     item = items[choice_id]
+                    if issubclass(type(item), Items.UsableItem):
+                        height = 3
+                        width = len('Use') + 2
+                        y = 4 + cursor
+                        if y + height > self.window_height:
+                            y -= height
+                        x = 5 + len(display_names[choice_id]) + 1
+                        options_window = curses.newwin(height, width, y, x)
+                        options_window.keypad(1)
+                        self.draw_borders(options_window)
+                        options_window.addstr(1, 1, 'Use', curses.A_REVERSE)
+                        options_window.refresh()
+                        while True:
+                            key = options_window.getch()
+                            if key == 27: # ESC
+                                break
+                            if key == 10: # ENTER
+                                item.use(self.player)
+                                display_names = self.get_display_names(items)
+                                break
                     if issubclass(type(item), Items.EquipableItem):
                         begin_s = 'Equip to '
                         item_slot = item.slot
@@ -1159,22 +1225,7 @@ class Game:
                                                 if self.player.equipment['ARM2'] == choice_id:
                                                     self.player.equipment['ARM2'] = None
                                         self.player.equipment[result_slot] = choice_id
-                                    display_names = []
-                                    for i in range(len(items)):
-                                        item = items[i]
-                                        line = f'{item.name}'
-                                        if issubclass(type(item), Items.CountableItem):
-                                            line += f' x{item.amount}'
-                                        if issubclass(type(item), Items.EquipableItem):
-                                            line += f' ({item.slot})'
-                                            for s in self.player.equipment:
-                                                if self.player.equipment[s] == i:
-                                                    if item.slot == 'ARMS':
-                                                        line += f' -> ARMS'
-                                                    else:
-                                                        line += f' -> {s}'
-                                                    break
-                                        display_names += [line]
+                                    display_names = self.get_display_names(items)
                                     break
                             # display
                             for i in range(len(options)):
@@ -1184,29 +1235,82 @@ class Game:
                                     options_window.addstr(1 + i, 1, f'{begin_s}{options[i]}', curses.A_REVERSE)
                                 else:
                                     options_window.addstr(1 + i, 1, f'{begin_s}{options[i]}')
-                if selected_tab == 1:
+                    if issubclass(type(item), Items.SpellBook):
+                        s = f'Use (requires INT of {item.int_to_learn})'
+                        height = 3
+                        width = len(s) + 2
+                        y = 4 + cursor
+                        if y + height > self.window_height:
+                            y -= height
+                        x = 5 + len(display_names[choice_id]) + 1
+                        options_window = curses.newwin(height, width, y, x)
+                        options_window.keypad(1)
+                        self.draw_borders(options_window)
+                        options_window.addstr(1, 1, s, curses.A_REVERSE)
+                        options_window.refresh()
+                        while True:
+                            key = options_window.getch()
+                            if key == 27: # ESC
+                                break
+                            if key == 10: # ENTER
+                                if self.player.INT >= item.int_to_learn:
+                                    self.player.learn_spells(item.spell_names, self.assets_path)
+                                    self.player.items.remove(item)
+                                    # refresh spell list
+                                    spell_choice_id = 0
+                                    spell_cursor = 0
+                                    spell_page_n = 0
+                                    spell_display_names = [spell.name for spell in self.player.spells]
+                                    # refresh item list
+                                    choice_id = 0
+                                    cursor = 0
+                                    page_n = 0
+                                    items = list(self.player.items)
+                                    items += self.player.countable_items
+                                    display_names = self.get_display_names(items)
+                                    break
+                                else:
+                                    self.message_box('Insufficient INT to read spellbook!', ['Ok'])
+                                    break
+                if selected_tab == 1: # EQUIPMENT
                     slot = slots[equip_choice_id]
                     if slot.startswith('ARM') and self.player.equipment['ARM1'] == self.player.equipment['ARM2']:
                         self.player.equipment['ARM1'] = None
                         self.player.equipment['ARM2'] = None
                     else:
                         self.player.equipment[slot] = None
-                    display_names = []
-                    for i in range(len(items)):
-                        item = items[i]
-                        line = f'{item.name}'
-                        if issubclass(type(item), Items.CountableItem):
-                            line += f' x{item.amount}'
-                        if issubclass(type(item), Items.EquipableItem):
-                            line += f' ({item.slot})'
-                            for s in self.player.equipment:
-                                if self.player.equipment[s] == i:
-                                    if item.slot == 'ARMS':
-                                        line += f' -> ARMS'
-                                    else:
-                                        line += f' -> {s}'
+                    display_names = self.get_display_names(items)
+                if selected_tab == 2:
+                    spell = self.player.spells[spell_choice_id]
+                    if issubclass(type(spell), NormalSpell):
+                        s = 'Cast (cost: {})'
+                        if issubclass(type(spell), BloodSpell):
+                            s = s.format(f'{spell.bloodcost} hp')
+                        else:
+                            s = s.format(f'{spell.manacost} mana')
+                        height = 3
+                        width = len(s) + 2
+                        y = 4 + spell_cursor
+                        if y + height > self.window_height:
+                            y -= height
+                        x = 5 + len(spell_display_names[spell_choice_id]) + 1
+                        options_window = curses.newwin(height, width, y, x)
+                        options_window.keypad(1)
+                        self.draw_borders(options_window)
+                        options_window.addstr(1, 1, s, curses.A_REVERSE)
+                        options_window.refresh()
+                        while True:
+                            key = options_window.getch()
+                            if key == 27: # ESC
+                                break
+                            if key == 10: # ENTER
+                                if self.player.can_cast(spell):
+                                    response = spell.cast(self.player)
+                                    # add response to log
                                     break
-                        display_names += [line]
+                                else:
+                                    self.message_box('Can\'t cast spell!', ['Ok'])
+                                    break
             # clear the space
             for i in range(displayed_item_count):
                 inventory_window.addstr(4 + i, 3, ' ' * (win_width - 4))
@@ -1235,13 +1339,13 @@ class Game:
                         inventory_window.addstr(4 + i, 3, f'> {display_names[i + page_n]}')
                     else:
                         inventory_window.addstr(4 + i, 3, f'{display_names[i + page_n]}')
-                item_description_window.clear()
+                description_window.clear()
                 if len(display_names) != 0:
                     desc = items[cursor + page_n].get_description(self.WIDTH - self.window_width - 3)
                 for i in range(len(desc)):
-                    item_description_window.addstr(1 + i, 1, desc[i])
-                self.draw_borders(item_description_window)
-                item_description_window.refresh()
+                    description_window.addstr(1 + i, 1, desc[i])
+                self.draw_borders(description_window)
+                description_window.refresh()
             if selected_tab == 1: # equipment
                 for i in range(len(slots)):
                     if i == equip_choice_id:
@@ -1285,16 +1389,34 @@ class Game:
                 # desc = []
                 # desc = items[cursor + page_n].get_description(self.WIDTH - self.window_width - 3)
                 # for i in range(len(desc)):
-                #     item_description_window.addstr(1 + i, 1, desc[i])
-                item_description_window.clear()
+                #     description_window.addstr(1 + i, 1, desc[i])
+                description_window.clear()
                 item_id = self.player.equipment[slots[equip_choice_id]]
                 if item_id != None:
                     desc = self.player.items[item_id].get_description(self.WIDTH - self.window_width - 3)
                     for i in range(len(desc)):
-                        item_description_window.addstr(1 + i, 1, desc[i])
-                self.draw_borders(item_description_window)
-                item_description_window.refresh()
-
+                        description_window.addstr(1 + i, 1, desc[i])
+                self.draw_borders(description_window)
+                description_window.refresh()
+            if selected_tab == 2: # spells
+                if len(spell_display_names) > displayed_spell_count:
+                    if spell_page_n != 0:
+                        inventory_window.addch(4, 1, curses.ACS_UARROW)
+                    if spell_page_n != len(spell_display_names) - displayed_spell_count:
+                        inventory_window.addch(win_height - 2, 1, curses.ACS_DARROW)
+                for i in range(min(len(spell_display_names), displayed_spell_count)):
+                    if i == spell_cursor:
+                        inventory_window.addstr(4 + i, 3, f'> {spell_display_names[i + page_n]}')
+                    else:
+                        inventory_window.addstr(4 + i, 3, f'{spell_display_names[i + page_n]}')
+                description_window.clear()
+                if len(spell_display_names) != 0:
+                    desc = []
+                    # add spell description to description window
+                for i in range(len(desc)):
+                    description_window.addstr(1 + i, 1, desc[i])
+                self.draw_borders(description_window)
+                description_window.refresh()
         self.stdscr.clear()
         self.draw_info_ui()
         self.draw_player_info()
@@ -1317,7 +1439,10 @@ class Game:
             self.game_running = False
             return
         if enemy.health == 0:
-            self.game_room.enemies_data.pop(encounter_enemy_code, None)
+            # self.game_room.enemies_data.pop(encounter_enemy_code, None)
+            self.save_enemy_env_vars()
+        # clear temporary statuses
+        self.player.temporary_statuses = []
         # clean-up
         self.stdscr.clear()
         self.draw_borders(self.tile_window)
@@ -1381,8 +1506,14 @@ class Game:
             if var == 'player.health':
                 self.player.add_health(real_value)
                 return False
+            if var == 'player.max_health':
+                self.player.max_health += real_value
+                return False
             if var == 'player.mana':
                 self.player.add_mana(real_value)
+                return False
+            if var == 'player.max_mana':
+                self.player.max_mana += real_value
                 return False
             if var == 'player.inventory':
                 sp = value.split(' ')
@@ -1395,6 +1526,9 @@ class Game:
                 else:
                     item = Items.Item.get_base_items([real_value], f'{self.assets_path}/items.json')[0]
                 self.player.add_item(item)
+                return False
+            if var == 'player.spells':
+                self.player.learn_spells(real_value, self.assets_path)
                 return False
             if var in self.env_vars:
                 if isinstance(self.get_env_var(var), str):
@@ -1412,8 +1546,14 @@ class Game:
             if var == 'player.health':
                 self.player.add_health(-real_value)
                 return False
+            if var == 'player.max_health':
+                self.player.max_health -= real_value
+                return False
             if var == 'player.mana':
                 self.player.add_mana(-real_value)
+                return False
+            if var == 'player.max_mana':
+                self.player.max_mana -= real_value
                 return False
             if var in self.env_vars:
                 self.set_env_var(var, self.get_env_var(var) - real_value)
@@ -1455,6 +1595,16 @@ class Game:
             self.draw_tile_window()
             self.tile_window.refresh()
             return False
+        if command == 'kill':
+            enemy_code = words[1]
+            enemy = self.game_room.enemies_data[enemy_code]
+            enemy.health = 0
+            return False
+        if command == 'revive':
+            enemy_code = words[1]
+            enemy = self.game_room.enemies_data[enemy_code]
+            enemy.health = enemy.max_health
+            return False
         if command == 'sleep':
             self.draw_tile_window()
             self.tile_window.refresh()
@@ -1471,6 +1621,9 @@ class Game:
                 self.player.equipment['LEGS'] = None
                 self.player.equipment['ARM1'] = None
                 self.player.equipment['ARM2'] = None
+                return False
+            if words[1] == 'player.spells':
+                self.player.spells = []
                 return False
             raise Exception(f'ERR: unknown var {var}')
         if command == 'if':

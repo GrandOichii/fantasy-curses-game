@@ -184,11 +184,15 @@ class Room:
                 if var in env_vars:
                     enemy.x = env_vars[var]
                 env_vars[var] = enemy.x
+
+                enemy.max_health = enemy.health
                 # health
                 var = f'{var_start}health'
                 if var in env_vars:
                     enemy.health = env_vars[var]
                 env_vars[var] = enemy.health
+
+                enemy.max_mana = enemy.mana
                 # mana
                 var = f'{var_start}mana'
                 if var in env_vars:
