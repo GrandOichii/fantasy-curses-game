@@ -682,10 +682,10 @@ class CombatEncounter:
                 player = self.get_player()
                 spell = player.spells[choice_id]
                 if player.can_cast(spell):
-                    if issubclass(type(spell), CombatSpell) and spell.range != -1 and spell.range >= self.distance:
-                        self.player_cast_spell = True
-                        return CastSpellAction(self, 'c', 'VA', player, self.get_enemy(), spell)
-                return None
+                    if issubclass(type(spell), CombatSpell) and spell.range != -1 and spell.range < self.distance:
+                        return None
+                    self.player_cast_spell = True
+                    return CastSpellAction(self, 'c', 'VA', player, self.get_enemy(), spell)
             # display
             spells_window.addch(1, win_width - 1, curses.ACS_VLINE)
             spells_window.addch(win_height - 2, win_width - 1, curses.ACS_VLINE)
