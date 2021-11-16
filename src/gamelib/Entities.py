@@ -221,9 +221,17 @@ class Player(Entity):
 
     def json(self):
         result = dict(self.__dict__)
-        result['items'] = Items.Item.arr_to_json(self.items)
-        result['spells'] = Spell.arr_to_json(self.spells)
-        result['countable_items'] = Items.Item.arr_to_json(self.countable_items)
+        # result['items'] = Items.Item.arr_to_json(self.items)
+        result['items'] = []
+        for item in self.items:
+            result['items'] += [item.name]
+        result['spells'] = []
+        for spell in self.spells:
+            result['spells'] += [spell.name]
+        # result['countable_items'] = Items.Item.arr_to_json(self.countable_items)
+        result['countable_items'] = {}
+        for item in self.countable_items:
+            result[item.name] = item.amount
         result['equipment'] = dict()
         slots = ['HEAD', 'BODY', 'LEGS', 'ARM1', 'ARM2']
         for slot in slots:
@@ -232,24 +240,18 @@ class Player(Entity):
 
     # static methods
 
-    def from_json(js):
+    def from_json(js, assets_path):
         result = Player()
         result.__dict__ = js
 
         items = result.items
-        result.items = []
-        for item in items:
-            result.items += [Items.Item.from_json(item)]
+        result.items = Items.Item.get_base_items(items, f'{assets_path}/items.json')
         
         countable_items = result.countable_items
-        result.countable_items = []
-        for item in countable_items:
-            result.countable_items += [Items.Item.from_json(item)]
+        result.countable_items = Items.CountableItem.get_base_items(countable_items, f'{assets_path}/items.json')
         
         spells = result.spells
-        result.spells = []
-        for spell in spells:
-            result.spells += [Spell.from_js(spell)]
+        result.spells = Spell.get_base_spells(spells, f'{assets_path}/spells.json')
 
         return result
 

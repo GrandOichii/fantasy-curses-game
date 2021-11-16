@@ -12,7 +12,7 @@ class Spell:
     def json(self):
         return self.__dict__
 
-    def from_js(js):
+    def from_json(js):
         result = Spell()
         t = js['type']
         if t == 'heal_spell':
@@ -35,10 +35,8 @@ class Spell:
     def get_base_spells(names, spells_path):
         data = json.loads(open(spells_path, 'r').read())
         result = []
-        for type in data:
-            for spell in data[type]:
-                if spell['name'] in names:
-                    result += [Spell.from_js(spell)]
+        for item_name in names:
+            result += [Spell.from_json(data[item_name])]
         return result
 
 class NormalSpell(Spell):

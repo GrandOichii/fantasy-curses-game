@@ -6,10 +6,8 @@ class Item:
     def get_base_items(names, path):
         data = json.loads(open(path).read())
         result = []
-        for type in data:
-            for item in data[type]:
-                if item['name'] in names:
-                    result += [Item.from_json(item)]
+        for item_name in names:
+            result += [Item.from_json(data[item_name])]
         return result
 
     def arr_to_json(items):

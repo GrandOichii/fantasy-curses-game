@@ -385,7 +385,7 @@ class Game:
         data = SaveFile.load(character_name, self.saves_path)
         if data == -1:
             raise Exception(f'ERR: save file of character with name {character_name} not found in {self.saves_path}')
-        self.player = Player.from_json(data['player'])
+        self.player = Player.from_json(data['player'], self.assets_path)
         self.env_vars = data['env_vars']
         self.game_room = Room.Room.by_name(data['room_name'], self.rooms_path, self.assets_path, self.env_vars)
 
@@ -1051,7 +1051,7 @@ class Game:
         # initial items display
         for i in range(min(displayed_item_count, len(display_names))):
             if i == cursor:
-                inventory_window.addstr(4 + i, 3, f'> {display_names[i]}')
+                inventory_window.addstr(4 + i, 3, f'{display_names[i]}', curses.A_REVERSE)
             else:
                 inventory_window.addstr(4 + i, 3, f'{display_names[i]}')
         if len(display_names) > displayed_item_count:
@@ -1321,10 +1321,7 @@ class Game:
                                     break
             # clear the space
             inventory_window.clear()
-            # for i in range(displayed_item_count):
-            #     inventory_window.addstr(4 + i, 3, ' ' * (win_width - 4))
-            # inventory_window.addch(4, 1, ' ')
-            # inventory_window.addch(win_height - 2, 1, ' ')
+
             inventory_window.addstr(1, 1, 'Inventory')
             self.draw_borders(inventory_window)
             inventory_window.addch(2, 0, curses.ACS_LTEE)
@@ -1359,7 +1356,7 @@ class Game:
                         inventory_window.addch(win_height - 2, 1, curses.ACS_DARROW)
                 for i in range(min(len(display_names), displayed_item_count)):
                     if i == cursor:
-                        inventory_window.addstr(4 + i, 3, f'> {display_names[i + page_n]}')
+                        inventory_window.addstr(4 + i, 3, f'{display_names[i + page_n]}', curses.A_REVERSE)
                     else:
                         inventory_window.addstr(4 + i, 3, f'{display_names[i + page_n]}')
                 description_window.clear()
