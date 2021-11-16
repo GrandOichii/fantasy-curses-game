@@ -1,4 +1,6 @@
 import json
+# from random import Random
+import random
 import gamelib.Items as Items
 from gamelib.Spells import BloodSpell, CombatSpell, ManaSpell, Spell
 
@@ -46,10 +48,14 @@ class Enemy(Entity):
         self.range = 0
         self.damage = 0
         self.damage_mod = 0
-        self.possible_item_ids = []
         self.statuses = []
         self.y = 0
         self.x = 0
+        # rewards
+        self.reward_items = {}
+        self.reward_countable_items = {}
+        self.min_reward_gold = 0
+        self.max_reward_gold = 0
 
     def add_statuses(self, statuses):
         self.statuses += statuses
@@ -64,6 +70,27 @@ class Enemy(Entity):
         result.__dict__ = data
         return result
 
+    def get_rewards(self, assets_path):
+        result = {}
+
+        # add gold
+        result['gold'] = random.randint(self.min_reward_gold, self.max_reward_gold)
+
+        # add items
+        reward_item_names = []
+        for item_name in self.reward_items:
+            if random.randint(0, 100) <= self.reward_items[item_name]:
+                reward_item_names += [item_name]
+        result['items'] = Items.Item.get_base_items(reward_item_names, f'{assets_path}/items.json')
+
+        # add countable items
+        reward_countable_items = dict(self.reward_countable_items)
+        for item_name in reward_countable_items:
+            reward_countable_items[item_name] = random.randint(1, reward_countable_items[item_name])
+        result['countable_items'] = Items.CountableItem.get_base_items(reward_countable_items, f'{assets_path}/items.json')
+
+        return result
+
 class Player(Entity):
     def __init__(self):
         super().__init__()
@@ -72,11 +99,19 @@ class Player(Entity):
         self.STR = 0
         self.DEX = 0
         self.INT = 0
+        self.gold = 0
         self.items = []
         self.countable_items = []
         self.equipment = dict()
         self.spells = []
         self.temporary_statuses = []
+
+    def add_rewards(self, rewards):
+        self.gold += rewards['gold']
+        for item in rewards['items']:
+            self.add_item(item)
+        for item in rewards['countable_items']:
+            self.add_item(item)
 
     def get_statuses(self):
         result = list(self.temporary_statuses)
@@ -116,6 +151,9 @@ class Player(Entity):
     def add_item(self, item):
         if item == None:
             raise Exception(f'ERR: add_item item is None')
+        if isinstance(item, Items.GoldPouch):
+            self.gold += item.amount
+            return
         if isinstance(item, Items.CountableItem):
             for i in self.countable_items:
                 if i.name == item.name:

@@ -20,13 +20,16 @@ unset all
 clear player.inventory
 ---
 chests_chest1:
+100 Gold
 
 chests_chest2:
 Hood
 100 Wooden Arrow
 
 chests_chest3:
+20 Gold
 Iron Sword
+30 Gold
 
 chests_chest4:
 Iron Helmet

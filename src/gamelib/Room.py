@@ -119,12 +119,16 @@ class Room:
         width = len(lines[0])
         result = Room('', height, width)
         result.name = name
+
+        # scripts
         result.scripts = dict()
         for chunk in scripts_data.split('\n\n'):
             l = chunk.split('\n')
             script_name = l[0][:-1]
             script_lines = l[1:]
             result.scripts[script_name] = script_lines
+        
+        # chest contents
         result.chest_contents = dict()
         for chunk in chest_content_data.split('\n\n'):
             l = chunk.split('\n')
@@ -138,7 +142,10 @@ class Room:
                 if sri[0].isdigit():
                     amount = int(sri[0])
                     item_name = ' '.join(sri[1:])
-                    item = Items.Item.get_base_items([item_name], f'{assets_path}/items.json')[0]
+                    if item_name == 'Gold':
+                        item = Items.GoldPouch()
+                    else:
+                        item = Items.Item.get_base_items([item_name], f'{assets_path}/items.json')[0]
                     item.amount = amount
                     d[item] = f'{chest_code}_{i}'
                 else: 
@@ -149,6 +156,8 @@ class Room:
                     data = ' '.join(sri)
                     raise Exception(f'ERR: item with data {data} not parsable')
             result.chest_contents[chest_code] = d
+        
+        # enemy data
         result.enemies_data = dict()
         if len(enemies_data) != 0:
             for chunk in enemies_data.split('\n\n'):

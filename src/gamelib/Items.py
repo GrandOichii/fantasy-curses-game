@@ -61,6 +61,10 @@ class Item:
             result += [d]
         return result
 
+class GoldPouch(Item):
+    def __init__(self):
+        super().__init__()
+
 class EquipableItem(Item):
     def __init__(self):
         super().__init__()
@@ -117,7 +121,7 @@ class CountableItem(Item):
         self.amount = 0
 
     def get_base_items(d, path):
-        items = Item.get_base_items(d.keys(), path)
+        items = Item.get_base_items(d.keys(), path) 
         for i in range(len(items)):
             items[i].amount = list(d.values())[i]
         return items

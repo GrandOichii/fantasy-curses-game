@@ -72,7 +72,7 @@ class AttackWithoutWeaponEnemyAction(Action):
     def run(self):
         damage = self.user.STR // 5
         self.other.add_health(-damage)
-        return [f'{self.user.name} punches {self.other.name} and deals {damage}']
+        return [f'{self.user.name} punches {self.other.name} and deals {damage} damage.']
 
 class AttackMeleeEnemyAction(Action):
     def __init__(self, parent, char, caption, user, other, weapon):
@@ -130,7 +130,9 @@ class CastSpellAction(Action):
         raise Exception(f'ERR: can\'t cast spell {self.spell.name}')
 
 class CombatEncounter:
-    def __init__(self, attacker, defender, distance, height, width):
+    def __init__(self, attacker, defender, distance, height, width, assets_path):
+        self.assets_path = assets_path
+        
         self.chars = ['s', 'd', 'f', 'g', 'h', 'j', 'k', 'l']
         self.HEIGHT = height
         self.WIDTH = width
@@ -714,7 +716,70 @@ class CombatEncounter:
         return WaitAction(self, '?', enemy)
 
     def player_won(self):
-        pass
+        rewards = self.get_enemy().get_rewards(self.assets_path)
+
+        display_names = []
+        g = rewards['gold']
+        display_names += [f'{g} gold']
+        for item in rewards['items']:
+            display_names += [item.name]
+        for item in rewards['countable_items']:
+            display_names += [f'{item.name} (amount: {item.amount})']
+        
+
+        r_w_height = self.HEIGHT - 2
+        r_w_width = self.WIDTH // 2
+        
+        limit = r_w_height - 3
+        page = 0
+
+        rewards_window = curses.newwin(r_w_height, r_w_width, 1, 1)
+        rewards_window.keypad(1)
+        self.draw_borders(rewards_window)
+        rewards_window.addstr(0, 1, 'End of combat')
+        rewards_window.refresh()
+        rewards_window.addstr(1, 1, 'Rewards:')
+
+        while True:
+            y = 1
+            # clear display
+            for i in range(limit):
+                rewards_window.addstr(y + i + 1, 1, ' ' * (r_w_width - 2))
+            rewards_window.addch(2, r_w_width - 1, curses.ACS_VLINE)
+            rewards_window.addch(r_w_height - 2, r_w_width - 1, curses.ACS_VLINE)
+
+            # display
+            first = 0
+            last = len(display_names) - 1
+            if len(display_names) > limit:
+                first = page
+                last = page + limit - 1
+            for i in range(first, last + 1):
+                rewards_window.addstr(1 + y, 1, display_names[i])
+                y += 1
+            if len(display_names) > limit:
+                if page != 0:
+                    rewards_window.addch(2, r_w_width - 1, curses.ACS_UARROW)
+                if page != len(display_names) - limit:
+                    rewards_window.addch(r_w_height - 2, r_w_width - 1, curses.ACS_DARROW)
+            
+            # key processing
+            key = rewards_window.getch()
+            if key == 259: # UP
+                if len(display_names) > limit:
+                    page -= 1
+                    if page < 0:
+                        page = 0
+            if key == 258: # DOWN
+                if len(display_names) > limit:
+                    page += 1
+                    if page > len(display_names) - limit:
+                        page = len(display_names) - limit
+            if key == 27: # ESC
+                break
+
+        # at the end
+        self.get_player().add_rewards(rewards)
 
     def player_lost(self):
         pass

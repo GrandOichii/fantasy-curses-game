@@ -703,7 +703,9 @@ class Game:
         codes = []
         for item in items:
             if self.get_env_var(items[item]) != True:
-                if isinstance(item, Items.CountableItem):
+                if isinstance(item, Items.GoldPouch):
+                    item_names += [f'{item.amount} gold']
+                elif isinstance(item, Items.CountableItem):
                     item_names += [f'{item.name} x{item.amount}']
                 else:
                     item_names += [item.name]
@@ -862,33 +864,37 @@ class Game:
         s = '1234567891234567891234'
         self.addstr(0, self.window_width + 2, f'Name: {self.player.name}')
         self.addstr(1, self.window_width + 2, f'Class: {self.player.class_name}')
-        self.addstr(3, self.window_width + 2, f'Health:          (   /   )') # left: 19
-        self.addstr(4, self.window_width + 2, f'  Mana:          (   /   )') # left: 21
-        self.addstr(6, self.window_width + 2, f'STR:') # left: 22
-        self.addstr(7, self.window_width + 2, f'DEX:') # left: 22
-        self.addstr(8, self.window_width + 2, f'INT:') # left: 22
-        self.addstr(10, self.window_width + 2, 'Prompt: ')
+        self.addstr(2, self.window_width + 2, f'Gold: ')
+        self.addstr(4, self.window_width + 2, f'Health:          (   /   )') # left: 19
+        self.addstr(5, self.window_width + 2, f'  Mana:          (   /   )') # left: 21
+        self.addstr(7, self.window_width + 2, f'STR:') # left: 22
+        self.addstr(8, self.window_width + 2, f'DEX:') # left: 22
+        self.addstr(9, self.window_width + 2, f'INT:') # left: 22
+        self.addstr(11, self.window_width + 2, 'Prompt: ')
         self.stdscr.refresh()
 
     def draw_player_info(self):
+        self.addstr(2, self.window_width + 2 + 6, ' ' * (self.WIDTH - self.window_width - 2 - 6))
+        self.addstr(2, self.window_width + 2 + 6, f'{self.player.gold}')
+
         health_info = ' ' * (3 - len(str(self.player.health))) + f'{self.player.health}'
-        self.addstr(3, self.window_width + 20, f'{health_info}')
+        self.addstr(4, self.window_width + 20, f'{health_info}')
         max_health_info =  ' ' * (3 - len(str(self.player.max_health))) + f'{self.player.max_health}'
-        self.addstr(3, self.window_width + 24, f'{max_health_info}')
-        self.addstr(3, self.window_width + 9, Utility.calc_pretty_bars(self.player.health, self.player.max_health, 10))
+        self.addstr(4, self.window_width + 24, f'{max_health_info}')
+        self.addstr(4, self.window_width + 9, Utility.calc_pretty_bars(self.player.health, self.player.max_health, 10))
         
         mana_info =  ' ' * (3 - len(str(self.player.mana))) + f'{self.player.mana}'
-        self.addstr(4, self.window_width + 20, f'{mana_info}')
+        self.addstr(5, self.window_width + 20, f'{mana_info}')
         max_mana_info =  ' ' * (3 - len(str(self.player.max_mana))) + f'{self.player.max_mana}'
-        self.addstr(4, self.window_width + 24, f'{max_mana_info}')
-        self.addstr(4, self.window_width + 9, Utility.calc_pretty_bars(self.player.mana, self.player.max_mana, 10))
+        self.addstr(5, self.window_width + 24, f'{max_mana_info}')
+        self.addstr(5, self.window_width + 9, Utility.calc_pretty_bars(self.player.mana, self.player.max_mana, 10))
 
         str_info = ' ' * (3 - len(str(self.player.STR))) + f'{self.player.STR}'
-        self.addstr(6, self.window_width + 6, f'{str_info}')
+        self.addstr(7, self.window_width + 6, f'{str_info}')
         dex_info = ' ' * (3 - len(str(self.player.DEX))) + f'{self.player.DEX}'
-        self.addstr(7, self.window_width + 6, f'{dex_info}')
+        self.addstr(8, self.window_width + 6, f'{dex_info}')
         int_info = ' ' * (3 - len(str(self.player.INT))) + f'{self.player.INT}'
-        self.addstr(8, self.window_width + 6, f'{int_info}')
+        self.addstr(9, self.window_width + 6, f'{int_info}')
 
     def draw_enemies(self):
         for enemy in list(self.game_room.enemies_data.values()):
@@ -1157,7 +1163,9 @@ class Game:
                             if key == 10: # ENTER
                                 item.use(self.player)
                                 display_names = self.get_display_names(items)
+                                # inventory_window.clear()
                                 break
+                        
                     if issubclass(type(item), Items.EquipableItem):
                         begin_s = 'Equip to '
                         item_slot = item.slot
@@ -1280,7 +1288,7 @@ class Game:
                     else:
                         self.player.equipment[slot] = None
                     display_names = self.get_display_names(items)
-                if selected_tab == 2:
+                if selected_tab == 2: # SPELLS
                     spell = self.player.spells[spell_choice_id]
                     if issubclass(type(spell), NormalSpell):
                         s = 'Cast (cost: {})'
@@ -1312,10 +1320,25 @@ class Game:
                                     self.message_box('Can\'t cast spell!', ['Ok'])
                                     break
             # clear the space
-            for i in range(displayed_item_count):
-                inventory_window.addstr(4 + i, 3, ' ' * (win_width - 4))
-            inventory_window.addch(4, 1, ' ')
-            inventory_window.addch(win_height - 2, 1, ' ')
+            inventory_window.clear()
+            # for i in range(displayed_item_count):
+            #     inventory_window.addstr(4 + i, 3, ' ' * (win_width - 4))
+            # inventory_window.addch(4, 1, ' ')
+            # inventory_window.addch(win_height - 2, 1, ' ')
+            inventory_window.addstr(1, 1, 'Inventory')
+            self.draw_borders(inventory_window)
+            inventory_window.addch(2, 0, curses.ACS_LTEE)
+            inventory_window.addch(2, win_width - 1, curses.ACS_RTEE)
+            for i in range(win_width - 2):
+                inventory_window.addch(2, 1 + i, curses.ACS_HLINE)
+            x = 2
+            for i in range(len(tabs)):
+                tab_name = f'[{tabs[i]}]'
+                if i == selected_tab:
+                    inventory_window.addstr(2, x, tab_name, curses.A_REVERSE)
+                else:
+                    inventory_window.addstr(2, x, tab_name)
+                x += 2 + len(tab_name)
 
             # display the tabs
             x = 2
@@ -1427,7 +1450,7 @@ class Game:
     def initiate_encounter_with(self, encounter_enemy_code):
         enemy = self.game_room.enemies_data[encounter_enemy_code]
         distance = Utility.distance(self.player_y, self.player_x, enemy.y, enemy.x)
-        encounter = CombatEncounter(self.player, enemy, distance, self.HEIGHT, self.WIDTH)
+        encounter = CombatEncounter(self.player, enemy, distance, self.HEIGHT, self.WIDTH, self.assets_path)
         encounter.start()
 
         if self.player.health == 0:
@@ -1488,6 +1511,9 @@ class Game:
             if var == 'player.mana':
                 self.player.mana = min(real_value, self.player.max_mana)                        
                 return False
+            if var == 'player.gold':
+                self.player.gold = real_value
+                return False
             self.set_env_var(var, real_value)
             return False
         if command == 'unset':
@@ -1514,6 +1540,9 @@ class Game:
                 return False
             if var == 'player.max_mana':
                 self.player.max_mana += real_value
+                return False
+            if var == 'player.gold':
+                self.player.gold += real_value
                 return False
             if var == 'player.inventory':
                 sp = value.split(' ')
@@ -1554,6 +1583,9 @@ class Game:
                 return False
             if var == 'player.max_mana':
                 self.player.max_mana -= real_value
+                return False
+            if var == 'player.gold':
+                self.player.gold -= real_value
                 return False
             if var in self.env_vars:
                 self.set_env_var(var, self.get_env_var(var) - real_value)
@@ -1677,6 +1709,8 @@ class Game:
             return self.player_y
         if s == 'player.x':
             return self.player_x
+        if s == 'player.gold':
+            return self.player.gold
         if s in self.env_vars:
             return self.get_env_var(s)
         ss = s.split('.')
