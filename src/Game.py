@@ -18,16 +18,14 @@ from gamelib.Entities import Player
 from gamelib.Combat import CombatEncounter
 
 class Game:
-    def __init__(self, saves_path, assets_path, rooms_path, map_path, starting_room='index'):
+    def __init__(self, config_file):
         self.debug = False
-        self.assets_path = assets_path
-        self.saves_path = saves_path
-        self.rooms_path = rooms_path
-        self.map_path = map_path
+        self.config_file = config_file
+        self.starting_room = 'index'
+        if config_file.has('Starting room'):
+            self.starting_room = config_file.get('Starting room')
         self.max_name_len = 20
-        self.starting_room = starting_room
         self.game_speed = 200
-
 
         self.create_folders()
         self.main_menu = Menu()
@@ -65,11 +63,9 @@ class Game:
 
     def create_folders(self):
         # create saves folder
-        if not os.path.exists(self.assets_path):
-            raise Exception('ERROR: No assets folder found')
-        if not os.path.exists(self.saves_path):
+        if not os.path.exists(self.config_file.get('Saves path')):
             try:
-                os.mkdir(self.saves_path)
+                os.mkdir(self.config_file.get('Save path'))
             except Exception as ex:
                 print('ERROR - Could not create saves folder')
                 print(ex)
@@ -339,25 +335,25 @@ class Game:
         if not class_result in data:
             raise Exception(f'ERR: Class {class_result} not found in assets')
         player.load_class(data[class_result], 'assets/items.json')
-        already_exists = SaveFile.save_file_exists(self.saves_path, player.name)
+        already_exists = SaveFile.save_file_exists(self.config_file.get('Saves path'), player.name)
         if already_exists and self.message_box(f'File with name {player.name} already exists, override?', ['No', 'Yes']) == 'No':
             self.stdscr.clear()
             self.new_game_action()
             return
-        SaveFile.save(player, self.starting_room, self.saves_path)
+        SaveFile.save(player, self.starting_room, self.config_file.get('Saves path'))
         self.stdscr.clear()
         self.load_character(player.name)
 
     def load_game_action(self):
-        if SaveFile.count_saves(self.saves_path) == 0:
+        if SaveFile.count_saves(self.config_file.get('Saves path')) == 0:
             self.message_box('No save files detected!', ['Ok'])
             return
-        save_desc, corrupt_files = SaveFile.save_descriptions(self.saves_path)
+        save_desc, corrupt_files = SaveFile.save_descriptions(self.config_file.get('Saves path'))
         for cor in corrupt_files:
             if self.message_box(f'Character {cor} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
-                SaveFile.delete_save_file(cor, self.saves_path)
+                SaveFile.delete_save_file(cor, self.config_file.get('Saves path'))
 
-        ch_names = SaveFile.character_names(self.saves_path)
+        ch_names = SaveFile.character_names(self.config_file.get('Saves path'))
         self.menu_choice_id = 0
         self.load_menu = Menu()
         self.load_menu.title = 'Load'
@@ -370,24 +366,25 @@ class Game:
         self.current_menu = self.load_menu
 
     def load_character_pick_action(self):
-        name = SaveFile.character_names(self.saves_path)[self.menu_choice_id]
+        name = SaveFile.character_names(self.config_file.get('Saves path'))[self.menu_choice_id]
         response = self.message_box(f'Load character {name}?', ['Load', 'Delete', 'Cancel'])
         if response == 'Cancel':
             return
         if response == 'Load':
             self.load_character(name)
         if response == 'Delete' and self.message_box(f'Delete character {name}? (Permanent)', ['No', 'Yes']) == 'Yes':
-            SaveFile.delete_save_file(name, self.saves_path)
+            SaveFile.delete_save_file(name, self.config_file.get('Saves path'))
             self.load_menu.remove_button_with_name(f'load_{name}_button')
             
     def load_character(self, character_name):
         # try:
-        data = SaveFile.load(character_name, self.saves_path)
+        data = SaveFile.load(character_name, self.config_file.get('Saves path'))
         if data == -1:
-            raise Exception(f'ERR: save file of character with name {character_name} not found in {self.saves_path}')
-        self.player = Player.from_json(data['player'], self.assets_path)
+            sp = self.config_file.get('Saves path')
+            raise Exception(f'ERR: save file of character with name {character_name} not found in {sp}')
+        self.player = Player.from_json(data['player'], self.config_file)
         self.env_vars = data['env_vars']
-        self.game_room = Room.Room.by_name(data['room_name'], self.rooms_path, self.assets_path, self.env_vars)
+        self.game_room = Room.Room.by_name(data['room_name'], self.config_file, self.env_vars)
 
         self.player_y, self.player_x = self.game_room.player_spawn_y, self.game_room.player_spawn_x
         if 'player_y' in data:
@@ -397,7 +394,7 @@ class Game:
         # except Exception as ex:
         #     if self.debug: raise ex
         #     if self.message_box(f'Character {character_name} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
-        #         SaveFile.delete_save_file(character_name, self.saves_path)
+        #         SaveFile.delete_save_file(character_name, self.config_file.get('Saves path'))
         #         self.load_menu.remove_button_with_name(f'load_{character_name}_button')
         #     return
             
@@ -430,8 +427,8 @@ class Game:
         self.draw_borders(self.mini_map_window)
         self.mini_map_window.refresh()
         self.full_map = None
-        if os.path.exists(self.map_path):
-            self.full_map = Map.Map(self.map_path)
+        if self.config_file.has('Map path'):
+            self.full_map = Map.Map(self.config_file.get('Map path'))
 
         self.mid_y = self.window_height // 2 
         self.mid_x = self.window_width // 2
@@ -470,7 +467,7 @@ class Game:
             self.tile_window.clear()
             if key == 81 and self.message_box('Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.window_width - 4, ypos=2, xpos=2) == 'Yes':
                 self.save_enemy_env_vars()
-                SaveFile.save(self.player, self.game_room.name, self.saves_path, player_y=self.player_y, player_x=self.player_x, env_vars=self.env_vars)
+                SaveFile.save(self.player, self.game_room.name, self.config_file.get('Saves path'), player_y=self.player_y, player_x=self.player_x, env_vars=self.env_vars)
                 break
             # if self.debug and key == 126:
             if key == 126:
@@ -557,7 +554,7 @@ class Game:
                     destination_room = tile.to
                     door_code = tile.door_code
                     self.set_env_var('_last_door_code', door_code)
-                    self.game_room = Room.Room.by_name(destination_room, self.rooms_path, self.assets_path, door_code=door_code, env_vars=self.env_vars)
+                    self.game_room = Room.Room.by_name(destination_room, self.config_file, door_code=door_code, env_vars=self.env_vars)
                     self.player_y, self.player_x = self.game_room.player_spawn_y, self.game_room.player_spawn_x
                     self.tile_window.clear()
                     self.tile_window.refresh()
@@ -1262,7 +1259,7 @@ class Game:
                                 break
                             if key == 10: # ENTER
                                 if self.player.INT >= item.int_to_learn:
-                                    self.player.learn_spells(item.spell_names, self.assets_path)
+                                    self.player.learn_spells(item.spell_names, self.config_file.get('Spells path'))
                                     self.player.items.remove(item)
                                     # refresh spell list
                                     spell_choice_id = 0
@@ -1447,7 +1444,7 @@ class Game:
     def initiate_encounter_with(self, encounter_enemy_code):
         enemy = self.game_room.enemies_data[encounter_enemy_code]
         distance = Utility.distance(self.player_y, self.player_x, enemy.y, enemy.x)
-        encounter = CombatEncounter(self.player, enemy, distance, self.HEIGHT, self.WIDTH, self.assets_path)
+        encounter = CombatEncounter(self.player, enemy, distance, self.HEIGHT, self.WIDTH, self.config_file)
         encounter.start()
 
         if self.player.health == 0:
@@ -1547,14 +1544,14 @@ class Game:
                 if sp[0].isdigit():
                     amount = int(sp[0])
                     item_name = self.get_true_value(' '.join(sp[1:]))
-                    item = Items.Item.get_base_items([item_name], f'{self.assets_path}/items.json')[0]
+                    item = Items.Item.get_base_items([item_name], self.config_file.get('Items path'))[0]
                     item.amount = amount
                 else:
-                    item = Items.Item.get_base_items([real_value], f'{self.assets_path}/items.json')[0]
+                    item = Items.Item.get_base_items([real_value], self.config_file.get('Items path'))[0]
                 self.player.add_item(item)
                 return False
             if var == 'player.spells':
-                self.player.learn_spells(real_value, self.assets_path)
+                self.player.learn_spells([real_value], self.config_file.get('Spells path'))
                 return False
             if var in self.env_vars:
                 if isinstance(self.get_env_var(var), str):

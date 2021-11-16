@@ -63,14 +63,14 @@ class Enemy(Entity):
     def has_status(self, status):
         return status in self.statuses
 
-    def from_enemy_name(name, assets_path):
-        enemy_schemas_path = f'{assets_path}/enemy_schemas.json'
+    def from_enemy_name(name, config_file):
+        enemy_schemas_path = config_file.get('Enemy schemas path')
         result = Enemy()
         data = json.loads(open(enemy_schemas_path, 'r').read())[name]
         result.__dict__ = data
         return result
 
-    def get_rewards(self, assets_path):
+    def get_rewards(self, config_file):
         result = {}
 
         # add gold
@@ -81,13 +81,13 @@ class Enemy(Entity):
         for item_name in self.reward_items:
             if random.randint(0, 100) <= self.reward_items[item_name]:
                 reward_item_names += [item_name]
-        result['items'] = Items.Item.get_base_items(reward_item_names, f'{assets_path}/items.json')
+        result['items'] = Items.Item.get_base_items(reward_item_names, config_file.get('Items path'))
 
         # add countable items
         reward_countable_items = dict(self.reward_countable_items)
         for item_name in reward_countable_items:
             reward_countable_items[item_name] = random.randint(1, reward_countable_items[item_name])
-        result['countable_items'] = Items.CountableItem.get_base_items(reward_countable_items, f'{assets_path}/items.json')
+        result['countable_items'] = Items.CountableItem.get_base_items(reward_countable_items, config_file.get('Items path'))
 
         return result
 
@@ -121,8 +121,8 @@ class Player(Entity):
                 result += self.items[item_i].gives_statuses
         return result 
 
-    def learn_spells(self, spell_names, assets_path):
-        spells = Spell.get_base_spells(spell_names, f'{assets_path}/spells.json')
+    def learn_spells(self, spell_names, spells_path):
+        spells = Spell.get_base_spells(spell_names, spells_path)
         spell_names = [spell.name for spell in self.spells]
         for spell in spells:
             if not spell.name in spell_names:
@@ -163,7 +163,7 @@ class Player(Entity):
         else:
             self.items += [item]
 
-    def load_class(self, class_data, assets_path):
+    def load_class(self, class_data, config_file):
         self.max_health = class_data['max_health']
         self.health = self.max_health
         self.max_mana = class_data['max_mana']
@@ -173,8 +173,8 @@ class Player(Entity):
         self.INT = class_data['INT']
         self.class_name = class_data['name']
         self.class_description = class_data['description']
-        self.items = Items.Item.get_base_items(class_data['items'], assets_path)
-        self.countable_items = Items.CountableItem.get_base_items(class_data['countable_items'], assets_path)
+        self.items = Items.Item.get_base_items(class_data['items'], config_file)
+        self.countable_items = Items.CountableItem.get_base_items(class_data['countable_items'], config_file)
         self.equipment = dict()
         self.equipment['HEAD'] = None
         self.equipment['BODY'] = None
@@ -240,18 +240,18 @@ class Player(Entity):
 
     # static methods
 
-    def from_json(js, assets_path):
+    def from_json(js, config_file):
         result = Player()
         result.__dict__ = js
 
         items = result.items
-        result.items = Items.Item.get_base_items(items, f'{assets_path}/items.json')
+        result.items = Items.Item.get_base_items(items, config_file.get('Items path'))
         
         countable_items = result.countable_items
-        result.countable_items = Items.CountableItem.get_base_items(countable_items, f'{assets_path}/items.json')
+        result.countable_items = Items.CountableItem.get_base_items(countable_items, config_file.get('Items path'))
         
         spells = result.spells
-        result.spells = Spell.get_base_spells(spells, f'{assets_path}/spells.json')
+        result.spells = Spell.get_base_spells(spells, config_file.get('Spells path'))
 
         return result
 

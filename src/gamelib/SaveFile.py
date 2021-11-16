@@ -12,7 +12,6 @@ def save(player, room_name, saves_path, player_y=-1, player_x=-1, env_vars=dict(
         data['player_y'] = player_y
     if player_x != -1:
         data['player_x'] = player_x
-    
     open(f'{saves_path}/{player.name}.save', 'w').write(json.dumps(data, indent=4, sort_keys=True))
 
 def load(name, saves_path):

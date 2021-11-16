@@ -13,7 +13,7 @@ class Tile:
         self.solid = solid
         self.interactable = interactable
 
-    def from_info(tile_char, tiles_data, scripts, chest_content_info, assets_path):
+    def from_info(tile_char, tiles_data, scripts, chest_content_info, config_file):
         if tile_char == ' ' or tile_char == '@':
             return Tile('floor', ' ', False, False)
         if tile_char == '#':
@@ -46,7 +46,7 @@ class Tile:
                 actual_tile_tiles_data[actual_tile_tile_char] = [' '.join(split[2].split('_'))]
                 actual_tile_tiles_data[actual_tile_tile_char] += [actual_tile_tile_char]
                 actual_tile_tiles_data[actual_tile_tile_char] += [split[3 : len(split)]]
-                actual_tile = Tile.from_info(actual_tile_tile_char, actual_tile_tiles_data, scripts, chest_content_info, assets_path)
+                actual_tile = Tile.from_info(actual_tile_tile_char, actual_tile_tiles_data, scripts, chest_content_info, config_file)
                 return HiddenTile(tile_name, tile_actual_char, True, False, actual_tile, signal)
         # in case of unknown tile
         return Tile('ERR', '!', True, False)
@@ -95,11 +95,12 @@ class Room:
         self.visible_range = 0
         self.player_spawn_char = player_spawn_char
 
-    def by_name(name, rooms_path, assets_path, env_vars, door_code=None):
-        room_names = [f for f in listdir(rooms_path) if isfile(join(rooms_path, f)) and splitext(f)[1] == '.room']
+    def by_name(name, config_file, env_vars, door_code=None):
+        r_p = config_file.get('Rooms path')
+        room_names = [f for f in listdir(r_p) if isfile(join(r_p, f)) and splitext(f)[1] == '.room']
         if not f'{name}.room' in room_names:
-            raise Exception(f'ERR: room with name {name} not found in {rooms_path}')
-        raw_data = open(f'{rooms_path}/{name}.room', 'r').read()
+            raise Exception(f'ERR: room with name {name} not found in {r_p}')
+        raw_data = open(f'{r_p}/{name}.room', 'r').read()
         data = raw_data.split('\n---\n')
         if len(data) != 6:
             raise Exception(f'ERR: Incorrect room file format. Room name: {name}')
@@ -110,10 +111,10 @@ class Room:
         chest_content_data = data[4]
         enemies_data = data[5]
         tiles_data = tiles_raw_data.split('\n')
-        result = Room.from_str(name, layout_data, tiles_data, room_data, scripts_data, chest_content_data, enemies_data, '@', assets_path, door_code, env_vars)
+        result = Room.from_str(name, layout_data, tiles_data, room_data, scripts_data, chest_content_data, enemies_data, '@', config_file, door_code, env_vars)
         return result
 
-    def from_str(name, layout_data, raw_tiles_data, room_data, scripts_data, chest_content_data, enemies_data, player_spawn_char, assets_path, door_code, env_vars):
+    def from_str(name, layout_data, raw_tiles_data, room_data, scripts_data, chest_content_data, enemies_data, player_spawn_char, config_file, door_code, env_vars):
         lines = layout_data.split('\n')
         height = len(lines)
         width = len(lines[0])
@@ -145,12 +146,12 @@ class Room:
                     if item_name == 'Gold':
                         item = Items.GoldPouch()
                     else:
-                        item = Items.Item.get_base_items([item_name], f'{assets_path}/items.json')[0]
+                        item = Items.Item.get_base_items([item_name], config_file.get('Items path'))[0]
                     item.amount = amount
                     d[item] = f'{chest_code}_{i}'
                 else: 
                     item_name = ' '.join(sri)
-                    item = Items.Item.get_base_items([item_name], f'{assets_path}/items.json')[0]
+                    item = Items.Item.get_base_items([item_name], config_file)[0]
                     d[item] = f'{chest_code}_{i}'
                 if item == None:
                     data = ' '.join(sri)
@@ -170,7 +171,7 @@ class Room:
                 for line in enemy_data:
                     d = line.split('=')
                     if d[0] == 'e_type':
-                        enemy = Enemy.from_enemy_name(d[1], assets_path)
+                        enemy = Enemy.from_enemy_name(d[1], config_file)
                     if d[0] == 'y':
                         y = int(d[1])
                     if d[0] == 'x':
@@ -226,7 +227,7 @@ class Room:
         for i in range(height):
             result.tiles += [[]]
             for j in range(width):
-                result.tiles[i] += [Tile.from_info(lines[i][j], tiles_data, result.scripts, result.chest_contents, assets_path)]
+                result.tiles[i] += [Tile.from_info(lines[i][j], tiles_data, result.scripts, result.chest_contents, config_file)]
 
         # find the player spawn point
         if not door_code:

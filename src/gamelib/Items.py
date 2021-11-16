@@ -118,8 +118,8 @@ class CountableItem(Item):
         super().__init__()
         self.amount = 0
 
-    def get_base_items(d, path):
-        items = Item.get_base_items(d.keys(), path) 
+    def get_base_items(d, config_file):
+        items = Item.get_base_items(d.keys(), config_file) 
         for i in range(len(items)):
             items[i].amount = list(d.values())[i]
         return items

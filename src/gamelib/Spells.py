@@ -32,8 +32,8 @@ class Spell:
             result += [spell.json()]
         return result
 
-    def get_base_spells(names, spells_path):
-        data = json.loads(open(spells_path, 'r').read())
+    def get_base_spells(names, path):
+        data = json.loads(open(path, 'r').read())
         result = []
         for item_name in names:
             result += [Spell.from_json(data[item_name])]

@@ -130,8 +130,8 @@ class CastSpellAction(Action):
         raise Exception(f'ERR: can\'t cast spell {self.spell.name}')
 
 class CombatEncounter:
-    def __init__(self, attacker, defender, distance, height, width, assets_path):
-        self.assets_path = assets_path
+    def __init__(self, attacker, defender, distance, height, width, config_file):
+        self.config_file = config_file
         
         self.chars = ['s', 'd', 'f', 'g', 'h', 'j', 'k', 'l']
         self.HEIGHT = height
@@ -716,7 +716,7 @@ class CombatEncounter:
         return WaitAction(self, '?', enemy)
 
     def player_won(self):
-        rewards = self.get_enemy().get_rewards(self.assets_path)
+        rewards = self.get_enemy().get_rewards(self.config_file)
 
         display_names = []
         g = rewards['gold']
