@@ -605,9 +605,9 @@ class CombatEncounter:
                     items_window.addch(win_height - 2, win_width - 1, curses.ACS_DARROW)
             for i in range(displayed_item_count):
                 if i == choice_id:
-                    items_window.addstr(1 + i, 1, item_names[i], curses.A_REVERSE)
+                    items_window.addstr(1 + i, 1, item_names[i + page_n], curses.A_REVERSE)
                 else:
-                    items_window.addstr(1 + i, 1, item_names[i])
+                    items_window.addstr(1 + i, 1, item_names[i + page_n])
     
     def get_usable_spell_display_names(self):
         result = []
@@ -698,9 +698,9 @@ class CombatEncounter:
                     spells_window.addch(win_height - 2, win_width - 1, curses.ACS_DARROW)
             for i in range(displayed_spell_count):
                 if i == choice_id:
-                    spells_window.addstr(1 + i, 1, spell_names[i], curses.A_REVERSE)
+                    spells_window.addstr(1 + i, 1, spell_names[i + page_n], curses.A_REVERSE)
                 else:
-                    spells_window.addstr(1 + i, 1, spell_names[i])
+                    spells_window.addstr(1 + i, 1, spell_names[i + page_n])
 
     def get_enemy_action(self):
         enemy = self.get_enemy()

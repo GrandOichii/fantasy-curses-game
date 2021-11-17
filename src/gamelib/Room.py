@@ -151,7 +151,7 @@ class Room:
                     d[item] = f'{chest_code}_{i}'
                 else: 
                     item_name = ' '.join(sri)
-                    item = Items.Item.get_base_items([item_name], config_file)[0]
+                    item = Items.Item.get_base_items([item_name], config_file.get('Items path'))[0]
                     d[item] = f'{chest_code}_{i}'
                 if item == None:
                     data = ' '.join(sri)

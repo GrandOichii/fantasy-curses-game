@@ -3,10 +3,11 @@ import curses.textpad as textpad
 import json
 from math import sqrt
 import os
+from Settings import SettingsMenu
 from gamelib.Spells import BloodSpell, NormalSpell
 
 from ui.Menu import Menu
-from ui.Buttons import Button, ActionButton
+from ui.UIElements import Button, ActionButton
 
 import Utility
 import gamelib.Room as Room
@@ -33,10 +34,10 @@ class Game:
         self.main_menu.title = 'Fantasy Curses Game'
         self.main_menu.text = 'This is a fantasy game made using python curses'
 
-        settings_menu = Menu()
-        settings_menu.choice_symbol = '> '
-        settings_menu.title = 'Settings'
-        settings_menu.text = 'Nothing here yet'
+        # settings_menu = Menu()
+        # settings_menu.choice_symbol = '> '
+        # settings_menu.title = 'Settings'
+        # settings_menu.text = 'Nothing here yet'
 
         credits_menu = Menu()
         credits_menu.choice_symbol = '> '
@@ -47,19 +48,21 @@ class Game:
 
         ActionButton('load_button', 'Load', self.main_menu, self.load_game_action)
 
-        main_to_settings_button = Button('settings_button', 'Settings', self.main_menu)
-        main_to_settings_button.connect_to(settings_menu)
+        ActionButton('settings_button', 'Settings', self.main_menu, self.config_settings)
 
         main_to_credits_button = Button('credits_button', 'Credits', self.main_menu)
         main_to_credits_button.connect_to(credits_menu)
 
         ActionButton('exit_button', 'Exit', self.main_menu, self.exit_action)
 
-        back_to_main_button = Button('back_to_main_button', 'Back', settings_menu)
+        back_to_main_button = Button('back_to_main_button', 'Back', credits_menu)
         back_to_main_button.connect_to(self.main_menu)
-        credits_menu.add_button(back_to_main_button)
 
         self.current_menu = self.main_menu
+
+    def config_settings(self):
+        SettingsMenu(self.stdscr, self.config_file)
+        self.stdscr.clear()
 
     def create_folders(self):
         # create saves folder
