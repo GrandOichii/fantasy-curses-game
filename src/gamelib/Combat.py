@@ -10,6 +10,7 @@ import gamelib.Items as Items
 from gamelib.Entities import Player, Enemy
 from gamelib.Items import MeleeWeapon, RangedWeapon
 from gamelib.Spells import BloodSpell, CombatSpell, NormalSpell
+from ui.UIElements import DropDownBox
 
 class Action:
     def __init__(self, parent, char, caption, picture, user, other):
@@ -543,75 +544,27 @@ class CombatEncounter:
         item_names = self.get_usable_item_display_names()
         if len(item_names) == 0:
             return None
-        win_height = min(max_items, len(item_names)) + 2
-        win_width = max([len(n) for n in item_names]) + 2
-        items_window = curses.newwin(win_height, win_width, self.action_id + 2, 14 + self.box_width)
-        items_window.keypad(1)
-        choice_id = 0
-        cursor = 0
-        displayed_item_count = win_height - 2
-        for i in range(displayed_item_count):
-            if i == choice_id:
-                items_window.addstr(1 + i, 1, item_names[i], curses.A_REVERSE)
-            else:
-                items_window.addstr(1 + i, 1, item_names[i])
-        self.draw_borders(items_window)
-        if len(item_names) > displayed_item_count:
-            items_window.addch(win_height - 2, win_width - 1, curses.ACS_DARROW)
-        page_n = 0
-        while True:
-            key = items_window.getch()
-            if key == 27: # ESC
-                return None
-            if key == 259: # UP
-                choice_id -= 1
-                cursor -= 1
-                if cursor < 0:
-                    if len(item_names) > displayed_item_count:
-                        if page_n == 0:
-                            cursor = displayed_item_count - 1
-                            choice_id = len(item_names) - 1
-                            page_n = len(item_names) - displayed_item_count
-                        else:
-                            page_n -= 1
-                            cursor += 1
-                    else:
-                        cursor = len(item_names) - 1
-                        choice_id = cursor
-            if key == 258: # DOWN
-                choice_id += 1
-                cursor += 1
-                if len(item_names) > displayed_item_count:
-                    if cursor >= displayed_item_count:
-                        cursor -= 1
-                        page_n += 1
-                        if choice_id == len(item_names):
-                            choice_id = 0
-                            cursor = 0
-                            page_n = 0
-                else:
-                    if cursor >= len(item_names):
-                        cursor = 0
-                        choice_id = 0
-            if key == 10: # ENTER
-                return UseItemAction(self, 'u', '-', self.get_player(), self.get_usable_items()[choice_id])
-            # display
-            items_window.addch(1, win_width - 1, curses.ACS_VLINE)
-            items_window.addch(win_height - 2, win_width - 1, curses.ACS_VLINE)
-            if len(item_names) > displayed_item_count:
-                if page_n != 0:
-                    items_window.addch(1, win_width - 1, curses.ACS_UARROW)
-                if page_n != len(item_names) - displayed_item_count:
-                    items_window.addch(win_height - 2, win_width - 1, curses.ACS_DARROW)
-            for i in range(displayed_item_count):
-                if i == choice_id:
-                    items_window.addstr(1 + i, 1, item_names[i + page_n], curses.A_REVERSE)
-                else:
-                    items_window.addstr(1 + i, 1, item_names[i + page_n])
+        item_box = DropDownBox(item_names, max_items, self.action_id + 2, 14 + self.box_width, DropDownBox.SIGNLE_ELEMENT)
+        results = item_box.show()
+        if len(results) == 0:
+            return None
+        result_id = results[0]
+        return UseItemAction(self, 'u', '-', self.get_player(), self.get_usable_items()[result_id])
     
-    def get_usable_spell_display_names(self):
+    def get_usable_spells(self):
+        player = self.get_player()
         result = []
-        for spell in self.get_player().spells:
+        for spell in player.spells:
+            if not player.can_cast(spell):
+                continue
+            if issubclass(type(spell), CombatSpell) and spell.range != -1 and spell.range < self.distance:
+                continue
+            result += [spell]
+        return result
+
+    def get_usable_spell_display_names(self, spells):
+        result = []
+        for spell in spells:
             cost = 0
             cost_type = 'mana'
             if issubclass(type(spell), BloodSpell):
@@ -627,80 +580,16 @@ class CombatEncounter:
     
     def choose_player_spell(self):
         max_spells = 4
-        spell_names = self.get_usable_spell_display_names()
+        spells = self.get_usable_spells()
+        spell_names = self.get_usable_spell_display_names(spells)
         if len(spell_names) == 0:
             return None
-        win_height = min(max_spells, len(spell_names)) + 2
-        win_width = max([len(n) for n in spell_names]) + 2
-        spells_window = curses.newwin(win_height, win_width, self.action_id + 2, 16 + self.box_width)
-        spells_window.keypad(1)
-        choice_id = 0
-        cursor = 0
-        displayed_spell_count = win_height - 2
-        for i in range(displayed_spell_count):
-            if i == choice_id:
-                spells_window.addstr(1 + i, 1, spell_names[i], curses.A_REVERSE)
-            else:
-                spells_window.addstr(1 + i, 1, spell_names[i])
-        self.draw_borders(spells_window)
-        if len(spell_names) > displayed_spell_count:
-            spells_window.addch(win_height - 2, win_width - 1, curses.ACS_DARROW)
-        page_n = 0
-        while True:
-            key = spells_window.getch()
-            if key == 27: # ESC
-                return None
-            if key == 259: # UP
-                choice_id -= 1
-                cursor -= 1
-                if cursor < 0:
-                    if len(spell_names) > displayed_spell_count:
-                        if page_n == 0:
-                            cursor = displayed_spell_count - 1
-                            choice_id = len(spell_names) - 1
-                            page_n = len(spell_names) - displayed_spell_count
-                        else:
-                            page_n -= 1
-                            cursor += 1
-                    else:
-                        cursor = len(spell_names) - 1
-                        choice_id = cursor
-            if key == 258: # DOWN
-                choice_id += 1
-                cursor += 1
-                if len(spell_names) > displayed_spell_count:
-                    if cursor >= displayed_spell_count:
-                        cursor -= 1
-                        page_n += 1
-                        if choice_id == len(spell_names):
-                            choice_id = 0
-                            cursor = 0
-                            page_n = 0
-                else:
-                    if cursor >= len(spell_names):
-                        cursor = 0
-                        choice_id = 0
-            if key == 10: # ENTER
-                player = self.get_player()
-                spell = player.spells[choice_id]
-                if player.can_cast(spell):
-                    if issubclass(type(spell), CombatSpell) and spell.range != -1 and spell.range < self.distance:
-                        return None
-                    self.player_cast_spell = True
-                    return CastSpellAction(self, 'c', 'VA', player, self.get_enemy(), spell)
-            # display
-            spells_window.addch(1, win_width - 1, curses.ACS_VLINE)
-            spells_window.addch(win_height - 2, win_width - 1, curses.ACS_VLINE)
-            if len(spell_names) > displayed_spell_count:
-                if page_n != 0:
-                    spells_window.addch(1, win_width - 1, curses.ACS_UARROW)
-                if page_n != len(spell_names) - displayed_spell_count:
-                    spells_window.addch(win_height - 2, win_width - 1, curses.ACS_DARROW)
-            for i in range(displayed_spell_count):
-                if i == choice_id:
-                    spells_window.addstr(1 + i, 1, spell_names[i + page_n], curses.A_REVERSE)
-                else:
-                    spells_window.addstr(1 + i, 1, spell_names[i + page_n])
+        spell_box = DropDownBox(spell_names, max_spells, self.action_id + 2, 16 + self.box_width, DropDownBox.SIGNLE_ELEMENT)
+        results = spell_box.show()
+        if len(results) == 0:
+            return None
+        result_id = results[0]
+        return CastSpellAction(self, 'c', 'VA', self.get_player(), self.get_enemy(), spells[result_id])
 
     def get_enemy_action(self):
         enemy = self.get_enemy()

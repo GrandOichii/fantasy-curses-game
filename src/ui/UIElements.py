@@ -29,7 +29,7 @@ class DropDownBox:
         self.options = options
         self.choice_type = choice_type
         self.max_display_amount = max_display_amount
-        self.HEIGHT = max_display_amount + 2
+        self.HEIGHT = min(len(options), max_display_amount) + 2
         self.WIDTH = max([len(o) for o in options]) + 2
 
         self.window = curses.newwin(self.HEIGHT, self.WIDTH, y, x)

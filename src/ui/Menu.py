@@ -1,5 +1,3 @@
-import ui.Buttons
-
 class Menu:
     def __init__(self):
         self.title = ''
