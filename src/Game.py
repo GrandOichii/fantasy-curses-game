@@ -8,6 +8,7 @@ from gamelib.Spells import BloodSpell, NormalSpell
 
 from ui.Menu import Menu
 from ui.UIElements import Button, ActionButton, DropDownBox
+from ui.Utility import message_box, draw_borders
 
 import Utility
 import gamelib.Room as Room
@@ -79,7 +80,7 @@ class Game:
         curses.wrapper(self.main)
 
     def main(self, stdscr):
-        if self.debug: self.draw_borders(stdscr)
+        if self.debug: draw_borders(stdscr)
         self.stdscr = stdscr
         self.HEIGHT, self.WIDTH = self.stdscr.getmaxyx()
         self.menu_choice_id = 0
@@ -117,7 +118,7 @@ class Game:
             if key in [10]: # ENTER
                 if not self.current_menu.buttons[self.menu_choice_id].leads_to:
                     if not isinstance(self.current_menu.buttons[self.menu_choice_id], ActionButton) :
-                        self.message_box('This button doesn\'t do anything', ['Ok'])
+                        message_box(self.stdscr, 'This button doesn\'t do anything', ['Ok'])
                     else:
                         self.current_menu.buttons[self.menu_choice_id].click()
                 else:
@@ -127,7 +128,7 @@ class Game:
             if self.running:
                 if self.debug: self.addstr(0, 0, f'KEY: |{key}|')
                 self.display_current_menu(1, 1)
-                if self.debug: self.draw_borders(stdscr)
+                if self.debug: draw_borders(stdscr)
                 stdscr.refresh()
 
     def addstr(self, ypos, xpos, message):
@@ -144,7 +145,7 @@ class Game:
 
 
         w = curses.newwin(height - 1, width, height + 1, 2)
-        self.draw_borders(w)
+        draw_borders(w)
         w.keypad(1)
         w.addstr(0, 1, name)
 
@@ -176,94 +177,6 @@ class Game:
                 else:    
                     w.addstr(height - len(replies) - 2 + i, 1, '  ')
         return replies[choice_i]
-
-    def message_box(self, message, choices, ypos=-1, xpos=-1, height=-1, width=-1, additional_lines=[]):
-        # restrict the min and max width of message box
-        if len(choices) == 0 or len(choices) > 3:
-            raise Exception(f'MESSAGE_BOX ERROR: choices length can\'t be {len(choices)}')
-        choice_id = 0
-        done = False
-
-        # if possible break up the messages
-        if width != -1 and len(additional_lines) == 0:
-            lines = Utility.str_smart_split(message, width - 6)
-            if len(lines) != 1:
-                message = lines[0]
-                lines.pop(0)
-                additional_lines = lines
-
-        # set max min values
-        max_width = self.WIDTH - 2
-
-        # calculate values
-        choices_len = (len(choices) + 1) * 2
-        for choice in choices:
-            choices_len += len(choice)
-        if width == -1:
-            width = max(choices_len, len(message) + 4)
-            max_add_len = 0
-            for add in additional_lines:
-                max_add_len = max(max_add_len, len(add))
-            max_add_len += 4
-            width = max(width, max_add_len)
-            width = min(max_width, width)
-    
-        if height == -1:
-            height = 6 + len(additional_lines)
-
-        if ypos == -1:
-            ypos = (self.HEIGHT - height) // 2
-        if xpos == -1:
-            xpos = (self.WIDTH - width) // 2
-        
-        # print the message box itself
-        win = curses.newwin(height + 1, width + 2, ypos - 1, xpos)
-        self.draw_borders(win)
-
-        # textpad.rectangle(win, 0, 0, height, width + 1)
-        win.addstr(2, 3, message)
-        win.keypad(1)
-        for i in range(len(additional_lines)):
-            win.addstr(3 + i, 3, additional_lines[i])
-        pos = 3
-        for i in range(len(choices)):
-            if i == choice_id:
-                win.addstr(height - 2, pos - 1, f'[{choices[i]}]')
-            else:
-                win.addstr(height - 2, pos, choices[i])
-            pos += len(choices[i]) + 2
-
-
-        while not done:
-            key = win.getch()
-            win.addstr(height - 2, 1, ' ' * width)
-            win.refresh()
-            if key == 260: # LEFT
-                choice_id -= 1
-                if choice_id < 0:
-                    choice_id = len(choices) - 1
-            if key == 261: # RIGHT
-                choice_id += 1
-                if choice_id >= len(choices):
-                    choice_id = 0
-            if 'Cancel' in choices and key == 27: # ESC
-                win.clear()
-                win.refresh()
-                return 'Cancel'
-            pos = 3
-            for i in range(len(choices)):
-                if i == choice_id:
-                    win.addstr(height - 2, pos - 1, f'[{choices[i]}]')
-                else:
-                    win.addstr(height - 2, pos, choices[i])
-                pos += len(choices[i]) + 2
-            if key == 10:
-                done = True
-            self.draw_borders(win)
-            if self.debug: win.addstr(0, 0, f'KEY: |{key}|\t{height}; {width}')
-        win.clear()
-        win.refresh()
-        return choices[choice_id]
 
     def prompt_display(self, message):
         self.addstr(11, self.window_width + 11, message)
@@ -300,12 +213,12 @@ class Game:
             if self.debug: self.addstr(0, 0, f'KEY: |{key}|')
             if (key >= 97 and key <= 122) or (key >= 65 and key <= 90) or key in [32]: # from a to z, from A to Z, SPACE
                 if len(name) >= self.max_name_len:
-                    self.message_box(f'Maximum length of character is {self.max_name_len}', ['Ok'])
+                    message_box(self.stdscr, f'Maximum length of character is {self.max_name_len}', ['Ok'])
                 else:
                     name += chr(key)
             # too slow for some reason
             if key in [27]: # ESC
-                cancel_result = self.message_box('Cancel character creation?', ['No', 'Yes'])
+                cancel_result = message_box(self.stdscr, 'Cancel character creation?', ['No', 'Yes'])
                 if cancel_result == 'Yes':
                     self.stdscr.clear()
                     return
@@ -313,20 +226,20 @@ class Game:
                 if len(name) > 0:
                     name = name[:-1]
                 else:
-                    cancel_result = self.message_box('Cancel character creation?', ['No', 'Yes'])
+                    cancel_result = message_box(self.stdscr, 'Cancel character creation?', ['No', 'Yes'])
                     if cancel_result == 'Yes':
                         self.stdscr.clear()
                         return
             if key in [10]: # ENTER
                 if len(name) < min_name_len:
-                    self.message_box(f'The name has to be at least {min_name_len} characters long!', ['Ok'])
+                    message_box(self.stdscr, f'The name has to be at least {min_name_len} characters long!', ['Ok'])
                 else:
                     done = True
             if not done:
                 placeholder = '_' * (self.max_name_len - len(name))
                 self.addstr(1, 1 + len(enstr), f'{name}{placeholder}')
-        class_result = self.message_box('Choose your character class:', ['Warrior', 'Mage', 'Thief'])
-        if self.message_box('Is this ok?',  ['Yes', 'No'], additional_lines=[f'Name: {name}', f'Class: {class_result}']) == 'No':
+        class_result = message_box(self.stdscr, 'Choose your character class:', ['Warrior', 'Mage', 'Thief'])
+        if message_box(self.stdscr, 'Is this ok?',  ['Yes', 'No'], additional_lines=[f'Name: {name}', f'Class: {class_result}']) == 'No':
             self.new_game_action()
             return
         
@@ -339,7 +252,7 @@ class Game:
             raise Exception(f'ERR: Class {class_result} not found in assets')
         player.load_class(data[class_result], 'assets/items.json')
         already_exists = SaveFile.save_file_exists(self.config_file.get('Saves path'), player.name)
-        if already_exists and self.message_box(f'File with name {player.name} already exists, override?', ['No', 'Yes']) == 'No':
+        if already_exists and message_box(self.stdscr, f'File with name {player.name} already exists, override?', ['No', 'Yes']) == 'No':
             self.stdscr.clear()
             self.new_game_action()
             return
@@ -349,11 +262,11 @@ class Game:
 
     def load_game_action(self):
         if SaveFile.count_saves(self.config_file.get('Saves path')) == 0:
-            self.message_box('No save files detected!', ['Ok'])
+            message_box(self.stdscr, 'No save files detected!', ['Ok'])
             return
         save_desc, corrupt_files = SaveFile.save_descriptions(self.config_file.get('Saves path'))
         for cor in corrupt_files:
-            if self.message_box(f'Character {cor} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
+            if message_box(self.stdscr, f'Character {cor} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
                 SaveFile.delete_save_file(cor, self.config_file.get('Saves path'))
 
         ch_names = SaveFile.character_names(self.config_file.get('Saves path'))
@@ -370,12 +283,12 @@ class Game:
 
     def load_character_pick_action(self):
         name = SaveFile.character_names(self.config_file.get('Saves path'))[self.menu_choice_id]
-        response = self.message_box(f'Load character {name}?', ['Load', 'Delete', 'Cancel'])
+        response = message_box(self.stdscr, f'Load character {name}?', ['Load', 'Delete', 'Cancel'])
         if response == 'Cancel':
             return
         if response == 'Load':
             self.load_character(name)
-        if response == 'Delete' and self.message_box(f'Delete character {name}? (Permanent)', ['No', 'Yes']) == 'Yes':
+        if response == 'Delete' and message_box(self.stdscr, f'Delete character {name}? (Permanent)', ['No', 'Yes']) == 'Yes':
             SaveFile.delete_save_file(name, self.config_file.get('Saves path'))
             self.load_menu.remove_button_with_name(f'load_{name}_button')
             
@@ -396,7 +309,7 @@ class Game:
             self.player_x = data['player_x']
         # except Exception as ex:
         #     if self.debug: raise ex
-        #     if self.message_box(f'Character {character_name} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
+        #     if message_box(self.stdscr, f'Character {character_name} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
         #         SaveFile.delete_save_file(character_name, self.config_file.get('Saves path'))
         #         self.load_menu.remove_button_with_name(f'load_{character_name}_button')
         #     return
@@ -415,7 +328,7 @@ class Game:
 
         # permanent display
         self.tile_window = curses.newwin(self.window_height, self.window_width, 0, 1)
-        self.draw_borders(self.tile_window)
+        draw_borders(self.tile_window)
         # self.tile_window.nodelay(True)
         # self.tile_window.timeout(self.game_speed)
 
@@ -427,7 +340,7 @@ class Game:
         self.MINI_MAP_HEIGHT = 7
         self.MINI_MAP_WIDTH = 7
         self.mini_map_window = curses.newwin(self.MINI_MAP_HEIGHT + 2, self.MINI_MAP_WIDTH + 2, 13, self.window_width + 4)
-        self.draw_borders(self.mini_map_window)
+        draw_borders(self.mini_map_window)
         self.mini_map_window.refresh()
         self.full_map = None
         if self.config_file.has('Map path'):
@@ -469,7 +382,7 @@ class Game:
                 self.exec_script('_tick', self.game_room.scripts)
             key = self.tile_window.getch()
             self.tile_window.clear()
-            if key == 81 and self.message_box('Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.window_width - 4, ypos=2, xpos=2) == 'Yes':
+            if key == 81 and message_box(self.stdscr, 'Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.window_width - 4, ypos=2, xpos=2) == 'Yes':
                 self.save_enemy_env_vars()
                 SaveFile.save(self.player, self.game_room.name, self.config_file.get('Saves path'), player_y=self.player_y, player_x=self.player_x, env_vars=self.env_vars)
                 break
@@ -522,7 +435,7 @@ class Game:
             if key == 101: # e
                 interactable_tiles = self.get_interactable_tiles(self.player_y, self.player_x)
                 if len(interactable_tiles) == 0:
-                    self.message_box('No tiles to interact with nearby!', ['Ok'],width=self.window_width - 4, ypos=2, xpos=2)
+                    message_box(self.stdscr, 'No tiles to interact with nearby!', ['Ok'],width=self.window_width - 4, ypos=2, xpos=2)
                 else:
                     interact_key = self.prompt_display('Interact where?')
                     flag = False
@@ -552,7 +465,7 @@ class Game:
                 if encounter_ready:
                     self.initiate_encounter_with(encounter_enemy_code)
                 else:
-                    self.message_box('You are not within range to attack anybody!', ['Ok'], width=self.window_width - 4, ypos=2, xpos=2)
+                    message_box(self.stdscr, 'You are not within range to attack anybody!', ['Ok'], width=self.window_width - 4, ypos=2, xpos=2)
             if key == 120: # x
                 update_entities = False
             if self.game_running:
@@ -696,7 +609,7 @@ class Game:
                         self.tile_window.addch(y, x, enemy.char)
             if len(display_name) != 0:
                 self.tile_window.addstr(1, 1, f'[{display_name}]')
-            self.draw_borders(self.tile_window)
+            draw_borders(self.tile_window)
         # clean-up
         self.tile_window.clear()
         self.draw_tile_window()
@@ -719,7 +632,7 @@ class Game:
                 codes += [items_dict[item]]
 
         if len(item_names) == 0:
-            self.message_box('Chest is empty.', ['Ok'])
+            message_box(self.stdscr, 'Chest is empty.', ['Ok'])
             return
         chest_box = DropDownBox(item_names, 4, self.mid_y, self.mid_x + 3, DropDownBox.MULTIPLE_ELEMENTS)
         results = chest_box.show()
@@ -768,9 +681,6 @@ class Game:
         return result
 
     # drawing
-
-    def draw_borders(self, w):
-        w.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE, curses.ACS_ULCORNER, curses.ACS_URCORNER, curses.ACS_LLCORNER, curses.ACS_LRCORNER)
 
     def draw_info_ui(self):
         s = '1234567891234567891234'
@@ -852,7 +762,7 @@ class Game:
                                 self.tile_window.addch(i, j, self.game_room.tiles[room_y][room_x].char)
 
     def draw_tile_window(self):
-        self.draw_borders(self.tile_window)
+        draw_borders(self.tile_window)
         self.draw_tiles(self.player_y, self.player_x, self.game_room.visible_range)
         self.draw_torches()
         # last to display
@@ -883,7 +793,7 @@ class Game:
         x = self.window_width - w -1
         win = curses.newwin(h, w, y, x)
         win.addstr(1, 1, display_name)
-        self.draw_borders(win)
+        draw_borders(win)
         win.refresh()
 
     def get_display_names(self, items):
@@ -916,7 +826,7 @@ class Game:
         inventory_window = curses.newwin(win_height, win_width, 0, 1)
         inventory_window.keypad(1)
         inventory_window.addstr(1, 1, 'Inventory')
-        self.draw_borders(inventory_window)
+        draw_borders(inventory_window)
 
         selected_tab = 0
         tabs = ['Items', 'Equipment', 'Spells']
@@ -957,7 +867,7 @@ class Game:
             desc = items[cursor + page_n].get_description(d_window_width - 2)
         for i in range(len(desc)):
             description_window.addstr(1 + i, 1, desc[i])
-        self.draw_borders(description_window)
+        draw_borders(description_window)
         description_window.refresh()
 
         # initial items display
@@ -1065,7 +975,7 @@ class Game:
                         x = 5 + len(display_names[choice_id]) + 1
                         options_window = curses.newwin(height, width, y, x)
                         options_window.keypad(1)
-                        self.draw_borders(options_window)
+                        draw_borders(options_window)
                         options_window.addstr(1, 1, 'Use', curses.A_REVERSE)
                         options_window.refresh()
                         while True:
@@ -1092,7 +1002,7 @@ class Game:
                         x = 5 + len(display_names[choice_id]) + 1
                         options_window = curses.newwin(height, width, y, x)
                         options_window.keypad(1)
-                        self.draw_borders(options_window)
+                        draw_borders(options_window)
                         option_choice_id = 0
                         for i in range(len(options)):
                             if option_choice_id == i:
@@ -1116,7 +1026,7 @@ class Game:
                                 result_slot = options[option_choice_id]
                                 item = items[choice_id]
                                 if not self.player.meets_requirements(item.requires):
-                                    self.message_box('You do not meet the requirements to equip this item', ['Ok'], width=self.window_width - 4, ypos=2, xpos=2)
+                                    message_box(self.stdscr, 'You do not meet the requirements to equip this item', ['Ok'], width=self.window_width - 4, ypos=2, xpos=2)
                                     inventory_window.addstr(1, 1, 'Inventory')
                                     # redraw missing textures
                                     for i in range(win_width - 2):
@@ -1165,7 +1075,7 @@ class Game:
                         x = 5 + len(display_names[choice_id]) + 1
                         options_window = curses.newwin(height, width, y, x)
                         options_window.keypad(1)
-                        self.draw_borders(options_window)
+                        draw_borders(options_window)
                         options_window.addstr(1, 1, s, curses.A_REVERSE)
                         options_window.refresh()
                         while True:
@@ -1190,7 +1100,7 @@ class Game:
                                     display_names = self.get_display_names(items)
                                     break
                                 else:
-                                    self.message_box('Insufficient INT to read spellbook!', ['Ok'])
+                                    message_box(self.stdscr, 'Insufficient INT to read spellbook!', ['Ok'])
                                     break
                 if selected_tab == 1: # EQUIPMENT
                     slot = slots[equip_choice_id]
@@ -1216,7 +1126,7 @@ class Game:
                         x = 5 + len(spell_display_names[spell_choice_id]) + 1
                         options_window = curses.newwin(height, width, y, x)
                         options_window.keypad(1)
-                        self.draw_borders(options_window)
+                        draw_borders(options_window)
                         options_window.addstr(1, 1, s, curses.A_REVERSE)
                         options_window.refresh()
                         while True:
@@ -1229,13 +1139,13 @@ class Game:
                                     # add response to log
                                     break
                                 else:
-                                    self.message_box('Can\'t cast spell!', ['Ok'])
+                                    message_box(self.stdscr, 'Can\'t cast spell!', ['Ok'])
                                     break
             # clear the space
             inventory_window.clear()
 
             inventory_window.addstr(1, 1, 'Inventory')
-            self.draw_borders(inventory_window)
+            draw_borders(inventory_window)
             inventory_window.addch(2, 0, curses.ACS_LTEE)
             inventory_window.addch(2, win_width - 1, curses.ACS_RTEE)
             for i in range(win_width - 2):
@@ -1276,7 +1186,7 @@ class Game:
                     desc = items[cursor + page_n].get_description(self.WIDTH - self.window_width - 3)
                 for i in range(len(desc)):
                     description_window.addstr(1 + i, 1, desc[i])
-                self.draw_borders(description_window)
+                draw_borders(description_window)
                 description_window.refresh()
             if selected_tab == 1: # equipment
                 for i in range(len(slots)):
@@ -1328,7 +1238,7 @@ class Game:
                     desc = self.player.items[item_id].get_description(self.WIDTH - self.window_width - 3)
                     for i in range(len(desc)):
                         description_window.addstr(1 + i, 1, desc[i])
-                self.draw_borders(description_window)
+                draw_borders(description_window)
                 description_window.refresh()
             if selected_tab == 2: # spells
                 if len(spell_display_names) > displayed_spell_count:
@@ -1347,7 +1257,7 @@ class Game:
                     # add spell description to description window
                 for i in range(len(desc)):
                     description_window.addstr(1 + i, 1, desc[i])
-                self.draw_borders(description_window)
+                draw_borders(description_window)
                 description_window.refresh()
         self.stdscr.clear()
         self.draw_info_ui()
@@ -1363,7 +1273,7 @@ class Game:
         encounter.start()
 
         if self.player.health == 0:
-            answer = self.message_box('PLAYER DEAD', ['Load last', 'Back to menu'], width=self.window_width - 4, ypos=2, xpos=2)
+            answer = message_box(self.stdscr, 'PLAYER DEAD', ['Load last', 'Back to menu'], width=self.window_width - 4, ypos=2, xpos=2)
             if answer == 'Back to menu':
                 self.game_running = False
                 return
@@ -1377,10 +1287,10 @@ class Game:
         self.player.temporary_statuses = []
         # clean-up
         self.stdscr.clear()
-        self.draw_borders(self.tile_window)
+        draw_borders(self.tile_window)
         self.draw_info_ui()
         self.draw_player_info()
-        self.draw_borders(self.mini_map_window)
+        draw_borders(self.mini_map_window)
         self.mini_map_window.refresh()
         self.stdscr.refresh()
         self.draw_tile_window()
@@ -1506,7 +1416,7 @@ class Game:
             real_var = self.get_true_value(var)
             if real_var == None:
                 raise Exception(f'ERR: {var} not recognized')  
-            answer = self.message_box(str(real_var), choices, width=self.window_width - 4, ypos=2, xpos=2)
+            answer = message_box(self.stdscr, str(real_var), choices, width=self.window_width - 4, ypos=2, xpos=2)
             self.set_env_var('_mb_result', answer)
             self.draw_tile_window()
             self.tile_window.refresh()
@@ -1636,7 +1546,7 @@ class Game:
 
     def exec_script(self, name, scripts):
         script = scripts[name]
-        # if self.debug: self.message_box(script[0], ['Ok'], width=self.window_width - 3, ypos=2, xpos=2, additional_lines=script[1:])
+        # if self.debug: message_box(self.stdscr, script[0], ['Ok'], width=self.window_width - 3, ypos=2, xpos=2, additional_lines=script[1:])
         for script_line in script:
             if script_line == '':
                 continue

@@ -1,0 +1,5 @@
+- add enemy ai when not in combat
+- add settings system
+- add log
+- add script line log
+- add script line fast access

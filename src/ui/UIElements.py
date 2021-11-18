@@ -19,7 +19,7 @@ class ActionButton(Button):
         self.action()
 
 class DropDownBox:
-    SIGNLE_ELEMENT = 1
+    SINGLE_ELEMENT = 1
     MULTIPLE_ELEMENTS = 2
 
     def draw_borders(self):
@@ -30,7 +30,7 @@ class DropDownBox:
         self.choice_type = choice_type
         self.max_display_amount = max_display_amount
         self.HEIGHT = min(len(options), max_display_amount) + 2
-        self.WIDTH = max([len(o) for o in options]) + 2
+        self.WIDTH = max([len(o) for o in options]) + 3
 
         self.window = curses.newwin(self.HEIGHT, self.WIDTH, y, x)
         self.window.keypad(1)
@@ -95,7 +95,7 @@ class DropDownBox:
                         choice = 0
             if key == 10: # ENTER
                 results.add(indexes[choice])
-                if self.choice_type == DropDownBox.SIGNLE_ELEMENT:
+                if self.choice_type == DropDownBox.SINGLE_ELEMENT:
                     break
                 if choice == -1:
                     break
@@ -112,5 +112,4 @@ class DropDownBox:
                     if choice == len(self.options):
                         cursor -= 1
                         choice -= 1
-                    pass
         return list(results)

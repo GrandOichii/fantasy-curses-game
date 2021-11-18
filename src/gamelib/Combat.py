@@ -11,6 +11,7 @@ from gamelib.Entities import Player, Enemy
 from gamelib.Items import MeleeWeapon, RangedWeapon
 from gamelib.Spells import BloodSpell, CombatSpell, NormalSpell
 from ui.UIElements import DropDownBox
+from ui.Utility import draw_borders
 
 class Action:
     def __init__(self, parent, char, caption, picture, user, other):
@@ -293,13 +294,13 @@ class CombatEncounter:
         self.draw_player_info()
         self.draw_enemy_info()
 
-        self.draw_borders(self.window)
-        self.draw_borders(self.player_window)
+        draw_borders(self.window)
+        draw_borders(self.player_window)
         self.player_window.addstr(0, 1, self.get_player().name)
         self.draw_option_boxes()
-        self.draw_borders(self.enemy_window)
+        draw_borders(self.enemy_window)
         self.enemy_window.addstr(0, 1, self.get_enemy().name)
-        self.draw_borders(self.player_actions_window)
+        draw_borders(self.player_actions_window)
         self.player_actions_window.addstr(0, 1, 'Player options')
 
         self.window.refresh()
@@ -310,7 +311,7 @@ class CombatEncounter:
 
     def draw_combat_log(self):
         self.combat_log_window.clear()
-        self.draw_borders(self.combat_log_window)
+        draw_borders(self.combat_log_window)
         self.combat_log_window.addstr(0, 1, 'Combat log')
         y = 0
         first = 0
@@ -453,7 +454,7 @@ class CombatEncounter:
         w_width = max([len(d) for d in display_names]) + 2
         w_choice_window = curses.newwin(w_height, w_width, 2, 12 + self.box_width)
         w_choice_window.keypad(1)
-        self.draw_borders(w_choice_window)
+        draw_borders(w_choice_window)
         choice_i = 0
         for i in range(len(display_names)):
             if i == choice_i:
@@ -496,7 +497,7 @@ class CombatEncounter:
         a_w_width = max([len(d) for d in display_names]) + 2
         a_window = curses.newwin(a_w_height, a_w_width, 5, 12 + w_width)
         a_window.keypad(1)
-        self.draw_borders(a_window)
+        draw_borders(a_window)
         choice_i = 0
         for i in range(len(display_names)):
             if i == choice_i:
@@ -544,7 +545,7 @@ class CombatEncounter:
         item_names = self.get_usable_item_display_names()
         if len(item_names) == 0:
             return None
-        item_box = DropDownBox(item_names, max_items, self.action_id + 2, 14 + self.box_width, DropDownBox.SIGNLE_ELEMENT)
+        item_box = DropDownBox(item_names, max_items, self.action_id + 2, 14 + self.box_width, DropDownBox.SINGLE_ELEMENT)
         results = item_box.show()
         if len(results) == 0:
             return None
@@ -584,7 +585,7 @@ class CombatEncounter:
         spell_names = self.get_usable_spell_display_names(spells)
         if len(spell_names) == 0:
             return None
-        spell_box = DropDownBox(spell_names, max_spells, self.action_id + 2, 16 + self.box_width, DropDownBox.SIGNLE_ELEMENT)
+        spell_box = DropDownBox(spell_names, max_spells, self.action_id + 2, 16 + self.box_width, DropDownBox.SINGLE_ELEMENT)
         results = spell_box.show()
         if len(results) == 0:
             return None
@@ -624,7 +625,7 @@ class CombatEncounter:
 
         rewards_window = curses.newwin(r_w_height, r_w_width, 1, 1)
         rewards_window.keypad(1)
-        self.draw_borders(rewards_window)
+        draw_borders(rewards_window)
         rewards_window.addstr(0, 1, 'End of combat')
         rewards_window.refresh()
         rewards_window.addstr(1, 1, 'Rewards:')
