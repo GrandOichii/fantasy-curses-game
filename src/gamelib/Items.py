@@ -50,7 +50,7 @@ class Item:
 
     def get_description(self, max_width):
         result = []
-        result += [f'{self.name}']
+        result += [self.name]
         result += ['']
         result += [f'Type: {self.itype}']
         

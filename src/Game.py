@@ -155,13 +155,11 @@ class Game:
         w.addch(height - len(replies) - 3, width - 1, curses.ACS_RTEE)
         for i in range(width - 2):
             w.addch(height - len(replies) - 3, 1 + i, curses.ACS_HLINE)
-        w.addstr(height - len(replies) - 2, 1, '> ')
         for i in range(len(replies)):
             w.addstr(height - len(replies) - 2 + i, 3, replies[i])
-        w.refresh()
         choice_i = 0
+        key = -1
         while True:
-            key = w.getch()
             if key == 259: # UP
                 choice_i -= 1
                 if choice_i < 0: choice_i = len(replies) - 1
@@ -176,6 +174,7 @@ class Game:
                     w.addstr(height - len(replies) - 2 + i, 1, '> ')
                 else:    
                     w.addstr(height - len(replies) - 2 + i, 1, '  ')
+            key = w.getch()
         return replies[choice_i]
 
     def prompt_display(self, message):
@@ -971,7 +970,7 @@ class Game:
                         y = 4 + cursor
                         if y + height > self.window_height:
                             y -= height
-                        x = 5 + len(display_names[choice_id]) + 1
+                        x = 4 + len(display_names[choice_id])
                         options_window = curses.newwin(height, width, y, x)
                         options_window.keypad(1)
                         draw_borders(options_window)
@@ -985,8 +984,7 @@ class Game:
                                 item.use(self.player)
                                 display_names = self.get_display_names(items)
                                 # inventory_window.clear()
-                                break
-                        
+                                break        
                     if issubclass(type(item), Items.EquipableItem):
                         begin_s = 'Equip to '
                         item_slot = item.slot
@@ -998,19 +996,13 @@ class Game:
                         y = 4 + cursor
                         if y + height > self.window_height:
                             y -= height
-                        x = 5 + len(display_names[choice_id]) + 1
+                        x = 4 + len(display_names[choice_id])
                         options_window = curses.newwin(height, width, y, x)
                         options_window.keypad(1)
                         draw_borders(options_window)
                         option_choice_id = 0
-                        for i in range(len(options)):
-                            if option_choice_id == i:
-                                options_window.addstr(1 + i, 1, f'{begin_s}{options[i]}', curses.A_REVERSE)
-                            else:
-                                options_window.addstr(1 + i, 1, f'{begin_s}{options[i]}')
+                        options_key = -1
                         while True:
-                            options_key = options_window.getch()
-                            options_window.addstr(0, 0, str(options_key))
                             if options_key == 259: # UP
                                 option_choice_id -= 1
                                 if option_choice_id < 0:
@@ -1064,6 +1056,7 @@ class Game:
                                     options_window.addstr(1 + i, 1, f'{begin_s}{options[i]}', curses.A_REVERSE)
                                 else:
                                     options_window.addstr(1 + i, 1, f'{begin_s}{options[i]}')
+                            options_key = options_window.getch()
                     if issubclass(type(item), Items.SpellBook):
                         s = f'Use (requires INT of {item.int_to_learn})'
                         height = 3
@@ -1071,7 +1064,7 @@ class Game:
                         y = 4 + cursor
                         if y + height > self.window_height:
                             y -= height
-                        x = 5 + len(display_names[choice_id]) + 1
+                        x = 4 + len(display_names[choice_id])
                         options_window = curses.newwin(height, width, y, x)
                         options_window.keypad(1)
                         draw_borders(options_window)
@@ -1252,8 +1245,7 @@ class Game:
                         inventory_window.addstr(4 + i, 3, f'{spell_display_names[i + page_n]}')
                 description_window.clear()
                 if len(spell_display_names) != 0:
-                    desc = []
-                    # add spell description to description window
+                    desc = self.player.spells[spell_cursor + spell_page_n].get_description(self.WIDTH - self.window_width - 3)
                 for i in range(len(desc)):
                     description_window.addstr(1 + i, 1, desc[i])
                 draw_borders(description_window)

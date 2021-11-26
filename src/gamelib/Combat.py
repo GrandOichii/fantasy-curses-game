@@ -456,13 +456,8 @@ class CombatEncounter:
         w_choice_window.keypad(1)
         draw_borders(w_choice_window)
         choice_i = 0
-        for i in range(len(display_names)):
-            if i == choice_i:
-                w_choice_window.addstr(1 + i, 1, display_names[i], curses.A_REVERSE)
-            else:
-                w_choice_window.addstr(1 + i, 1, display_names[i])
+        key = -1
         while True:
-            key = w_choice_window.getch()
             for i in range(w_height - 2):
                 w_choice_window.addstr(1 + i, 1, ' ' * (w_width - 2))
             if key == 259: # UP
@@ -482,6 +477,7 @@ class CombatEncounter:
                     w_choice_window.addstr(1 + i, 1, display_names[i], curses.A_REVERSE)
                 else:
                     w_choice_window.addstr(1 + i, 1, display_names[i])
+            key = w_choice_window.getch()
         weapon = weapons[choice_i]
         if weapon.range < self.distance:
             return None

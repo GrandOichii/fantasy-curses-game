@@ -1,18 +1,21 @@
 {
     "Heal": {
         "name": "Heal",
+        "description": "A spell that heals a moderate amount of health.",
         "type": "heal_spell",
         "restores": 20,
         "manacost": 10
     },
     "Convert": {
         "name": "Convert",
+        "description": "A blood spell. Converts hp to mana.",
         "type": "blood_spell_mana",
         "restores": 20,
         "bloodcost": 10
     },
     "Fireball": {
         "name": "Fireball",
+        "description": "A fireball spell.",
         "type": "damage_spell",
         "user_statuses": [],
         "enemy_statuses": [],
@@ -22,6 +25,7 @@
     },
     "Boost": {
         "name": "Boost",
+        "description": "Upon casting this spell, applies fast status to caster",
         "type": "combat_spell",
         "user_statuses": ["fast"],
         "enemy_statuses": [],
@@ -30,6 +34,7 @@
     },
     "Slow Down": {
         "name": "Slow Down",
+        "description": "Upon castring this spell makes enemy slower.",
         "type": "combat_spell",
         "user_statuses": [],
         "enemy_statuses": ["slow"],
