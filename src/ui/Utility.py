@@ -1,6 +1,9 @@
 import curses
 import Utility
 
+SINGLE_ELEMENT = 1
+MULTIPLE_ELEMENTS = 2
+
 def draw_borders(window):
     window.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE, curses.ACS_ULCORNER, curses.ACS_URCORNER, curses.ACS_LLCORNER, curses.ACS_LRCORNER)
 
@@ -91,3 +94,88 @@ def message_box(window, message, choices, ypos=-1, xpos=-1, height=-1, width=-1,
     win.clear()
     win.refresh()
     return choices[choice_id]
+
+def drop_down_box(options, max_display_amount, y, x, choice_type):
+    HEIGHT = min(len(options), max_display_amount) + 2
+    WIDTH = max([len(o) for o in options]) + 3
+
+    window = curses.newwin(HEIGHT, WIDTH, y, x)
+    window.keypad(1)
+
+    results = set()
+    indexes = [i for i in range(len(options))]
+    cursor = 0
+    page_n = 0
+    choice = 0
+    draw_borders(window)
+    while True:
+        # clear lines
+        window.addch(1, WIDTH - 1, curses.ACS_VLINE)
+        window.addch(HEIGHT - 2, WIDTH - 1, curses.ACS_VLINE)
+        for i in range(1, HEIGHT - 1):
+            window.addstr(i, 1, ' ' * (WIDTH - 2))
+        # display
+        if len(options) > max_display_amount:
+            if page_n != 0:
+                window.addch(1, WIDTH - 1, curses.ACS_UARROW)
+            if page_n != len(options) - max_display_amount:
+                window.addch(HEIGHT - 2, WIDTH - 1, curses.ACS_DARROW)
+        for i in range(min(max_display_amount, len(options))):
+            if i == cursor:
+                window.addstr(1 + i, 1, options[i + page_n], curses.A_REVERSE)
+            else:
+                window.addstr(1 + i, 1, options[i + page_n])
+        # key processing
+        key = window.getch()
+        if key == 27: # ESC
+            break
+        if key == 259: # UP
+            choice -= 1
+            cursor -= 1
+            if cursor < 0:
+                if len(options) > max_display_amount:
+                    if page_n == 0:
+                        cursor = max_display_amount - 1
+                        choice = len(options) - 1
+                        page_n = len(options) - max_display_amount
+                    else:
+                        page_n -= 1
+                        cursor += 1
+                else:
+                    cursor = len(options) - 1
+                    choice = cursor
+        if key == 258: # DOWN
+            choice += 1
+            cursor += 1
+            if len(options) > max_display_amount:
+                if cursor >= max_display_amount:
+                    cursor -= 1
+                    page_n += 1
+                    if choice == len(options):
+                        choice = 0
+                        cursor = 0
+                        page_n = 0
+            else:
+                if cursor >= len(options):
+                    cursor = 0
+                    choice = 0
+        if key == 10: # ENTER
+            if choice == -1:
+                break
+            results.add(indexes[choice])
+            if choice_type == SINGLE_ELEMENT:
+                break
+            options.pop(choice)
+            indexes.pop(choice)
+            if len(options) > max_display_amount:
+                if page_n == len(options) - max_display_amount + 1:
+                    page_n -= 1
+                    choice -= 1
+            else:
+                if page_n == 1:
+                    page_n = 0
+                    choice -= 1
+                if choice == len(options):
+                    cursor -= 1
+                    choice -= 1
+    return list(results)

@@ -88,7 +88,11 @@ class StringSettingsItem(SettingsItem):
 
     def get_value(self):
         return self.value
-        
+
+    def proc_key(self, key):
+        if key == 10: # ENTER
+            curses.flash()
+
 class MultipleOptionsSettingsMenu(SettingsItem):
     def __init__(self, parent, name, description, options):
         super().__init__(parent, name, description)

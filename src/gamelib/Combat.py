@@ -10,8 +10,7 @@ import gamelib.Items as Items
 from gamelib.Entities import Player, Enemy
 from gamelib.Items import MeleeWeapon, RangedWeapon
 from gamelib.Spells import BloodSpell, CombatSpell, NormalSpell
-from ui.UIElements import DropDownBox
-from ui.Utility import draw_borders
+from ui.Utility import draw_borders, drop_down_box, SINGLE_ELEMENT, MULTIPLE_ELEMENTS
 
 class Action:
     def __init__(self, parent, char, caption, picture, user, other):
@@ -109,6 +108,7 @@ class AttackPlayerAction(Action):
         damage = self.user.damage
         damage += random.randint(0, self.user.damage_mod)
         self.other.add_health(-damage)
+        curses.flash()
         return [f'{self.user.name} attacks and deals {damage} damage to {self.other.name}.']
 
 class UseItemAction(Action):
@@ -545,8 +545,7 @@ class CombatEncounter:
         item_names = self.get_usable_item_display_names()
         if len(item_names) == 0:
             return None
-        item_box = DropDownBox(item_names, max_items, self.action_id + 2, 14 + self.box_width, DropDownBox.SINGLE_ELEMENT)
-        results = item_box.show()
+        results = drop_down_box(item_names, max_items, self.action_id + 2, 14 + self.box_width, SINGLE_ELEMENT)
         if len(results) == 0:
             return None
         result_id = results[0]
@@ -585,8 +584,7 @@ class CombatEncounter:
         spell_names = self.get_usable_spell_display_names(spells)
         if len(spell_names) == 0:
             return None
-        spell_box = DropDownBox(spell_names, max_spells, self.action_id + 2, 16 + self.box_width, DropDownBox.SINGLE_ELEMENT)
-        results = spell_box.show()
+        results = drop_down_box(spell_names, max_spells, self.action_id + 2, 16 + self.box_width, SINGLE_ELEMENT)
         if len(results) == 0:
             return None
         result_id = results[0]
@@ -665,7 +663,7 @@ class CombatEncounter:
                     page += 1
                     if page > len(display_names) - limit:
                         page = len(display_names) - limit
-            if key == 27: # ESC
+            if key == 27 or key == 10 or key == 32: # ESC/ENTER/SPACE
                 break
 
         # at the end

@@ -7,8 +7,8 @@ from Settings import SettingsMenu
 from gamelib.Spells import BloodSpell, NormalSpell
 
 from ui.Menu import Menu
-from ui.UIElements import Button, ActionButton, DropDownBox
-from ui.Utility import message_box, draw_borders
+from ui.UIElements import Button, ActionButton
+from ui.Utility import message_box, draw_borders, drop_down_box, MULTIPLE_ELEMENTS
 
 import Utility
 import gamelib.Room as Room
@@ -80,7 +80,7 @@ class Game:
         curses.wrapper(self.main)
 
     def main(self, stdscr):
-        if self.debug: draw_borders(stdscr)
+        draw_borders(stdscr)
         self.stdscr = stdscr
         self.HEIGHT, self.WIDTH = self.stdscr.getmaxyx()
         self.menu_choice_id = 0
@@ -634,8 +634,7 @@ class Game:
         if len(item_names) == 0:
             message_box(self.stdscr, 'Chest is empty.', ['Ok'])
             return
-        chest_box = DropDownBox(item_names, 4, self.mid_y, self.mid_x + 3, DropDownBox.MULTIPLE_ELEMENTS)
-        results = chest_box.show()
+        results = drop_down_box(item_names, 4, self.mid_y, self.mid_x + 3, MULTIPLE_ELEMENTS)
         if len(results) == 0:
             return
         # remove taken items
