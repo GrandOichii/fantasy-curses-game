@@ -6,11 +6,10 @@ import os
 from Settings import SettingsMenu
 from gamelib.Spells import BloodSpell, NormalSpell
 
-from ui.Menu import Menu
-from ui.UIElements import Button, ActionButton
-from ui.Utility import message_box, draw_borders, drop_down_box, MULTIPLE_ELEMENTS
+from cursesui.Elements import Menu, Window, Button, UIElement, Widget, TextField, WordChoice, Separator
+from cursesui.Utility import message_box, cct_len, draw_borders, drop_down_box, put, MULTIPLE_ELEMENTS
 
-import Utility
+import cursesui.Utility as Utility
 import gamelib.Room as Room
 import gamelib.Items as Items
 import gamelib.Map as Map
@@ -19,280 +18,18 @@ import gamelib.SaveFile as SaveFile
 from gamelib.Entities import Player
 from gamelib.Combat import CombatEncounter
 
+def distance(ay, ax, by, bx):
+    return sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by))
+
 class Game:
-    def __init__(self, config_file):
-        self.debug = False
+    def __init__(self, parent, character_name, config_file):
+        self.parent = parent
+        self.window = parent.window
+        self.character_name = character_name
         self.config_file = config_file
-        self.starting_room = 'index'
-        if config_file.has('Starting room'):
-            self.starting_room = config_file.get('Starting room')
+
         self.max_name_len = 20
-        self.game_speed = 200
 
-        self.create_folders()
-        self.main_menu = Menu()
-        self.main_menu.choice_symbol = '> '
-        self.main_menu.title = 'Fantasy Curses Game'
-        self.main_menu.text = 'This is a fantasy game made using python curses'
-
-        # settings_menu = Menu()
-        # settings_menu.choice_symbol = '> '
-        # settings_menu.title = 'Settings'
-        # settings_menu.text = 'Nothing here yet'
-
-        credits_menu = Menu()
-        credits_menu.choice_symbol = '> '
-        credits_menu.title = 'Credits'
-        credits_menu.text = 'https://github.com/GrandOichii/fantasy-curses-game'
-
-        ActionButton('new_game_button', 'New game', self.main_menu, self.new_game_action)
-
-        ActionButton('load_button', 'Load', self.main_menu, self.load_game_action)
-
-        ActionButton('settings_button', 'Settings', self.main_menu, self.config_settings)
-
-        main_to_credits_button = Button('credits_button', 'Credits', self.main_menu)
-        main_to_credits_button.connect_to(credits_menu)
-
-        ActionButton('exit_button', 'Exit', self.main_menu, self.exit_action)
-
-        back_to_main_button = Button('back_to_main_button', 'Back', credits_menu)
-        back_to_main_button.connect_to(self.main_menu)
-
-        self.current_menu = self.main_menu
-
-    def config_settings(self):
-        SettingsMenu(self.stdscr, self.config_file)
-        self.stdscr.clear()
-
-    def create_folders(self):
-        # create saves folder
-        if not os.path.exists(self.config_file.get('Saves path')):
-            try:
-                os.mkdir(self.config_file.get('Save path'))
-            except Exception as ex:
-                print('ERROR - Could not create saves folder')
-                print(ex)
-                input() # ???
-                exit()
-
-    def start(self):
-        curses.wrapper(self.main)
-
-    def main(self, stdscr):
-        draw_borders(stdscr)
-        self.stdscr = stdscr
-        self.HEIGHT, self.WIDTH = self.stdscr.getmaxyx()
-        self.menu_choice_id = 0
-
-        # remove cursor
-        curses.curs_set(0)
-        curses.mousemask(1)
-
-        # for testing purposes
-        stdscr = curses.initscr()
-
-        # init colors
-
-        # initial display
-        self.display_current_menu(1, 1)
-        stdscr.refresh()
-
-        # main game loop
-        self.running = True
-        while self.running:
-            key = stdscr.getch()
-            stdscr.clear()
-
-            # keys
-            if key in [81]: # Q
-                self.running = False
-            if key in [259]: # UP
-                self.menu_choice_id -= 1
-                if self.menu_choice_id < 0:
-                    self.menu_choice_id = len(self.current_menu.buttons) - 1
-            if key in [258]: # DOWN
-                self.menu_choice_id += 1
-                if self.menu_choice_id >= len(self.current_menu.buttons):
-                    self.menu_choice_id = 0
-            if key in [10]: # ENTER
-                if not self.current_menu.buttons[self.menu_choice_id].leads_to:
-                    if not isinstance(self.current_menu.buttons[self.menu_choice_id], ActionButton) :
-                        message_box(self.stdscr, 'This button doesn\'t do anything', ['Ok'])
-                    else:
-                        self.current_menu.buttons[self.menu_choice_id].click()
-                else:
-                    self.current_menu = self.current_menu.buttons[self.menu_choice_id].leads_to
-                    self.menu_choice_id = 0
-
-            if self.running:
-                if self.debug: self.addstr(0, 0, f'KEY: |{key}|')
-                self.display_current_menu(1, 1)
-                if self.debug: draw_borders(stdscr)
-                stdscr.refresh()
-
-    def addstr(self, ypos, xpos, message):
-        self.stdscr.addstr(ypos, xpos, message)
-
-    def display_dialog(self, message, replies):
-        width = self.window_width - 2
-        height = self.window_height // 2
-
-        lines = Utility.str_smart_split(message, width - 2)
-        name = '???'
-        if '_say_name' in self.env_vars:
-            name = self.get_env_var('_say_name')
-
-
-        w = curses.newwin(height - 1, width, height + 1, 2)
-        draw_borders(w)
-        w.keypad(1)
-        w.addstr(0, 1, name)
-
-        for i in range(len(lines)):
-            w.addstr(1 + i, 1, lines[i])
-        w.addch(height - len(replies) - 3, 0, curses.ACS_LTEE)
-        w.addch(height - len(replies) - 3, width - 1, curses.ACS_RTEE)
-        for i in range(width - 2):
-            w.addch(height - len(replies) - 3, 1 + i, curses.ACS_HLINE)
-        for i in range(len(replies)):
-            w.addstr(height - len(replies) - 2 + i, 3, replies[i])
-        choice_i = 0
-        key = -1
-        while True:
-            if key == 259: # UP
-                choice_i -= 1
-                if choice_i < 0: choice_i = len(replies) - 1
-            if key == 258: # DOWN
-                choice_i += 1
-                if choice_i >= len(replies): choice_i = 0
-            if key == 10: # ENTER
-                break
-
-            for i in range(len(replies)):
-                if i == choice_i:
-                    w.addstr(height - len(replies) - 2 + i, 1, '> ')
-                else:    
-                    w.addstr(height - len(replies) - 2 + i, 1, '  ')
-            key = w.getch()
-        return replies[choice_i]
-
-    def prompt_display(self, message):
-        self.addstr(11, self.window_width + 11, message)
-        self.stdscr.refresh()
-        key = self.stdscr.getch()
-        self.addstr(11, self.window_width + 11, ' ' * (self.WIDTH - self.window_width - 11))
-        self.stdscr.refresh()
-        return key
-
-    def display_menu(self, menu, y, x):
-        self.addstr(y, x, menu.title)
-        self.addstr(y + 2, x, menu.text)
-        for i in range(len(menu.buttons)):
-            self.addstr(y + 4 + i, x + len(menu.choice_symbol), menu.buttons[i].text)
-            if i == self.menu_choice_id:
-                self.addstr(y + 4 + i, x, menu.choice_symbol)
-
-    def display_current_menu(self, y, x):
-        self.display_menu(self.current_menu, y, x)
-            
-    def exit_action(self):
-        self.running = False
-
-    def new_game_action(self):
-        self.stdscr.clear()
-        enstr = 'Enter your character\'s name (press ESC to cancel): '
-        min_name_len = 3
-        self.addstr(1, 1, f'{enstr}')
-        self.addstr(1, 1 + len(enstr), '_' * self.max_name_len)
-        done = False
-        name = ''
-        while not done:
-            key = self.stdscr.getch()
-            if self.debug: self.addstr(0, 0, f'KEY: |{key}|')
-            if (key >= 97 and key <= 122) or (key >= 65 and key <= 90) or key in [32]: # from a to z, from A to Z, SPACE
-                if len(name) >= self.max_name_len:
-                    message_box(self.stdscr, f'Maximum length of character is {self.max_name_len}', ['Ok'])
-                else:
-                    name += chr(key)
-            # too slow for some reason
-            if key in [27]: # ESC
-                cancel_result = message_box(self.stdscr, 'Cancel character creation?', ['No', 'Yes'])
-                if cancel_result == 'Yes':
-                    self.stdscr.clear()
-                    return
-            if key in [127, 8]: # BACKSPACE
-                if len(name) > 0:
-                    name = name[:-1]
-                else:
-                    cancel_result = message_box(self.stdscr, 'Cancel character creation?', ['No', 'Yes'])
-                    if cancel_result == 'Yes':
-                        self.stdscr.clear()
-                        return
-            if key in [10]: # ENTER
-                if len(name) < min_name_len:
-                    message_box(self.stdscr, f'The name has to be at least {min_name_len} characters long!', ['Ok'])
-                else:
-                    done = True
-            if not done:
-                placeholder = '_' * (self.max_name_len - len(name))
-                self.addstr(1, 1 + len(enstr), f'{name}{placeholder}')
-        class_result = message_box(self.stdscr, 'Choose your character class:', ['Warrior', 'Mage', 'Thief'])
-        if message_box(self.stdscr, 'Is this ok?',  ['Yes', 'No'], additional_lines=[f'Name: {name}', f'Class: {class_result}']) == 'No':
-            self.new_game_action()
-            return
-        
-        # create character with name and class_result
-        class_result = class_result.lower()
-        player = Player()
-        player.name = name
-        data = json.loads(open('assets/class_schemas.json').read())
-        if not class_result in data:
-            raise Exception(f'ERR: Class {class_result} not found in assets')
-        player.load_class(data[class_result], 'assets/items.json')
-        already_exists = SaveFile.save_file_exists(self.config_file.get('Saves path'), player.name)
-        if already_exists and message_box(self.stdscr, f'File with name {player.name} already exists, override?', ['No', 'Yes']) == 'No':
-            self.stdscr.clear()
-            self.new_game_action()
-            return
-        SaveFile.save(player, self.starting_room, self.config_file.get('Saves path'))
-        self.stdscr.clear()
-        self.load_character(player.name)
-
-    def load_game_action(self):
-        if SaveFile.count_saves(self.config_file.get('Saves path')) == 0:
-            message_box(self.stdscr, 'No save files detected!', ['Ok'])
-            return
-        save_desc, corrupt_files = SaveFile.save_descriptions(self.config_file.get('Saves path'))
-        for cor in corrupt_files:
-            if message_box(self.stdscr, f'Character {cor} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
-                SaveFile.delete_save_file(cor, self.config_file.get('Saves path'))
-
-        ch_names = SaveFile.character_names(self.config_file.get('Saves path'))
-        self.menu_choice_id = 0
-        self.load_menu = Menu()
-        self.load_menu.title = 'Load'
-        self.load_menu.choice_symbol = '> '
-        self.load_menu.text = 'Choose a save file:'
-        for i in range(len(save_desc)):
-            ActionButton(f'load_{ch_names[i]}_button', save_desc[i], self.load_menu, self.load_character_pick_action)
-        button = Button('back_to_main_button', 'Back', self.load_menu)
-        button.connect_to(self.main_menu)
-        self.current_menu = self.load_menu
-
-    def load_character_pick_action(self):
-        name = SaveFile.character_names(self.config_file.get('Saves path'))[self.menu_choice_id]
-        response = message_box(self.stdscr, f'Load character {name}?', ['Load', 'Delete', 'Cancel'])
-        if response == 'Cancel':
-            return
-        if response == 'Load':
-            self.load_character(name)
-        if response == 'Delete' and message_box(self.stdscr, f'Delete character {name}? (Permanent)', ['No', 'Yes']) == 'Yes':
-            SaveFile.delete_save_file(name, self.config_file.get('Saves path'))
-            self.load_menu.remove_button_with_name(f'load_{name}_button')
-            
-    def load_character(self, character_name):
-        # try:
         data = SaveFile.load(character_name, self.config_file.get('Saves path'))
         if data == -1:
             sp = self.config_file.get('Saves path')
@@ -306,27 +43,27 @@ class Game:
             self.player_y = data['player_y']
         if 'player_x' in data:
             self.player_x = data['player_x']
-        # except Exception as ex:
-        #     if self.debug: raise ex
-        #     if message_box(self.stdscr, f'Character {character_name} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
-        #         SaveFile.delete_save_file(character_name, self.config_file.get('Saves path'))
-        #         self.load_menu.remove_button_with_name(f'load_{character_name}_button')
-        #     return
-            
-        self.stdscr.clear()
 
         # set some values
-        self.window_height = self.HEIGHT * 5 // 6
+        self.window_height = self.parent.HEIGHT * 5 // 6
         if self.window_height % 2 == 0: self.window_height -= 1
-        self.window_width = self.WIDTH - self.max_name_len - 8
+        self.tile_window_width = self.parent.WIDTH - self.max_name_len - 8
 
-        self.window_width -= 1
+        self.tile_window_width -= 1
 
         self.camera_dy = 0
         self.camera_dx = 0
 
-        # permanent display
-        self.tile_window = curses.newwin(self.window_height, self.window_width, 0, 1)
+        self.MINI_MAP_HEIGHT = 7
+        self.MINI_MAP_WIDTH = 7
+
+        self.mid_y = self.window_height // 2 
+        self.mid_x = self.tile_window_width // 2
+            
+    def start(self):
+        self.window.clear()
+         # permanent display
+        self.tile_window = curses.newwin(self.window_height, self.tile_window_width, 0, 1)
         draw_borders(self.tile_window)
         # self.tile_window.nodelay(True)
         # self.tile_window.timeout(self.game_speed)
@@ -334,20 +71,15 @@ class Game:
         self.tile_window.keypad(1)
         self.draw_info_ui()
         self.draw_player_info()
-        self.stdscr.refresh()
-
-        self.MINI_MAP_HEIGHT = 7
-        self.MINI_MAP_WIDTH = 7
-        self.mini_map_window = curses.newwin(self.MINI_MAP_HEIGHT + 2, self.MINI_MAP_WIDTH + 2, 13, self.window_width + 4)
+        self.window.refresh()
+        
+        self.mini_map_window = curses.newwin(self.MINI_MAP_HEIGHT + 2, self.MINI_MAP_WIDTH + 2, 13, self.tile_window_width + 4)
         draw_borders(self.mini_map_window)
         self.mini_map_window.refresh()
+
         self.full_map = None
         if self.config_file.has('Map path'):
             self.full_map = Map.Map(self.config_file.get('Map path'))
-
-        self.mid_y = self.window_height // 2 
-        self.mid_x = self.window_width // 2
-
         self.draw_tile_window()
 
         if '_load' in self.game_room.scripts:
@@ -360,15 +92,11 @@ class Game:
         if self.game_room.display_name != '':
             self.draw_room_display_name(self.game_room.display_name)
 
+        self.window.refresh()
         # main game loop
         self.main_game_loop()
-        
-        # end of method
-        self.tile_window.clear()
-        self.tile_window.refresh()
-        self.stdscr.clear()
-        self.stdscr.refresh()
-        self.current_menu = self.main_menu
+
+    # main loop methods
 
     def main_game_loop(self):
         entered_room = False
@@ -381,7 +109,7 @@ class Game:
                 self.exec_script('_tick', self.game_room.scripts)
             key = self.tile_window.getch()
             self.tile_window.clear()
-            if key == 81 and message_box(self.stdscr, 'Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.window_width - 4, ypos=2, xpos=2) == 'Yes':
+            if key == 81 and message_box(self.parent, 'Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.tile_window_width - 4, ypos=2, xpos=2) == 'Yes':
                 self.save_enemy_env_vars()
                 SaveFile.save(self.player, self.game_room.name, self.config_file.get('Saves path'), player_y=self.player_y, player_x=self.player_x, env_vars=self.env_vars)
                 break
@@ -434,9 +162,9 @@ class Game:
             if key == 101: # e
                 interactable_tiles = self.get_interactable_tiles(self.player_y, self.player_x)
                 if len(interactable_tiles) == 0:
-                    message_box(self.stdscr, 'No tiles to interact with nearby!', ['Ok'],width=self.window_width - 4, ypos=2, xpos=2)
+                    message_box(self.parent, 'No tiles to interact with nearby!', ['Ok'],width=self.tile_window_width - 4, ypos=2, xpos=2)
                 else:
-                    interact_key = self.prompt_display('Interact where?')
+                    interact_key = self.draw_prompt('Interact where?')
                     flag = False
                     i_tile = None
                     for o in interactable_tiles:
@@ -464,7 +192,7 @@ class Game:
                 if encounter_ready:
                     self.initiate_encounter_with(encounter_enemy_code)
                 else:
-                    message_box(self.stdscr, 'You are not within range to attack anybody!', ['Ok'], width=self.window_width - 4, ypos=2, xpos=2)
+                    message_box(self.parent, 'You are not within range to attack anybody!', ['Ok'], width=self.tile_window_width - 4, ypos=2, xpos=2)
             if key == 120: # x
                 update_entities = False
             if self.game_running:
@@ -496,14 +224,14 @@ class Game:
                 self.draw_tile_window()
                 self.draw_player_info()
                 self.tile_window.refresh()
-                self.stdscr.refresh()
+                self.window.refresh()
                 if self.game_room.display_name != '':
                     self.draw_room_display_name(self.game_room.display_name)
 
                 encounter_ready, encounter_enemy_code = self.check_for_encounters()
                 
                 if key == 120: # x
-                    self.tile_description_mode()      
+                    self.tile_description_mode()    
 
     def check_for_encounters(self):
         encounter_ready = False
@@ -513,7 +241,7 @@ class Game:
         for enemy_code in self.game_room.enemies_data:
             enemy = self.game_room.enemies_data[enemy_code]
             if enemy.health > 0:
-                d = Utility.distance(enemy.y, enemy.x, self.player_y, self.player_x)
+                d = distance(enemy.y, enemy.x, self.player_y, self.player_x)
                 if d <= self.player.get_range(self.game_room.visible_range):
                     if min_d == -1 or d < min_d:
                         min_d = d
@@ -523,9 +251,9 @@ class Game:
             encounter_ready = True
             s = f'[ Press [c] to initiate combat with {enemy.name} ]'
             y = self.window_height - 2
-            x = self.window_width // 2 - len(s) // 2
+            x = self.tile_window_width // 2 - len(s) // 2
             self.tile_window.addstr(y, x, s)
-        return (encounter_ready, enemy_code)                 
+        return (encounter_ready, enemy_code)    
 
     def update_entities(self):
         self.player.regenerate_mana()
@@ -541,6 +269,48 @@ class Game:
             self.set_env_var(f'{f}mana', enemy.mana)
             self.set_env_var(f'{f}y', enemy.y)
             self.set_env_var(f'{f}x', enemy.x)
+
+    def display_dialog(self, message, replies):
+        width = self.tile_window_width - 2
+        height = self.window_height // 2
+
+        lines = Utility.str_smart_split(message, width - 2)
+        name = '???'
+        if '_say_name' in self.env_vars:
+            name = self.get_env_var('_say_name')
+
+        w = curses.newwin(height - 1, width, height + 1, 2)
+        draw_borders(w)
+        w.keypad(1)
+        w.addstr(0, 1, name)
+
+        for i in range(len(lines)):
+            put(w, 1 + i, 1, lines[i])
+        w.addch(height - len(replies) - 3, 0, curses.ACS_LTEE)
+        w.addch(height - len(replies) - 3, width - 1, curses.ACS_RTEE)
+        for i in range(width - 2):
+            w.addch(height - len(replies) - 3, 1 + i, curses.ACS_HLINE)
+        for i in range(len(replies)):
+            put(w, height - len(replies) - 2 + i, 3, replies[i])
+        choice_i = 0
+        key = -1
+        while True:
+            if key == 259: # UP
+                choice_i -= 1
+                if choice_i < 0: choice_i = len(replies) - 1
+            if key == 258: # DOWN
+                choice_i += 1
+                if choice_i >= len(replies): choice_i = 0
+            if key == 10: # ENTER
+                break
+
+            for i in range(len(replies)):
+                if i == choice_i:
+                    put(w, height - len(replies) - 2 + i, 1, '> ')
+                else:    
+                    put(w, height - len(replies) - 2 + i, 1, '  ')
+            key = w.getch()
+        return replies[choice_i]
 
     def tile_description_mode(self):
         cursor_y = self.mid_y
@@ -561,19 +331,19 @@ class Game:
                 break
             self.tile_window.clear()
             # North
-            if key in [56, 259] and cursor_map_y != 0 and Utility.distance(cursor_map_y - 1, cursor_map_x, self.player_y, self.player_x) < self.game_room.visible_range:
+            if key in [56, 259] and cursor_map_y != 0 and distance(cursor_map_y - 1, cursor_map_x, self.player_y, self.player_x) < self.game_room.visible_range:
                 cursor_y -= 1
                 cursor_map_y -= 1
             # South
-            if key in [50, 258] and cursor_map_y != self.game_room.height - 1 and Utility.distance(cursor_map_y + 1, cursor_map_x, self.player_y, self.player_x) < self.game_room.visible_range:
+            if key in [50, 258] and cursor_map_y != self.game_room.height - 1 and distance(cursor_map_y + 1, cursor_map_x, self.player_y, self.player_x) < self.game_room.visible_range:
                 cursor_y += 1
                 cursor_map_y += 1
             # West
-            if key in [52, 260] and cursor_map_x != 0 and Utility.distance(cursor_map_y, cursor_map_x - 1, self.player_y, self.player_x) < self.game_room.visible_range:
+            if key in [52, 260] and cursor_map_x != 0 and distance(cursor_map_y, cursor_map_x - 1, self.player_y, self.player_x) < self.game_room.visible_range:
                 cursor_x -= 1
                 cursor_map_x -= 1
             # East
-            if key in [54, 261] and cursor_map_x != self.game_room.width - 1 and Utility.distance(cursor_map_y, cursor_map_x + 1, self.player_y, self.player_x) < self.game_room.visible_range:
+            if key in [54, 261] and cursor_map_x != self.game_room.width - 1 and distance(cursor_map_y, cursor_map_x + 1, self.player_y, self.player_x) < self.game_room.visible_range:
                 cursor_x += 1
                 cursor_map_x += 1
             
@@ -600,7 +370,7 @@ class Game:
             for enemy in list(self.game_room.enemies_data.values()):
                 y = enemy.y + self.mid_y - self.player_y
                 x = enemy.x + self.mid_x - self.player_x
-                if Utility.distance(self.player_y, self.player_x, enemy.y, enemy.x) < self.game_room.visible_range:
+                if distance(self.player_y, self.player_x, enemy.y, enemy.x) < self.game_room.visible_range:
                     if y == cursor_y and x == cursor_x:
                         self.tile_window.addch(y, x, enemy.char, curses.A_REVERSE)
                         display_name = enemy.name
@@ -612,41 +382,6 @@ class Game:
         # clean-up
         self.tile_window.clear()
         self.draw_tile_window()
-
-    def interact_with_chest(self, chest_tile):
-        max_win_height = 9
-
-        items_dict = self.game_room.chest_contents[chest_tile.chest_code]
-
-        item_names = []
-        codes = []
-        for item in items_dict:
-            if self.get_env_var(items_dict[item]) != True:
-                if isinstance(item, Items.GoldPouch):
-                    item_names += [f'{item.amount} gold']
-                elif isinstance(item, Items.CountableItem):
-                    item_names += [f'{item.name} x{item.amount}']
-                else:
-                    item_names += [item.name]
-                codes += [items_dict[item]]
-
-        if len(item_names) == 0:
-            message_box(self.stdscr, 'Chest is empty.', ['Ok'])
-            return
-        results = drop_down_box(item_names, 4, self.mid_y, self.mid_x + 3, MULTIPLE_ELEMENTS)
-        if len(results) == 0:
-            return
-        # remove taken items
-        for i in results:
-            self.set_env_var(codes[i], True)
-        # add items to inventory
-        items = list(items_dict.keys())
-        for i in results:
-            self.player.add_item(items[i])
-
-        # clear the leftovers from the drop down box borders
-        for i in range(self.HEIGHT):
-            self.addstr(i, self.window_width + 1, ' ')
 
     def get_interactable_tiles(self, y, x):
         y_lim = self.game_room.height
@@ -678,131 +413,40 @@ class Game:
             result += [[self.game_room.tiles[y + 1][x + 1], [110, 51]]]
         return result
 
-    # drawing
+    def interact_with_chest(self, chest_tile):
+        items_dict = self.game_room.chest_contents[chest_tile.chest_code]
 
-    def draw_info_ui(self):
-        s = '1234567891234567891234'
-        self.addstr(0, self.window_width + 2, f'Name: {self.player.name}')
-        self.addstr(1, self.window_width + 2, f'Class: {self.player.class_name}')
-        self.addstr(2, self.window_width + 2, f'Gold: ')
-        self.addstr(4, self.window_width + 2, f'Health:          (   /   )') # left: 19
-        self.addstr(5, self.window_width + 2, f'  Mana:          (   /   )') # left: 21
-        self.addstr(7, self.window_width + 2, f'STR:') # left: 22
-        self.addstr(8, self.window_width + 2, f'DEX:') # left: 22
-        self.addstr(9, self.window_width + 2, f'INT:') # left: 22
-        self.addstr(11, self.window_width + 2, 'Prompt: ')
-        self.stdscr.refresh()
+        item_names = []
+        codes = []
+        for item in items_dict:
+            if self.get_env_var(items_dict[item]) != True:
+                item_names += [item.get_cct_display_text()]
+                codes += [items_dict[item]]
 
-    def draw_player_info(self):
-        self.addstr(2, self.window_width + 2 + 6, ' ' * (self.WIDTH - self.window_width - 2 - 6))
-        self.addstr(2, self.window_width + 2 + 6, f'{self.player.gold}')
+        if len(item_names) == 0:
+            message_box(self.parent, 'Chest is empty.', ['Ok'])
+            return
+        results = drop_down_box(item_names, 4, self.mid_y, self.mid_x + 3, MULTIPLE_ELEMENTS)
+        if len(results) == 0:
+            return
+        # remove taken items
+        for i in results:
+            self.set_env_var(codes[i], True)
+        # add items to inventory
+        items = list(items_dict.keys())
+        for i in results:
+            self.player.add_item(items[i])
 
-        health_info = ' ' * (3 - len(str(self.player.health))) + f'{self.player.health}'
-        self.addstr(4, self.window_width + 20, f'{health_info}')
-        max_health_info =  ' ' * (3 - len(str(self.player.max_health))) + f'{self.player.max_health}'
-        self.addstr(4, self.window_width + 24, f'{max_health_info}')
-        self.addstr(4, self.window_width + 9, Utility.calc_pretty_bars(self.player.health, self.player.max_health, 10))
-        
-        mana_info =  ' ' * (3 - len(str(self.player.mana))) + f'{self.player.mana}'
-        self.addstr(5, self.window_width + 20, f'{mana_info}')
-        max_mana_info =  ' ' * (3 - len(str(self.player.max_mana))) + f'{self.player.max_mana}'
-        self.addstr(5, self.window_width + 24, f'{max_mana_info}')
-        self.addstr(5, self.window_width + 9, Utility.calc_pretty_bars(self.player.mana, self.player.max_mana, 10))
-
-        str_info = ' ' * (3 - len(str(self.player.STR))) + f'{self.player.STR}'
-        self.addstr(7, self.window_width + 6, f'{str_info}')
-        dex_info = ' ' * (3 - len(str(self.player.DEX))) + f'{self.player.DEX}'
-        self.addstr(8, self.window_width + 6, f'{dex_info}')
-        int_info = ' ' * (3 - len(str(self.player.INT))) + f'{self.player.INT}'
-        self.addstr(9, self.window_width + 6, f'{int_info}')
-
-    def draw_enemies(self):
-        for enemy in list(self.game_room.enemies_data.values()):
-            if enemy.health > 0 and sqrt((self.player_y - enemy.y) * (self.player_y - enemy.y) + (self.player_x - enemy.x) * (self.player_x - enemy.x)) < self.game_room.visible_range:
-                y = enemy.y + self.mid_y - self.player_y
-                x = enemy.x + self.mid_x - self.player_x
-                self.tile_window.addch(y, x, enemy.char)
-
-    def draw_torches(self):
-        for i in range(self.game_room.height):
-            for j in range(self.game_room.width):
-                if isinstance(self.game_room.tiles[i][j], Room.TorchTile):
-                    self.draw_tiles(i, j, self.game_room.tiles[i][j].visible_range)
-                if isinstance(self.game_room.tiles[i][j], Room.HiddenTile) and self.get_env_var(self.game_room.tiles[i][j].signal) == True and isinstance(self.game_room.tiles[i][j].actual_tile, Room.TorchTile):
-                    # !!! BIG ISSUE !!! either rework hidden tiles, or make a work-around
-                    self.draw_tiles(i, j, self.game_room.tiles[i][j].actual_tile.visible_range)
-
-    def draw_tiles(self, y, x, visible_range):
-        mid_y = self.mid_y - self.player_y + y + self.camera_dy
-        mid_x = self.mid_x - self.player_x + x - self.camera_dx
-        for i in range(max(1, mid_y - visible_range), min(self.window_height - 1, mid_y + visible_range + 1)):
-            for j in range(max (1, mid_x - visible_range), min(self.window_width - 1, mid_x + visible_range + 1)):
-                if Utility.distance(i, j, mid_y, mid_x) < visible_range:
-                    room_y = i + y - mid_y
-                    room_x = j + x - mid_x
-                    if room_y < 0 or room_x < 0 or room_y >= self.game_room.height or room_x >= self.game_room.width:
-                        self.tile_window.addch(i, j, '#')
-                    else:
-                        if self.game_room.tiles[room_y][room_x].char == '!':
-                            self.tile_window.addch(i, j, self.game_room.tiles[room_y][room_x].char, curses.A_BLINK)
-                        else:
-                            tile = self.game_room.tiles[room_y][room_x]
-                            if isinstance(tile, Room.HiddenTile):
-                                if self.get_env_var(tile.signal) == True:
-                                    self.game_room.tiles[room_y][room_x].solid = self.game_room.tiles[room_y][room_x].actual_tile.solid
-                                    self.game_room.tiles[room_y][room_x].interactable = self.game_room.tiles[room_y][room_x].actual_tile.interactable
-                                    self.tile_window.addch(i, j, self.game_room.tiles[room_y][room_x].actual_tile.char)
-                                else:
-                                    self.game_room.tiles[room_y][room_x].solid = True
-                                    self.game_room.tiles[room_y][room_x].interactable = False
-                                    self.tile_window.addch(i, j, self.game_room.tiles[room_y][room_x].char)
-                            else:
-                                self.tile_window.addch(i, j, self.game_room.tiles[room_y][room_x].char)
-
-    def draw_tile_window(self):
-        draw_borders(self.tile_window)
-        self.draw_tiles(self.player_y, self.player_x, self.game_room.visible_range)
-        self.draw_torches()
-        # last to display
-        real_mid_y = self.mid_y + self.camera_dy
-        real_mid_x = self.mid_x - self.camera_dx
-        if real_mid_y > 0 and real_mid_y < self.window_height - 1 and real_mid_x > 0 and real_mid_x < self.window_width - 1:
-            self.tile_window.addstr(real_mid_y, real_mid_x, '@')
-        if self.full_map != None:
-            self.draw_mini_map(self.game_room.name)
-        self.draw_enemies()
-
-    def draw_mini_map(self, room_name):
-        hh = self.MINI_MAP_HEIGHT // 2
-        hw = self.MINI_MAP_WIDTH // 2
-        mini_map_tiles = self.full_map.get_mini_tiles(room_name, self.env_vars, self.MINI_MAP_HEIGHT, self.MINI_MAP_WIDTH, hh, hw)
-        for i in range(self.MINI_MAP_HEIGHT):
-            for j in range(self.MINI_MAP_WIDTH):
-                if i == hh and j == hw:
-                    self.mini_map_window.addch(1 + i, 1 + j, mini_map_tiles[i][j], curses.A_REVERSE)
-                else:
-                    self.mini_map_window.addch(1 + i, 1 + j, mini_map_tiles[i][j])
-        self.mini_map_window.refresh()
-
-    def draw_room_display_name(self, display_name):
-        h = 3
-        w = len(display_name) + 2
-        y = self.window_height - 3 - 1
-        x = self.window_width - w -1
-        win = curses.newwin(h, w, y, x)
-        win.addstr(1, 1, display_name)
-        draw_borders(win)
-        win.refresh()
+        # clear the leftovers from the drop down box borders
+        for i in range(self.parent.HEIGHT):
+            self.window.addstr(i, self.tile_window_width + 1, ' ')
 
     def get_display_names(self, items):
-        display_names = []
+        result = []
         for i in range(len(items)):
             item = items[i]
-            line = f'{item.name}'
-            if issubclass(type(item), Items.CountableItem):
-                line += f' x{item.amount}'
+            line = item.get_cct_display_text()
             if issubclass(type(item), Items.EquipableItem):
-                line += f' ({item.slot})'
                 for s in self.player.equipment:
                     if self.player.equipment[s] == i:
                         if item.slot == 'ARMS':
@@ -810,8 +454,8 @@ class Game:
                         else:
                             line += f' -> {s}'
                         break
-            display_names += [line]
-        return display_names
+            result += [line]
+        return result
 
     def draw_inventory(self):
         items = list(self.player.items)
@@ -820,7 +464,7 @@ class Game:
         display_names = self.get_display_names(items)
 
         win_height = self.window_height
-        win_width = self.window_width
+        win_width = self.tile_window_width
         inventory_window = curses.newwin(win_height, win_width, 0, 1)
         inventory_window.keypad(1)
         inventory_window.addstr(1, 1, 'Inventory')
@@ -838,9 +482,9 @@ class Game:
         for i in range(len(tabs)):
             tab_name = f'[{tabs[i]}]'
             if i == selected_tab:
-                inventory_window.addstr(2, x, tab_name, curses.A_REVERSE)
+                put(inventory_window, 2, x, tab_name, curses.A_REVERSE)
             else:
-                inventory_window.addstr(2, x, tab_name)
+                put(inventory_window, 2, x, tab_name)
             x += 2 + len(tab_name)
 
         choice_id = 0
@@ -857,23 +501,23 @@ class Game:
         displayed_spell_count = displayed_item_count
 
         # item description window
-        d_window_height = self.HEIGHT
-        d_window_width = self.WIDTH - self.window_width - 1
-        description_window = curses.newwin(d_window_height, d_window_width, 0, self.window_width + 1)
+        d_window_height = self.parent.HEIGHT
+        d_window_width = self.parent.WIDTH - self.tile_window_width - 1
+        description_window = curses.newwin(d_window_height, d_window_width, 0, self.tile_window_width + 1)
         desc = []
         if len(display_names) != 0:
             desc = items[cursor + page_n].get_description(d_window_width - 2)
         for i in range(len(desc)):
-            description_window.addstr(1 + i, 1, desc[i])
+            put(description_window, 1 + i, 1, desc[i])
         draw_borders(description_window)
         description_window.refresh()
 
         # initial items display
         for i in range(min(displayed_item_count, len(display_names))):
             if i == cursor:
-                inventory_window.addstr(4 + i, 3, f'{display_names[i]}', curses.A_REVERSE)
+                put(inventory_window, 4 + i, 3, f'{display_names[i]}', curses.A_REVERSE)
             else:
-                inventory_window.addstr(4 + i, 3, f'{display_names[i]}')
+                put(inventory_window, 4 + i, 3, f'{display_names[i]}')
         if len(display_names) > displayed_item_count:
             inventory_window.addch(win_height - 2, 1, curses.ACS_DARROW)
         
@@ -996,7 +640,7 @@ class Game:
                         y = 4 + cursor
                         if y + height > self.window_height:
                             y -= height
-                        x = 4 + len(display_names[choice_id])
+                        x = 4 + cct_len(display_names[choice_id])
                         options_window = curses.newwin(height, width, y, x)
                         options_window.keypad(1)
                         draw_borders(options_window)
@@ -1017,7 +661,7 @@ class Game:
                                 result_slot = options[option_choice_id]
                                 item = items[choice_id]
                                 if not self.player.meets_requirements(item.requires):
-                                    message_box(self.stdscr, 'You do not meet the requirements to equip this item', ['Ok'], width=self.window_width - 4, ypos=2, xpos=2)
+                                    message_box(self.parent, 'You do not meet the requirements to equip this item', ['Ok'], width=self.tile_window_width - 4, ypos=2, xpos=2)
                                     inventory_window.addstr(1, 1, 'Inventory')
                                     # redraw missing textures
                                     for i in range(win_width - 2):
@@ -1092,7 +736,7 @@ class Game:
                                     display_names = self.get_display_names(items)
                                     break
                                 else:
-                                    message_box(self.stdscr, 'Insufficient INT to read spellbook!', ['Ok'])
+                                    message_box(self.parent, 'Insufficient INT to read spellbook!', ['Ok'])
                                     break
                 if selected_tab == 1: # EQUIPMENT
                     slot = slots[equip_choice_id]
@@ -1131,7 +775,7 @@ class Game:
                                     # add response to log
                                     break
                                 else:
-                                    message_box(self.stdscr, 'Can\'t cast spell!', ['Ok'])
+                                    message_box(self.parent, 'Can\'t cast spell!', ['Ok'])
                                     break
             # clear the space
             inventory_window.clear()
@@ -1146,9 +790,9 @@ class Game:
             for i in range(len(tabs)):
                 tab_name = f'[{tabs[i]}]'
                 if i == selected_tab:
-                    inventory_window.addstr(2, x, tab_name, curses.A_REVERSE)
+                    put(inventory_window, 2, x, tab_name, curses.A_REVERSE)
                 else:
-                    inventory_window.addstr(2, x, tab_name)
+                    put(inventory_window, 2, x, tab_name)
                 x += 2 + len(tab_name)
 
             # display the tabs
@@ -1170,14 +814,14 @@ class Game:
                         inventory_window.addch(win_height - 2, 1, curses.ACS_DARROW)
                 for i in range(min(len(display_names), displayed_item_count)):
                     if i == cursor:
-                        inventory_window.addstr(4 + i, 3, f'{display_names[i + page_n]}', curses.A_REVERSE)
+                        put(inventory_window, 4 + i, 3, f'{display_names[i + page_n]}', curses.A_REVERSE)
                     else:
-                        inventory_window.addstr(4 + i, 3, f'{display_names[i + page_n]}')
+                        put(inventory_window, 4 + i, 3, f'{display_names[i + page_n]}')
                 description_window.clear()
                 if len(display_names) != 0:
-                    desc = items[cursor + page_n].get_description(self.WIDTH - self.window_width - 3)
+                    desc = items[cursor + page_n].get_description(self.parent.WIDTH - self.tile_window_width - 3)
                 for i in range(len(desc)):
-                    description_window.addstr(1 + i, 1, desc[i])
+                    put(description_window, 1 + i, 1, desc[i])
                 draw_borders(description_window)
                 description_window.refresh()
             if selected_tab == 1: # equipment
@@ -1221,15 +865,15 @@ class Game:
                     inventory_window.addstr(12, 13, item_name)
 
                 # desc = []
-                # desc = items[cursor + page_n].get_description(self.WIDTH - self.window_width - 3)
+                # desc = items[cursor + page_n].get_description(self.WIDTH - self.tile_window_width - 3)
                 # for i in range(len(desc)):
                 #     description_window.addstr(1 + i, 1, desc[i])
                 description_window.clear()
                 item_id = self.player.equipment[slots[equip_choice_id]]
                 if item_id != None:
-                    desc = self.player.items[item_id].get_description(self.WIDTH - self.window_width - 3)
+                    desc = self.player.items[item_id].get_description(self.parent.WIDTH - self.tile_window_width - 3)
                     for i in range(len(desc)):
-                        description_window.addstr(1 + i, 1, desc[i])
+                        put(description_window, 1 + i, 1, desc[i])
                 draw_borders(description_window)
                 description_window.refresh()
             if selected_tab == 2: # spells
@@ -1245,26 +889,26 @@ class Game:
                         inventory_window.addstr(4 + i, 3, f'{spell_display_names[i + page_n]}')
                 description_window.clear()
                 if len(spell_display_names) != 0:
-                    desc = self.player.spells[spell_cursor + spell_page_n].get_description(self.WIDTH - self.window_width - 3)
+                    desc = self.player.spells[spell_cursor + spell_page_n].get_description(self.parent.WIDTH - self.tile_window_width - 3)
                 for i in range(len(desc)):
                     description_window.addstr(1 + i, 1, desc[i])
                 draw_borders(description_window)
                 description_window.refresh()
-        self.stdscr.clear()
+        self.window.clear()
         self.draw_info_ui()
         self.draw_player_info()
-        self.stdscr.refresh()
+        self.window.refresh()
 
     # combat
 
     def initiate_encounter_with(self, encounter_enemy_code):
         enemy = self.game_room.enemies_data[encounter_enemy_code]
-        distance = Utility.distance(self.player_y, self.player_x, enemy.y, enemy.x)
-        encounter = CombatEncounter(self.player, enemy, distance, self.HEIGHT, self.WIDTH, self.config_file)
+        d = distance(self.player_y, self.player_x, enemy.y, enemy.x)
+        encounter = CombatEncounter(self.player, enemy, d, self.parent.HEIGHT, self.parent.WIDTH, self.config_file)
         encounter.start()
 
         if self.player.health == 0:
-            answer = message_box(self.stdscr, 'PLAYER DEAD', ['Load last', 'Back to menu'], width=self.window_width - 4, ypos=2, xpos=2)
+            answer = message_box(self.parent, 'PLAYER DEAD', ['Load last', 'Back to menu'], width=self.tile_window_width - 4, ypos=2, xpos=2)
             if answer == 'Back to menu':
                 self.game_running = False
                 return
@@ -1277,13 +921,13 @@ class Game:
         # clear temporary statuses
         self.player.temporary_statuses = []
         # clean-up
-        self.stdscr.clear()
+        self.window.clear()
         draw_borders(self.tile_window)
         self.draw_info_ui()
         self.draw_player_info()
         draw_borders(self.mini_map_window)
         self.mini_map_window.refresh()
-        self.stdscr.refresh()
+        self.window.refresh()
         self.draw_tile_window()
         if self.full_map != None:
             self.draw_mini_map(self.game_room.name)
@@ -1291,6 +935,129 @@ class Game:
         self.tile_window.refresh()
         if self.game_room.display_name != '':
             self.draw_room_display_name(self.game_room.display_name)
+
+    # draw
+
+    def draw_info_ui(self):
+        # s = '1234567891234567891234'
+        put(self.window, 0, self.tile_window_width + 2, f'Name: #green-black {self.player.name}')
+        put(self.window, 1, self.tile_window_width + 2, f'Class: #green-black {self.player.class_name}')
+        put(self.window, 2, self.tile_window_width + 2, f'Gold: ')
+        put(self.window, 4, self.tile_window_width + 2, f'Health:          (   /   )') # left: 19
+        put(self.window, 5, self.tile_window_width + 2, f'  Mana:          (   /   )') # left: 21
+        put(self.window, 7, self.tile_window_width + 2, f'#black-red STR:') # left: 22
+        put(self.window, 8, self.tile_window_width + 2, f'#black-green DEX:') # left: 22
+        put(self.window, 9, self.tile_window_width + 2, f'#black-cyan INT:') # left: 22
+        put(self.window, 11, self.tile_window_width + 2, 'Prompt: ')
+        self.window.refresh()
+
+    def draw_player_info(self):
+        put(self.window, 2, self.tile_window_width + 2 + 6, ' ' * (self.parent.WIDTH - self.tile_window_width - 2 - 6))
+        put(self.window, 2, self.tile_window_width + 2 + 6, f'#yellow-black {self.player.gold}')
+
+        health_info = ' ' * (3 - len(str(self.player.health))) + f'{self.player.health}'
+        put(self.window, 4, self.tile_window_width + 20, f'#red-black {health_info}')
+        max_health_info =  ' ' * (3 - len(str(self.player.max_health))) + f'{self.player.max_health}'
+        put(self.window, 4, self.tile_window_width + 24, f'#red-black {max_health_info}')
+        put(self.window, 4, self.tile_window_width + 9, f'#red-black {Utility.calc_pretty_bars(self.player.health, self.player.max_health, 10)}')
+        
+        mana_info =  ' ' * (3 - len(str(self.player.mana))) + f'{self.player.mana}'
+        put(self.window, 5, self.tile_window_width + 20, f'#cyan-black {mana_info}')
+        max_mana_info =  ' ' * (3 - len(str(self.player.max_mana))) + f'{self.player.max_mana}'
+        put(self.window, 5, self.tile_window_width + 24, f'#cyan-black {max_mana_info}')
+        put(self.window, 5, self.tile_window_width + 9, f'#cyan-black {Utility.calc_pretty_bars(self.player.mana, self.player.max_mana, 10)}')
+
+        str_info = ' ' * (3 - len(str(self.player.STR))) + f'{self.player.STR}'
+        put(self.window, 7, self.tile_window_width + 6, f'{str_info}')
+        dex_info = ' ' * (3 - len(str(self.player.DEX))) + f'{self.player.DEX}'
+        put(self.window, 8, self.tile_window_width + 6, f'{dex_info}')
+        int_info = ' ' * (3 - len(str(self.player.INT))) + f'{self.player.INT}'
+        put(self.window, 9, self.tile_window_width + 6, f'{int_info}')
+
+    def draw_tile_window(self):
+        draw_borders(self.tile_window)
+        self.draw_tiles(self.player_y, self.player_x, self.game_room.visible_range)
+        self.draw_torches()
+        # last to display
+        real_mid_y = self.mid_y + self.camera_dy
+        real_mid_x = self.mid_x - self.camera_dx
+        if real_mid_y > 0 and real_mid_y < self.window_height - 1 and real_mid_x > 0 and real_mid_x < self.tile_window_width - 1:
+            self.tile_window.addstr(real_mid_y, real_mid_x, '@')
+        if self.full_map != None:
+            self.draw_mini_map(self.game_room.name)
+        self.draw_enemies()
+
+    def draw_mini_map(self, room_name):
+        hh = self.MINI_MAP_HEIGHT // 2
+        hw = self.MINI_MAP_WIDTH // 2
+        mini_map_tiles = self.full_map.get_mini_tiles(room_name, self.env_vars, self.MINI_MAP_HEIGHT, self.MINI_MAP_WIDTH, hh, hw)
+        for i in range(self.MINI_MAP_HEIGHT):
+            for j in range(self.MINI_MAP_WIDTH):
+                if i == hh and j == hw:
+                    self.mini_map_window.addch(1 + i, 1 + j, mini_map_tiles[i][j], curses.A_REVERSE)
+                else:
+                    self.mini_map_window.addch(1 + i, 1 + j, mini_map_tiles[i][j])
+        self.mini_map_window.refresh()
+
+    def draw_room_display_name(self, display_name):
+        h = 3
+        w = len(display_name) + 2
+        y = self.window_height - 3 - 1
+        x = self.tile_window_width - w -1
+        win = curses.newwin(h, w, y, x)
+        win.addstr(1, 1, display_name)
+        draw_borders(win)
+        win.refresh()
+
+    def draw_tiles(self, y, x, visible_range):
+        mid_y = self.mid_y - self.player_y + y + self.camera_dy
+        mid_x = self.mid_x - self.player_x + x - self.camera_dx
+        for i in range(max(1, mid_y - visible_range), min(self.window_height - 1, mid_y + visible_range + 1)):
+            for j in range(max (1, mid_x - visible_range), min(self.tile_window_width - 1, mid_x + visible_range + 1)):
+                if distance(i, j, mid_y, mid_x) < visible_range:
+                    room_y = i + y - mid_y
+                    room_x = j + x - mid_x
+                    if room_y < 0 or room_x < 0 or room_y >= self.game_room.height or room_x >= self.game_room.width:
+                        self.tile_window.addch(i, j, '#')
+                    else:
+                        if self.game_room.tiles[room_y][room_x].char == '!':
+                            self.tile_window.addch(i, j, self.game_room.tiles[room_y][room_x].char, curses.A_BLINK)
+                        else:
+                            tile = self.game_room.tiles[room_y][room_x]
+                            if isinstance(tile, Room.HiddenTile):
+                                if self.get_env_var(tile.signal) == True:
+                                    self.game_room.tiles[room_y][room_x].solid = self.game_room.tiles[room_y][room_x].actual_tile.solid
+                                    self.game_room.tiles[room_y][room_x].interactable = self.game_room.tiles[room_y][room_x].actual_tile.interactable
+                                    self.tile_window.addch(i, j, self.game_room.tiles[room_y][room_x].actual_tile.char)
+                                else:
+                                    self.game_room.tiles[room_y][room_x].solid = True
+                                    self.game_room.tiles[room_y][room_x].interactable = False
+                                    self.tile_window.addch(i, j, self.game_room.tiles[room_y][room_x].char)
+                            else:
+                                self.tile_window.addch(i, j, self.game_room.tiles[room_y][room_x].char)
+
+    def draw_torches(self):
+        for i in range(self.game_room.height):
+            for j in range(self.game_room.width):
+                if isinstance(self.game_room.tiles[i][j], Room.TorchTile):
+                    self.draw_tiles(i, j, self.game_room.tiles[i][j].visible_range)
+                if isinstance(self.game_room.tiles[i][j], Room.HiddenTile) and self.get_env_var(self.game_room.tiles[i][j].signal) == True and isinstance(self.game_room.tiles[i][j].actual_tile, Room.TorchTile):
+                    # !!! BIG ISSUE !!! either rework hidden tiles, or make a work-around
+                    self.draw_tiles(i, j, self.game_room.tiles[i][j].actual_tile.visible_range)
+
+    def draw_enemies(self):
+        for enemy in list(self.game_room.enemies_data.values()):
+            if enemy.health > 0 and sqrt((self.player_y - enemy.y) * (self.player_y - enemy.y) + (self.player_x - enemy.x) * (self.player_x - enemy.x)) < self.game_room.visible_range:
+                y = enemy.y + self.mid_y - self.player_y
+                x = enemy.x + self.mid_x - self.player_x
+                self.tile_window.addch(y, x, enemy.char)
+
+    def draw_prompt(self, message):
+        put(self.window, 11, self.tile_window_width + 11, message)
+        key = self.window.getch()
+        put(self.window, 11, self.tile_window_width + 11, ' ' * (self.parent.WIDTH - self.tile_window_width - 11))
+        self.window.refresh()
+        return key
 
     # env vars
 
@@ -1407,7 +1174,7 @@ class Game:
             real_var = self.get_true_value(var)
             if real_var == None:
                 raise Exception(f'ERR: {var} not recognized')  
-            answer = message_box(self.stdscr, str(real_var), choices, width=self.window_width - 4, ypos=2, xpos=2)
+            answer = message_box(self.parent, str(real_var), choices, width=self.tile_window_width - 4, ypos=2, xpos=2)
             self.set_env_var('_mb_result', answer)
             self.draw_tile_window()
             self.tile_window.refresh()
@@ -1537,7 +1304,7 @@ class Game:
 
     def exec_script(self, name, scripts):
         script = scripts[name]
-        # if self.debug: message_box(self.stdscr, script[0], ['Ok'], width=self.window_width - 3, ypos=2, xpos=2, additional_lines=script[1:])
+        # if self.debug: message_box(self.stdscr, script[0], ['Ok'], width=self.tile_window_width - 3, ypos=2, xpos=2, additional_lines=script[1:])
         for script_line in script:
             if script_line == '':
                 continue
@@ -1546,9 +1313,9 @@ class Game:
                 return True
             
     def get_terminal_command(self):
-        self.addstr(self.window_height, 1, '> ')
-        self.stdscr.refresh()
-        w = curses.newwin(1, self.window_width - 3, self.window_height, 3)
+        self.window.addstr(self.window_height, 1, '> ')
+        self.window.refresh()
+        w = curses.newwin(1, self.tile_window_width - 3, self.window_height, 3)
         curses.curs_set(1)
         w.keypad(1)
         box = textpad.Textbox(w)
@@ -1557,11 +1324,275 @@ class Game:
         curses.curs_set(0)
         w.clear()
         w.refresh()
-        self.addstr(self.window_height, 1, '  ')
-        self.stdscr.refresh()
+        self.window.addstr(self.window_height, 1, '  ')
+        self.window.refresh()
         return result
 
     def _terminal_command_validator(self, ch):
         if ch in [127, 8]:
             return 8
         return ch
+
+class GameWindow(Window):
+    def __init__(self, window, config_file):
+        super().__init__(window)
+        self.debug = False
+        self.config_file = config_file
+        self.starting_room = 'index'
+        if config_file.has('Starting room'):
+            self.starting_room = config_file.get('Starting room')
+        self.game_speed = 200
+
+        self.create_folders()
+
+    def initUI(self):
+        # menu init
+        self.main_menu = Menu(self, '#red-black Fantasy #cyan-black Curses #magenta-black Game')
+        self.main_menu.bottom_description = ''
+
+        self.credits_menu = Menu(self, '#yellow-black Credits')
+        self.credits_menu.bottom_description = 'https://github.com/GrandOichii/fantasy-curses-game'
+
+        self.character_creation_menu = Menu(self, '#cyan-black Character creation')
+        self.character_creation_menu.bottom_description = 'Create your character!'
+
+        # elements init
+        self.new_game_button = Button(self, 'New game', self.to_character_creation_action)
+        self.new_game_button.set_focused(True)
+        self.new_game_button.set_pos(1, 1)
+
+        self.load_game_button = Button(self, 'Load', self.load_game_action)
+        self.load_game_button.set_pos(2, 1)
+
+        self.settings_button = Button(self, 'Settings', self.to_settings_action)
+        self.settings_button.set_pos(3, 1)
+
+        self.credits_button = Button(self, 'Credits', self.to_credits_action)
+        self.credits_button.set_pos(4, 1)
+
+        self.exit_button = Button(self, 'Exit', self.exit)
+        self.exit_button.set_pos(5, 1)
+
+        back_to_main_button = Button(self, 'Back', self.to_main_menu_action)
+        back_to_main_button.set_focused(True)
+        back_to_main_button.set_pos(1, 1)
+
+        name_text_widget = Widget(self)
+        name_text_widget.add_element(UIElement(self, 'Name: '))
+        self.name_text_field = TextField(self, '', 20)
+        name_text_widget.add_element(self.name_text_field)
+        name_text_widget.focused_element_id = 1
+        name_text_widget.set_pos(1, 1)
+        name_text_widget.set_focused(True)
+
+        class_widget = Widget(self)
+        class_widget.add_element(UIElement(self, 'Class:'))
+        self.class_choice = WordChoice(self, ['Warrior', 'Wizard', 'Rogue'])
+        class_widget.add_element(self.class_choice)
+        class_widget.focused_element_id = 1
+        class_widget.set_pos(2, 1)
+
+        create_button = Button(self, 'Create', self.create_character_action)
+        create_button.set_pos(4, 1)
+
+        cancel_button = Button(self, 'Cancel', self.to_main_menu_action)
+        cancel_button.set_pos(5, 1)
+
+        # next prev setting
+        self.new_game_button.prev = self.exit_button
+        self.new_game_button.next = self.load_game_button
+
+        self.new_game_button.prev = self.exit_button
+        self.new_game_button.next = self.load_game_button
+
+        self.load_game_button.prev = self.new_game_button
+        self.load_game_button.next = self.settings_button
+
+        self.settings_button.prev = self.load_game_button
+        self.settings_button.next = self.credits_button
+
+        self.credits_button.prev = self.settings_button
+        self.credits_button.next = self.exit_button
+        
+        self.exit_button.prev = self.credits_button
+        self.exit_button.next = self.new_game_button
+
+        name_text_widget.prev = cancel_button
+        name_text_widget.next = class_widget
+
+        class_widget.prev = name_text_widget
+        class_widget.next = create_button
+
+        create_button.prev = class_widget
+        create_button.next = cancel_button
+        
+        cancel_button.prev = create_button
+        cancel_button.next = name_text_widget
+        
+        # add elements to menus
+        self.main_menu.add_element(self.new_game_button)
+        self.main_menu.add_element(self.load_game_button)
+        self.main_menu.add_element(self.settings_button)
+        self.main_menu.add_element(self.credits_button)
+        self.main_menu.add_element(self.exit_button)
+
+        self.character_creation_menu.add_element(name_text_widget)
+        self.character_creation_menu.add_element(class_widget)
+        self.character_creation_menu.add_element(Separator(self, 3))
+        self.character_creation_menu.add_element(create_button)
+        self.character_creation_menu.add_element(cancel_button)
+
+        self.credits_menu.add_element(back_to_main_button)
+
+        self.current_menu = self.main_menu
+
+    def handle_key(self, key):
+        if key == 27:
+            self.exit()
+
+    # actions
+
+    def to_credits_action(self):
+        self.current_menu = self.credits_menu
+
+    def to_main_menu_action(self):
+        self.current_menu = self.main_menu
+
+    def to_settings_action(self):
+        message_box(self, '#red-black Not implemented yet!', ['Ok'])
+        return
+        # TO-DO: change to settings window
+        self.window.clear()
+        SettingsMenu(self.window, self.config_file)
+        self.window.clear()
+
+    def to_character_creation_action(self):
+        self.character_creation_menu.unfocus_all()
+        self.character_creation_menu.selectedElementId = 0
+        self.character_creation_menu.focus_selected()
+
+        self.name_text_field.text = ''
+        self.name_text_field.cursor = 0
+
+        self.class_choice.choice = 0
+
+        self.current_menu = self.character_creation_menu
+
+    def create_character_action(self):
+        character_name = self.name_text_field.text
+        character_class = self.class_choice.get_selected_value()
+        if message_box(self, 'Is this ok?',  ['Yes', 'No'], additional_lines=[f'Name: #cyan-black {character_name}', f'Class: #cyan-black {character_class}']) == 'No':
+            return
+        # create the character
+        character_class = character_class.lower()
+        player = Player()
+        player.name = character_name
+        data = json.loads(open('assets/class_schemas.json').read())
+        if not character_class in data:
+            raise Exception(f'ERR: Class {character_class} not found in assets')
+        player.load_class(data[character_class], 'assets/items.json')
+        already_exists = SaveFile.save_file_exists(self.config_file.get('Saves path'), player.name)
+        if already_exists and message_box(self, f'File with name {player.name} already exists, override?', ['No', 'Yes']) == 'No':
+            return
+        SaveFile.save(player, self.starting_room, self.config_file.get('Saves path'))
+        self.window.clear()
+        self.load_character(player.name)
+    
+    # game actions
+
+    def create_folders(self):
+        # create saves folder
+        if not os.path.exists(self.config_file.get('Saves path')):
+            try:
+                os.mkdir(self.config_file.get('Save path'))
+            except Exception as ex:
+                print('ERROR - Could not create saves folder')
+                print(ex)
+                input() # ???
+                exit()
+
+    def load_game_action(self):
+        if SaveFile.count_saves(self.config_file.get('Saves path')) == 0:
+            message_box(self, 'No save files detected!', ['Ok'])
+            self.current_menu = self.main_menu
+            return
+        save_desc, corrupt_files = SaveFile.save_descriptions(self.config_file.get('Saves path'))
+        for cor in corrupt_files:
+            if message_box(self, f'Character {cor} seems to be corrupt, delete file?', ['No', 'Yes']) == 'Yes':
+                SaveFile.delete_save_file(cor, self.config_file.get('Saves path'))
+
+        # ch_names = SaveFile.character_names(self.config_file.get('Saves path'))
+        self.load_menu = Menu(self, '#cyan-black Load character')
+
+        label = UIElement(self, 'Load character:')
+        label.set_pos(1, 1)
+        self.load_menu.add_element(label)
+
+        # first button
+        first_button = Button(self, f'#cyan-black {save_desc[0]}', self.load_character_pick_action)
+        first_button.set_focused(True)
+        first_button.set_pos(2, 2)
+        self.load_menu.add_element(first_button)
+
+        last_button = first_button
+
+        # other buttons
+        i = 1
+        for i in range(1, len(save_desc)):
+            new_button = Button(self, f'#cyan-black {save_desc[i]}', self.load_character_pick_action)
+            new_button.set_pos(2 + i, 2)
+
+            new_button.prev = last_button
+            last_button.next = new_button
+
+            self.load_menu.add_element(new_button)
+            last_button = new_button
+        
+        # back to main button
+        button = Button(self, 'Back', self.to_main_menu_action)
+        button.set_pos(4 + i, 1)
+        last_button.next = button
+        button.prev = last_button
+        button.next = first_button
+        first_button.prev = button
+
+        self.load_menu.add_element(Separator(self, 3 + i))
+        self.load_menu.add_element(button)
+
+        self.current_menu = self.load_menu
+
+    def load_character_pick_action(self):
+        names = SaveFile.character_names(self.config_file.get('Saves path'))
+        name = names[self.current_menu.selectedElementId - 1]
+        response = message_box(self, f'Load character {name}?', ['Load', 'Delete', 'Cancel'])
+        if response == 'Cancel':
+            return
+        if response == 'Load':
+            self.load_character(name)
+        if response == 'Delete' and message_box(self, f'Delete character {name}? (Permanent)', ['No', 'Yes']) == 'Yes':
+            SaveFile.delete_save_file(name, self.config_file.get('Saves path'))
+            self.load_game_action()
+
+    def load_character(self, character_name):
+        game = Game(self, character_name, self.config_file)
+        game.start()
+
+        self.current_menu = self.main_menu
+
+
+
+     
+
+                 
+
+    
+
+    
+
+    
+
+    
+    
+
+    # drawing
+

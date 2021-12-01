@@ -52,7 +52,7 @@ move camera 0 -3
 sleep 500
 set _say_name player.name
 sleep 500
-say ... "Thats weird."
+say ... "#cyan-black Thats weird."
 sleep 500
 move camera 0 3
 sleep 500

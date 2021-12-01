@@ -1,6 +1,6 @@
 import json
 
-from Utility import str_smart_split
+from cursesui.Utility import str_smart_split
 
 class Spell:
     def __init__(self):

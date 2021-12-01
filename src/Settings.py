@@ -1,8 +1,6 @@
 import curses
 
-from ui.Utility import draw_borders
-
-from Utility import str_smart_split
+from cursesui.Utility import draw_borders, str_smart_split
 
 SPACING = 1
 

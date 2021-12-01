@@ -3,14 +3,12 @@ import random
 from curses import textpad
 from curses.textpad import rectangle
 
-import Utility
-
 import gamelib.Items as Items
 
 from gamelib.Entities import Player, Enemy
 from gamelib.Items import MeleeWeapon, RangedWeapon
 from gamelib.Spells import BloodSpell, CombatSpell, NormalSpell
-from ui.Utility import draw_borders, drop_down_box, SINGLE_ELEMENT, MULTIPLE_ELEMENTS
+from cursesui.Utility import put, draw_borders, drop_down_box, calc_pretty_bars, str_smart_split, SINGLE_ELEMENT, MULTIPLE_ELEMENTS
 
 class Action:
     def __init__(self, parent, char, caption, picture, user, other):
@@ -233,11 +231,11 @@ class CombatEncounter:
             self.enemy_window.addstr(i, 1, ' ' * (self.box_width - 3))
         
         # display health
-        self.enemy_window.addstr(y_first, 1, f'Health: {Utility.calc_pretty_bars(enemy.health, enemy.max_health, self.box_width - 16)}')
+        self.enemy_window.addstr(y_first, 1, f'Health: {calc_pretty_bars(enemy.health, enemy.max_health, self.box_width - 16)}')
         self.enemy_window.addstr(y_first, self.box_width - 6, f'(  )')
         self.enemy_window.addstr(y_first, self.box_width - 5, f'{enemy.health}')
         # display mana
-        self.enemy_window.addstr(y_first + 1, 1, f'  Mana: {Utility.calc_pretty_bars(enemy.mana, enemy.max_mana, self.box_width - 16)}')
+        self.enemy_window.addstr(y_first + 1, 1, f'  Mana: {calc_pretty_bars(enemy.mana, enemy.max_mana, self.box_width - 16)}')
         self.enemy_window.addstr(y_first + 1, self.box_width - 6, f'(  )')
         self.enemy_window.addstr(y_first + 1, self.box_width - 5, f'{enemy.mana}')
 
@@ -260,11 +258,11 @@ class CombatEncounter:
             self.player_window.addstr(i, 1, ' ' * (self.box_width - 3))
 
         # display health
-        self.player_window.addstr(y_first, 1, f'Health: {Utility.calc_pretty_bars(player.health, player.max_health, self.box_width - 15)}')
+        self.player_window.addstr(y_first, 1, f'Health: {calc_pretty_bars(player.health, player.max_health, self.box_width - 15)}')
         self.player_window.addstr(y_first, self.box_width - 5, f'(  )')
         self.player_window.addstr(y_first, self.box_width - 4, f'{player.health}')
         # display mana
-        self.player_window.addstr(y_first + 1, 1, f'  Mana: {Utility.calc_pretty_bars(player.mana, player.max_mana, self.box_width - 15)}')
+        self.player_window.addstr(y_first + 1, 1, f'  Mana: {calc_pretty_bars(player.mana, player.max_mana, self.box_width - 15)}')
         self.player_window.addstr(y_first + 1, self.box_width - 5, f'(  )')
         self.player_window.addstr(y_first + 1, self.box_width - 4, f'{player.mana}')
 
@@ -320,7 +318,7 @@ class CombatEncounter:
             first = self.cl_page
             last = self.cl_page + self.cl_limit - 1
         for i in range(first, last + 1):
-            self.combat_log_window.addstr(1 + y, 1, self.combat_log[i])
+            put(self.combat_log_window, 1 + y, 1, self.combat_log[i])
             y += 1
         if len(self.combat_log) > self.cl_limit:
             if self.cl_page != 0:
@@ -418,7 +416,7 @@ class CombatEncounter:
 
     def add_to_combat_log(self, message):
         message = '- ' + message
-        self.combat_log += Utility.str_smart_split(message, self.combat_log_message_width)
+        self.combat_log += str_smart_split(message, self.combat_log_message_width)
         if len(self.combat_log) > self.cl_limit:
             self.cl_page = len(self.combat_log) - self.cl_limit
 
@@ -488,7 +486,7 @@ class CombatEncounter:
         ammo_items = player.get_ammo_of_type(weapon.ammo_type)
         if len(ammo_items) == 0: # BAD
             return None
-        display_names = [f'{item.name} ({item.amount})' for item in ammo_items]
+        display_names = [item.get_cct_display_text() for item in ammo_items]
         a_w_height = len(ammo_items) + 2
         a_w_width = max([len(d) for d in display_names]) + 2
         a_window = curses.newwin(a_w_height, a_w_width, 5, 12 + w_width)
@@ -526,7 +524,7 @@ class CombatEncounter:
         result = []
         for item in self.get_player().countable_items:
             if isinstance(item, Items.UsableItem):
-                result += [f'{item.name} x{item.amount}']
+                result += [item.get_cct_display_text()]
         return result
 
     def get_usable_items(self):

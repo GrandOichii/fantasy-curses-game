@@ -1,5 +1,5 @@
 import json
-import Utility
+from cursesui.Utility import str_smart_split, pos_neg_int
 from gamelib.Spells import Spell
 
 class Item:
@@ -54,14 +54,20 @@ class Item:
         result += ['']
         result += [f'Type: {self.itype}']
         
-        desc = Utility.str_smart_split(self.description, max_width)
+        desc = str_smart_split(self.description, max_width)
         for d in desc:
             result += [d]
         return result
 
+    def get_cct_display_text(self):
+        return self.name
+
 class GoldPouch(Item):
     def __init__(self):
         super().__init__()
+
+    def get_cct_display_text(self):
+        return f'#yellow-black {self.amount} #normal gold'
 
 class EquipableItem(Item):
     def __init__(self):
@@ -74,6 +80,9 @@ class EquipableItem(Item):
         result.insert(3, f'Slot: {self.slot}')
         result.insert(4, '')
         return result
+
+    def get_cct_display_text(self):
+        return f'{self.name} (#green-black {self.slot}#normal )'
         
 class Armor(EquipableItem):
     def __init__(self):
@@ -108,10 +117,12 @@ class Armor(EquipableItem):
             result.insert(i + app + 1, '')
         app = i + app + 2
         for i in range(len(self.mods)):
-            result.insert(i + app, f'{list(self.mods.keys())[i]}: {Utility.pos_neg_int(list(self.mods.values())[i])}')
+            result.insert(i + app, f'{list(self.mods.keys())[i]}: {pos_neg_int(list(self.mods.values())[i])}')
         if len(self.mods) != 0:
             result.insert(i + app + 1, '')
         return result
+
+    
 
 class CountableItem(Item):
     def __init__(self):
@@ -123,6 +134,9 @@ class CountableItem(Item):
         for i in range(len(items)):
             items[i].amount = list(d.values())[i]
         return items
+
+    def get_cct_display_text(self):
+        return f'{self.name} x#magenta-black {self.amount}'
 
 class Ammo(CountableItem):
     def __init__(self):
@@ -185,7 +199,7 @@ class MeleeWeapon(EquipableItem):
             result.insert(i + app + 1, '')
         app = i + app + 2
         for i in range(len(self.mods)):
-            result.insert(i + app, f'{list(self.mods.keys())[i]}: {Utility.pos_neg_int(list(self.mods.values())[i])}')
+            result.insert(i + app, f'{list(self.mods.keys())[i]}: {pos_neg_int(list(self.mods.values())[i])}')
         if len(self.mods) != 0:
             result.insert(i + app + 1, '')
         return result
