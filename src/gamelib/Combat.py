@@ -8,7 +8,7 @@ import gamelib.Items as Items
 from gamelib.Entities import Player, Enemy
 from gamelib.Items import MeleeWeapon, RangedWeapon
 from gamelib.Spells import BloodSpell, CombatSpell, NormalSpell
-from cursesui.Utility import put, draw_borders, drop_down_box, calc_pretty_bars, str_smart_split, SINGLE_ELEMENT, MULTIPLE_ELEMENTS
+from cursesui.Utility import cct_len, put, draw_borders, drop_down_box, calc_pretty_bars, str_smart_split, SINGLE_ELEMENT, MULTIPLE_ELEMENTS
 
 class Action:
     def __init__(self, parent, char, caption, picture, user, other):
@@ -231,18 +231,18 @@ class CombatEncounter:
             self.enemy_window.addstr(i, 1, ' ' * (self.box_width - 3))
         
         # display health
-        self.enemy_window.addstr(y_first, 1, f'Health: {calc_pretty_bars(enemy.health, enemy.max_health, self.box_width - 16)}')
+        put(self.enemy_window, y_first, 1, f'Health: #red-black {calc_pretty_bars(enemy.health, enemy.max_health, self.box_width - 16)}')
         self.enemy_window.addstr(y_first, self.box_width - 6, f'(  )')
-        self.enemy_window.addstr(y_first, self.box_width - 5, f'{enemy.health}')
+        put(self.enemy_window, y_first, self.box_width - 5, f'#red-black {enemy.health}')
         # display mana
-        self.enemy_window.addstr(y_first + 1, 1, f'  Mana: {calc_pretty_bars(enemy.mana, enemy.max_mana, self.box_width - 16)}')
+        put(self.enemy_window, y_first + 1, 1, f'  Mana: #cyan-black {calc_pretty_bars(enemy.mana, enemy.max_mana, self.box_width - 16)}')
         self.enemy_window.addstr(y_first + 1, self.box_width - 6, f'(  )')
-        self.enemy_window.addstr(y_first + 1, self.box_width - 5, f'{enemy.mana}')
+        put(self.enemy_window, y_first + 1, self.box_width - 5, f'#cyan-black {enemy.mana}')
 
         # display statuses
         self.enemy_window.addstr(y_first + 2, 1, 'Statuses:')
         for i in range(len(enemy.statuses)):
-            self.enemy_window.addstr(y_first + 3 + i, 1, enemy.statuses[i])
+            self.enemy_window.addstr(y_first + 3 + i, 2, enemy.statuses[i])
 
         y_first = y_first + 5 + i
               # display distance
@@ -258,18 +258,18 @@ class CombatEncounter:
             self.player_window.addstr(i, 1, ' ' * (self.box_width - 3))
 
         # display health
-        self.player_window.addstr(y_first, 1, f'Health: {calc_pretty_bars(player.health, player.max_health, self.box_width - 15)}')
+        put(self.player_window, y_first, 1, f'Health: #red-black {calc_pretty_bars(player.health, player.max_health, self.box_width - 15)}')
         self.player_window.addstr(y_first, self.box_width - 5, f'(  )')
-        self.player_window.addstr(y_first, self.box_width - 4, f'{player.health}')
+        put(self.player_window, y_first, self.box_width - 4, f'#red-black {player.health}')
         # display mana
-        self.player_window.addstr(y_first + 1, 1, f'  Mana: {calc_pretty_bars(player.mana, player.max_mana, self.box_width - 15)}')
+        put(self.player_window, y_first + 1, 1, f'  Mana: #cyan-black {calc_pretty_bars(player.mana, player.max_mana, self.box_width - 15)}')
         self.player_window.addstr(y_first + 1, self.box_width - 5, f'(  )')
-        self.player_window.addstr(y_first + 1, self.box_width - 4, f'{player.mana}')
+        put(self.player_window, y_first + 1, self.box_width - 4, f'#cyan-black {player.mana}')
 
         # display statuses
         self.player_window.addstr(y_first + 2, 1, 'Statuses:')
         for i in range(len(statuses)):
-            self.player_window.addstr(y_first + 3 + i, 1, statuses[i])
+            self.player_window.addstr(y_first + 3 + i, 2, statuses[i])
 
     def draw_option_boxes(self):
         rectangle(self.player_window, 1, 1, self.action_box_height, self.action_box_width)
@@ -603,14 +603,17 @@ class CombatEncounter:
         display_names = []
         g = rewards['gold']
         display_names += [f'{g} gold']
+        # for item in rewards['items']:
+        #     display_names += [item.name]
+        # for item in rewards['countable_items']:
+        #     display_names += [f'{item.name} (amount: {item.amount})']
         for item in rewards['items']:
-            display_names += [item.name]
+            display_names += [item.get_cct_display_text()]
         for item in rewards['countable_items']:
-            display_names += [f'{item.name} (amount: {item.amount})']
-        
+            display_names += [item.get_cct_display_text()]
 
         r_w_height = self.HEIGHT - 2
-        r_w_width = self.WIDTH // 2
+        r_w_width = max(self.WIDTH // 3, max([cct_len(n) for n in display_names])) + 1
         
         limit = r_w_height - 3
         page = 0
@@ -637,7 +640,7 @@ class CombatEncounter:
                 first = page
                 last = page + limit - 1
             for i in range(first, last + 1):
-                rewards_window.addstr(1 + y, 1, display_names[i])
+                put(rewards_window, 1 + y, 3, display_names[i])
                 y += 1
             if len(display_names) > limit:
                 if page != 0:

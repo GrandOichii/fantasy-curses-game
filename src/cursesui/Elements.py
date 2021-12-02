@@ -146,7 +146,7 @@ class TextField(UIElement):
 
     def handle_key(self, key):
         super().handle_key(key)
-        if key == 127 and len(self.text) > 0:
+        if (key == 127 or key == 8) and len(self.text) > 0:
             self.text = self.text[:-1]
             self.cursor -= 1
         if len(self.text) == self.max_width:

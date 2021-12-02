@@ -193,6 +193,7 @@ class Game:
                     self.initiate_encounter_with(encounter_enemy_code)
                 else:
                     message_box(self.parent, 'You are not within range to attack anybody!', ['Ok'], width=self.tile_window_width - 4, ypos=2, xpos=2)
+            # enter tile description mode
             if key == 120: # x
                 update_entities = False
             if self.game_running:
@@ -614,7 +615,7 @@ class Game:
                         y = 4 + cursor
                         if y + height > self.window_height:
                             y -= height
-                        x = 4 + len(display_names[choice_id])
+                        x = 4 + cct_len(display_names[choice_id])
                         options_window = curses.newwin(height, width, y, x)
                         options_window.keypad(1)
                         draw_borders(options_window)
@@ -1497,19 +1498,6 @@ class GameWindow(Window):
         SaveFile.save(player, self.starting_room, self.config_file.get('Saves path'))
         self.window.clear()
         self.load_character(player.name)
-    
-    # game actions
-
-    def create_folders(self):
-        # create saves folder
-        if not os.path.exists(self.config_file.get('Saves path')):
-            try:
-                os.mkdir(self.config_file.get('Save path'))
-            except Exception as ex:
-                print('ERROR - Could not create saves folder')
-                print(ex)
-                input() # ???
-                exit()
 
     def load_game_action(self):
         if SaveFile.count_saves(self.config_file.get('Saves path')) == 0:
@@ -1522,17 +1510,18 @@ class GameWindow(Window):
                 SaveFile.delete_save_file(cor, self.config_file.get('Saves path'))
 
         # ch_names = SaveFile.character_names(self.config_file.get('Saves path'))
-        self.load_menu = Menu(self, '#cyan-black Load character')
+        load_menu = Menu(self, '#cyan-black Load character')
+        load_menu.bottom_description = 'Load a previous character'
 
         label = UIElement(self, 'Load character:')
         label.set_pos(1, 1)
-        self.load_menu.add_element(label)
+        load_menu.add_element(label)
 
         # first button
         first_button = Button(self, f'#cyan-black {save_desc[0]}', self.load_character_pick_action)
         first_button.set_focused(True)
         first_button.set_pos(2, 2)
-        self.load_menu.add_element(first_button)
+        load_menu.add_element(first_button)
 
         last_button = first_button
 
@@ -1545,7 +1534,7 @@ class GameWindow(Window):
             new_button.prev = last_button
             last_button.next = new_button
 
-            self.load_menu.add_element(new_button)
+            load_menu.add_element(new_button)
             last_button = new_button
         
         # back to main button
@@ -1556,10 +1545,10 @@ class GameWindow(Window):
         button.next = first_button
         first_button.prev = button
 
-        self.load_menu.add_element(Separator(self, 3 + i))
-        self.load_menu.add_element(button)
+        load_menu.add_element(Separator(self, 3 + i))
+        load_menu.add_element(button)
 
-        self.current_menu = self.load_menu
+        self.current_menu = load_menu
 
     def load_character_pick_action(self):
         names = SaveFile.character_names(self.config_file.get('Saves path'))
@@ -1573,26 +1562,21 @@ class GameWindow(Window):
             SaveFile.delete_save_file(name, self.config_file.get('Saves path'))
             self.load_game_action()
 
+    # utility methods
+
     def load_character(self, character_name):
         game = Game(self, character_name, self.config_file)
         game.start()
 
         self.current_menu = self.main_menu
 
-
-
-     
-
-                 
-
-    
-
-    
-
-    
-
-    
-    
-
-    # drawing
-
+    def create_folders(self):
+        # create saves folder
+        if not os.path.exists(self.config_file.get('Saves path')):
+            try:
+                os.mkdir(self.config_file.get('Save path'))
+            except Exception as ex:
+                print('ERROR - Could not create saves folder')
+                print(ex)
+                input() # ???
+                exit()

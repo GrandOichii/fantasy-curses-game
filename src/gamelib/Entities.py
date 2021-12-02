@@ -231,7 +231,7 @@ class Player(Entity):
         # result['countable_items'] = Items.Item.arr_to_json(self.countable_items)
         result['countable_items'] = {}
         for item in self.countable_items:
-            result[item.name] = item.amount
+            result['countable_items'][item.name] = item.amount
         result['equipment'] = dict()
         slots = ['HEAD', 'BODY', 'LEGS', 'ARM1', 'ARM2']
         for slot in slots:
