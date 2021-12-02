@@ -24,6 +24,11 @@ class Spell:
             result += [d]
         return result
 
+    def get_cct_display_text(self):
+        return self.name
+
+    # static methods
+
     def from_json(js):
         result = Spell()
         t = js['type']
@@ -70,6 +75,9 @@ class ManaSpell(NormalSpell):
         result.insert(3, '')
         return result
 
+    def get_cct_display_text(self):
+        return f'{self.name} (#cyan-black {self.manacost} #normal mana)'
+
 class BloodSpell(NormalSpell):
     def __init__(self):
         super().__init__()
@@ -84,6 +92,9 @@ class BloodSpell(NormalSpell):
         result.insert(2, f'Blood cost: {self.bloodcost}')
         result.insert(3, '')
         return result
+
+    def get_cct_display_text(self):
+        return f'{self.name} (#red-black {self.bloodcost} #normal hp)'
 
 class HealSpell(ManaSpell):
     def __init__(self):
@@ -156,6 +167,13 @@ class CombatSpell(Spell):
             pos += 1
         result.insert(pos, '')
         return result
+
+    def get_cct_display_text(self):
+        result = f'{self.name} {{}} (#cyan-black {self.manacost} #normal mana)'
+        if self.range != -1:
+            result = result.format(f'(range: #yellow-black {self.range} #normal )')
+            return result
+        return result.format('')
 
 class DamageSpell(CombatSpell):
     def __init__(self):

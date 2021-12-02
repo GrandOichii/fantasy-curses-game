@@ -203,7 +203,7 @@ class Player(Entity):
         return highest_range + visible_range // 3
     
     def get_combat_range(self):
-        result = 2
+        result = 1
         ARM1 = self.equipment['ARM1']
         ARM2 = self.equipment['ARM2']
         if ARM1 != None:

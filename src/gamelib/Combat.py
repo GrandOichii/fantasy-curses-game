@@ -559,17 +559,18 @@ class CombatEncounter:
     def get_usable_spell_display_names(self, spells):
         result = []
         for spell in spells:
-            cost = 0
-            cost_type = 'mana'
-            if issubclass(type(spell), BloodSpell):
-                cost = spell.bloodcost
-                cost_type = 'hp'
-            else:
-                cost = spell.manacost
-            if issubclass(type(spell), CombatSpell) and spell.range != -1:
-                result += [f'{spell.name} (range: {spell.range}) ({cost} {cost_type})']
-            else:
-                result += [f'{spell.name} ({cost} {cost_type})']
+            # cost = 0
+            # cost_type = 'mana'
+            # if issubclass(type(spell), BloodSpell):
+            #     cost = spell.bloodcost
+            #     cost_type = 'hp'
+            # else:
+            #     cost = spell.manacost
+            # if issubclass(type(spell), CombatSpell) and spell.range != -1:
+            #     result += [f'{spell.name} (range: {spell.range}) ({cost} {cost_type})']
+            # else:
+            #     result += [f'{spell.name} ({cost} {cost_type})']
+            result += [spell.get_cct_display_text()]
         return result
     
     def choose_player_spell(self):
@@ -602,7 +603,7 @@ class CombatEncounter:
 
         display_names = []
         g = rewards['gold']
-        display_names += [f'{g} gold']
+        display_names += [f'#yellow-black {g} #normal gold']
         # for item in rewards['items']:
         #     display_names += [item.name]
         # for item in rewards['countable_items']:

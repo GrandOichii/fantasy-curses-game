@@ -892,7 +892,7 @@ class Game:
                 if len(spell_display_names) != 0:
                     desc = self.player.spells[spell_cursor + spell_page_n].get_description(self.parent.WIDTH - self.tile_window_width - 3)
                 for i in range(len(desc)):
-                    description_window.addstr(1 + i, 1, desc[i])
+                    put(description_window, 1 + i, 1, desc[i])
                 draw_borders(description_window)
                 description_window.refresh()
         self.window.clear()
@@ -1388,7 +1388,7 @@ class GameWindow(Window):
 
         class_widget = Widget(self)
         class_widget.add_element(UIElement(self, 'Class:'))
-        self.class_choice = WordChoice(self, ['Warrior', 'Wizard', 'Rogue'])
+        self.class_choice = WordChoice(self, ['Warrior', 'Mage', 'Rogue'])
         class_widget.add_element(self.class_choice)
         class_widget.focused_element_id = 1
         class_widget.set_pos(2, 1)
