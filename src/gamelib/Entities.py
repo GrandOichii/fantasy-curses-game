@@ -14,6 +14,12 @@ class Entity:
         self.description = ''
         self.statuses = []
 
+    def get_max_mana(self):
+        return self.max_mana
+
+    def get_max_health(self):
+        return self.max_health
+
     def regenerate_mana(self):
         self.add_mana(1)
 
@@ -25,15 +31,15 @@ class Entity:
 
     def add_health(self, amount):
         self.health += amount
-        if self.health > self.max_health:
-            self.health = self.max_health
+        if self.health > self.get_max_health():
+            self.health = self.get_max_health()
         if self.health < 0:
             self.health = 0
 
     def add_mana(self, amount):
         self.mana += amount
-        if self.mana > self.max_mana:
-            self.mana = self.max_mana 
+        if self.mana > self.get_max_mana():
+            self.mana = self.get_max_mana() 
         if self.mana < 0:
             self.mana = 0
 
@@ -105,6 +111,21 @@ class Player(Entity):
         self.equipment = dict()
         self.spells = []
         self.temporary_statuses = []
+
+    def _get_mods_from_equipment(self, mod):
+        result = 0
+        for i in list(self.equipment.values()):
+            if i != None:
+                item = self.items[i]
+                if mod in item.mods:
+                    result += item.mods[mod]
+        return result
+
+    def get_max_mana(self):
+        return self.max_mana + self._get_mods_from_equipment('mana')
+
+    def get_max_health(self):
+        return self.max_health + self._get_mods_from_equipment('health')
 
     def add_rewards(self, rewards):
         self.gold += rewards['gold']

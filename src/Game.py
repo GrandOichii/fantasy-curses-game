@@ -953,20 +953,27 @@ class Game:
         self.window.refresh()
 
     def draw_player_info(self):
+        # check player mana
+        if self.player.mana > self.player.get_max_mana():
+            self.player.mana = self.player.get_max_mana()
+        # check player health
+        if self.player.health > self.player.get_max_health():
+            self.player.health = self.player.get_max_health()
+        
         put(self.window, 2, self.tile_window_width + 2 + 6, ' ' * (self.parent.WIDTH - self.tile_window_width - 2 - 6))
         put(self.window, 2, self.tile_window_width + 2 + 6, f'#yellow-black {self.player.gold}')
 
         health_info = ' ' * (3 - len(str(self.player.health))) + f'{self.player.health}'
         put(self.window, 4, self.tile_window_width + 20, f'#red-black {health_info}')
-        max_health_info =  ' ' * (3 - len(str(self.player.max_health))) + f'{self.player.max_health}'
+        max_health_info =  ' ' * (3 - len(str(self.player.get_max_health()))) + f'{self.player.get_max_health()}'
         put(self.window, 4, self.tile_window_width + 24, f'#red-black {max_health_info}')
-        put(self.window, 4, self.tile_window_width + 9, f'#red-black {Utility.calc_pretty_bars(self.player.health, self.player.max_health, 10)}')
+        put(self.window, 4, self.tile_window_width + 9, f'#red-black {Utility.calc_pretty_bars(self.player.health, self.player.get_max_health(), 10)}')
         
         mana_info =  ' ' * (3 - len(str(self.player.mana))) + f'{self.player.mana}'
         put(self.window, 5, self.tile_window_width + 20, f'#cyan-black {mana_info}')
-        max_mana_info =  ' ' * (3 - len(str(self.player.max_mana))) + f'{self.player.max_mana}'
+        max_mana_info =  ' ' * (3 - len(str(self.player.get_max_mana()))) + f'{self.player.get_max_mana()}'
         put(self.window, 5, self.tile_window_width + 24, f'#cyan-black {max_mana_info}')
-        put(self.window, 5, self.tile_window_width + 9, f'#cyan-black {Utility.calc_pretty_bars(self.player.mana, self.player.max_mana, 10)}')
+        put(self.window, 5, self.tile_window_width + 9, f'#cyan-black {Utility.calc_pretty_bars(self.player.mana, self.player.get_max_mana(), 10)}')
 
         str_info = ' ' * (3 - len(str(self.player.STR))) + f'{self.player.STR}'
         put(self.window, 7, self.tile_window_width + 6, f'{str_info}')
@@ -1084,10 +1091,10 @@ class Game:
             if real_value == None:
                 raise Exception(f'ERR: value {value} not recognized')
             if var == 'player.health':
-                self.player.health = min(real_value, self.player.max_health)                        
+                self.player.health = min(real_value, self.player.get_max_health())                        
                 return False
             if var == 'player.mana':
-                self.player.mana = min(real_value, self.player.max_mana)                        
+                self.player.mana = min(real_value, self.player.get_max_mana())                        
                 return False
             if var == 'player.gold':
                 self.player.gold = real_value
@@ -1213,7 +1220,7 @@ class Game:
         if command == 'revive':
             enemy_code = words[1]
             enemy = self.game_room.enemies_data[enemy_code]
-            enemy.health = enemy.max_health
+            enemy.health = enemy.get_max_health()
             return False
         if command == 'sleep':
             self.draw_tile_window()
@@ -1276,11 +1283,11 @@ class Game:
         if s == 'player.health':
             return self.player.health
         if s == 'player.max_health':
-            return self.player.max_health
+            return self.player.get_max_health()
         if s == 'player.mana':
             return self.player.mana
         if s == 'player.max_mana':
-            return self.player.max_mana
+            return self.player.get_max_mana()
         if s == 'player.name':
             return self.player.name
         if s == 'player.y':

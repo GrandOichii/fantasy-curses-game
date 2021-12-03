@@ -1,7 +1,6 @@
 import json
 from os import listdir, remove
 from os.path import isfile, join, splitext
-from posixpath import split
 
 def save(player, room_name, saves_path, player_y=-1, player_x=-1, env_vars=dict()):
     data = dict()

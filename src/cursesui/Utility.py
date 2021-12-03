@@ -1,9 +1,14 @@
 import curses
+from posixpath import dirname
 import re
 from math import ceil
+from os import listdir
+from os.path import isfile, join, splitext
 
 SINGLE_ELEMENT = 1
 MULTIPLE_ELEMENTS = 2
+
+ACS_SOLID = '\u2588'
 
 cc = {
     'red': curses.COLOR_RED,
@@ -316,3 +321,100 @@ def message_box(parent, message, choices, ypos=-1, xpos=-1, height=-1, width=-1,
     win.clear()
     win.refresh()
     return choices[choice_id]
+
+def choose_file(parent, title, starting_directory='.'):
+    w_height = parent.HEIGHT // 8 * 5
+    w_width = parent.WIDTH // 8 * 5
+    w_y = (parent.HEIGHT - w_height) // 2
+    w_x = (parent.WIDTH - w_width) // 2
+    window = curses.newwin(w_height, w_width, w_y, w_x)
+    window.keypad(1)
+
+    path = starting_directory
+    max_display_amount = w_height - 3
+    choice = 0
+    cursor = 0
+    page_n = 0
+    while True:
+        # get dir info
+        paths = ['..']
+        p = listdir(path)
+        pfolders = []
+        pfiles = []
+        for pp in p:
+            if isfile(f'{path}/{pp}'):
+                pfiles += [pp]
+            else:
+                pfolders += [pp]
+        paths += pfolders
+        paths += pfiles
+
+        # display
+        draw_borders(window)
+        window.addstr(0, 0, ACS_SOLID)
+        window.addstr(0, 1, title)
+        window.addch(0, 0, curses.ACS_BOARD)
+        for i in range(min(max_display_amount, len(paths))):
+            attr = curses.A_REVERSE if i == cursor else 0
+            if not isfile(f'{path}/{paths[i + page_n]}'):
+                put(window, 2 + i, 2, f'#cyan-black {paths[i + page_n]}', attr)
+            else:
+                window.addstr(2 + i, 2, paths[i + page_n], attr)
+        # key handling
+        key = window.getch()
+        if key == 10: # ENTER
+            if paths[choice] == '..':
+                path = dirname(path)
+                choice = 0
+                cursor = 0
+                page_n = 0
+            else:
+                full_path = f'{path}/{paths[choice]}'
+                if isfile(full_path):
+                    try:
+                        open(full_path, 'r')
+                        return re.sub('/+', '/', full_path)
+                    except PermissionError:
+                        message_box(parent, 'Premission denied', ['Ok'])
+                        continue
+                try:
+                    listdir(f'{path}/{paths[choice]}')
+                    path += f'/{paths[choice]}'
+                    choice = 0
+                    cursor = 0
+                    page_n = 0
+                except PermissionError:
+                    message_box(parent, 'Premission denied', ['Ok'])
+        if key == 259: # UP
+            choice -= 1
+            cursor -= 1
+            if cursor < 0:
+                if len(paths) > max_display_amount:
+                    if page_n == 0:
+                        cursor = max_display_amount - 1
+                        choice = len(paths) - 1
+                        page_n = len(paths) - max_display_amount
+                    else:
+                        page_n -= 1
+                        cursor += 1
+                else:
+                    cursor = len(paths) - 1
+                    choice = cursor
+        if key == 258: # DOWN
+            choice += 1
+            cursor += 1
+            if len(paths) > max_display_amount:
+                if cursor >= max_display_amount:
+                    cursor -= 1
+                    page_n += 1
+                    if choice == len(paths):
+                        choice = 0
+                        cursor = 0
+                        page_n = 0
+            else:
+                if cursor >= len(paths):
+                    cursor = 0
+                    choice = 0
+
+        # clear screen
+        window.clear()

@@ -25,7 +25,7 @@
     },
     "Boost": {
         "name": "Boost",
-        "description": "Upon casting this spell, applies fast status to caster",
+        "description": "Upon casting this spell, applies fast status to caster.",
         "type": "combat_spell",
         "user_statuses": ["fast"],
         "enemy_statuses": [],

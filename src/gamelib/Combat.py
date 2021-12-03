@@ -231,11 +231,11 @@ class CombatEncounter:
             self.enemy_window.addstr(i, 1, ' ' * (self.box_width - 3))
         
         # display health
-        put(self.enemy_window, y_first, 1, f'Health: #red-black {calc_pretty_bars(enemy.health, enemy.max_health, self.box_width - 16)}')
+        put(self.enemy_window, y_first, 1, f'Health: #red-black {calc_pretty_bars(enemy.health, enemy.get_max_health(), self.box_width - 16)}')
         self.enemy_window.addstr(y_first, self.box_width - 6, f'(  )')
         put(self.enemy_window, y_first, self.box_width - 5, f'#red-black {enemy.health}')
         # display mana
-        put(self.enemy_window, y_first + 1, 1, f'  Mana: #cyan-black {calc_pretty_bars(enemy.mana, enemy.max_mana, self.box_width - 16)}')
+        put(self.enemy_window, y_first + 1, 1, f'  Mana: #cyan-black {calc_pretty_bars(enemy.mana, enemy.get_max_mana(), self.box_width - 16)}')
         self.enemy_window.addstr(y_first + 1, self.box_width - 6, f'(  )')
         put(self.enemy_window, y_first + 1, self.box_width - 5, f'#cyan-black {enemy.mana}')
 
@@ -258,11 +258,11 @@ class CombatEncounter:
             self.player_window.addstr(i, 1, ' ' * (self.box_width - 3))
 
         # display health
-        put(self.player_window, y_first, 1, f'Health: #red-black {calc_pretty_bars(player.health, player.max_health, self.box_width - 15)}')
+        put(self.player_window, y_first, 1, f'Health: #red-black {calc_pretty_bars(player.health, player.get_max_health(), self.box_width - 15)}')
         self.player_window.addstr(y_first, self.box_width - 5, f'(  )')
         put(self.player_window, y_first, self.box_width - 4, f'#red-black {player.health}')
         # display mana
-        put(self.player_window, y_first + 1, 1, f'  Mana: #cyan-black {calc_pretty_bars(player.mana, player.max_mana, self.box_width - 15)}')
+        put(self.player_window, y_first + 1, 1, f'  Mana: #cyan-black {calc_pretty_bars(player.mana, player.get_max_mana(), self.box_width - 15)}')
         self.player_window.addstr(y_first + 1, self.box_width - 5, f'(  )')
         put(self.player_window, y_first + 1, self.box_width - 4, f'#cyan-black {player.mana}')
 

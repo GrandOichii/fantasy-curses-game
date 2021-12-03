@@ -74,6 +74,7 @@ class EquipableItem(Item):
         super().__init__()
         self.slot = ''
         self.gives_statuses = []
+        self.mods = {}
 
     def get_description(self, max_width):
         result = super().get_description(max_width)
@@ -87,7 +88,6 @@ class EquipableItem(Item):
 class Armor(EquipableItem):
     def __init__(self):
         super().__init__()
-        self.mods = {}
         self.requires = {}
 
     def __str__(self):
@@ -121,8 +121,6 @@ class Armor(EquipableItem):
         if len(self.mods) != 0:
             result.insert(i + app + 1, '')
         return result
-
-    
 
 class CountableItem(Item):
     def __init__(self):
@@ -163,7 +161,6 @@ class MeleeWeapon(EquipableItem):
         self.base_damage = 0
         self.max_mod = 0
         self.range = 0
-        self.mods = {}
         self.requires = {}
 
     def __str__(self):

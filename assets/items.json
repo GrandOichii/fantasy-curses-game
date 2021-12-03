@@ -43,7 +43,8 @@
         "itype": "armor",
         "mods": {
             "armor": 1,
-            "mana": 3
+            "mana": 3,
+            "health": 10
         },
         "slot": "HEAD",
         "gives_statuses": [],
@@ -189,21 +190,21 @@
     "Spellbook of Fireball": {
         "name": "Spellbook of Fireball",
         "itype": "spell book",
-        "description": "Read this spell book to learn Fireball",
+        "description": "Read this spell book to learn Fireball.",
         "spell_names": ["Fireball"],
         "int_to_learn": 12
     },
     "Spellbook of Heal": {
         "name": "Spellbook of Heal",
         "itype": "spell book",
-        "description": "Read this spell book to learn Heal",
+        "description": "Read this spell book to learn Heal.",
         "spell_names": ["Heal"],
         "int_to_learn": 12
     },
     "Spellbook of Boost": {
         "name": "Spellbook of Boost",
         "itype": "spell book",
-        "description": "Read this spell book to learn Boost",
+        "description": "Read this spell book to learn Boost.",
         "spell_names": ["Boost"],
         "int_to_learn": 12
     }
