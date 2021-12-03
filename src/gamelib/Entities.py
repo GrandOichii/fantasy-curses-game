@@ -14,6 +14,15 @@ class Entity:
         self.description = ''
         self.statuses = []
 
+    def take_damage(self, damage):
+        armor = self.get_armor() // 2
+        actual_damage = damage - armor
+        if actual_damage <= 0: actual_damage = 1
+        self.health -= actual_damage
+        if self.health < 0:
+            self.health = 0
+        return actual_damage
+
     def get_armor(self):
         return 0
 

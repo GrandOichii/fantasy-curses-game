@@ -7,7 +7,7 @@ from Settings import SettingsMenu
 from gamelib.Spells import BloodSpell, NormalSpell
 
 from cursesui.Elements import Menu, Window, Button, UIElement, Widget, TextField, WordChoice, Separator
-from cursesui.Utility import message_box, cct_len, draw_borders, drop_down_box, put, MULTIPLE_ELEMENTS
+from cursesui.Utility import draw_separator, message_box, cct_len, draw_borders, drop_down_box, put, MULTIPLE_ELEMENTS
 
 import cursesui.Utility as Utility
 import gamelib.Room as Room
@@ -45,11 +45,14 @@ class Game:
             self.player_x = data['player_x']
 
         # set some values
-        self.window_height = self.parent.HEIGHT * 5 // 6
-        if self.window_height % 2 == 0: self.window_height -= 1
+        self.tile_window_height = self.parent.HEIGHT * 5 // 6
+        if self.tile_window_height % 2 == 0: self.tile_window_height -= 1
         self.tile_window_width = self.parent.WIDTH - self.max_name_len - 8
 
-        self.tile_window_width -= 1
+        self.tile_window_width -= 2
+
+        self.player_info_window_height = 13
+        self.player_info_window_width = self.parent.WIDTH - self.tile_window_width - 1
 
         self.camera_dy = 0
         self.camera_dx = 0
@@ -57,42 +60,35 @@ class Game:
         self.MINI_MAP_HEIGHT = 7
         self.MINI_MAP_WIDTH = 7
 
-        self.mid_y = self.window_height // 2 
+        self.mid_y = self.tile_window_height // 2 
         self.mid_x = self.tile_window_width // 2
             
     def start(self):
         self.window.clear()
-         # permanent display
-        self.tile_window = curses.newwin(self.window_height, self.tile_window_width, 0, 1)
+        self.window.refresh()
+
+        # room tile window
+        self.tile_window = curses.newwin(self.tile_window_height, self.tile_window_width, 0, 1)
+        self.tile_window.keypad(1)
         draw_borders(self.tile_window)
         # self.tile_window.nodelay(True)
         # self.tile_window.timeout(self.game_speed)
 
-        self.tile_window.keypad(1)
-        self.draw_info_ui()
-        self.draw_player_info()
-        self.window.refresh()
+        # player info window
+        self.player_info_window = curses.newwin(self.player_info_window_height, self.player_info_window_width, 0, self.tile_window_width + 1)
         
-        self.mini_map_window = curses.newwin(self.MINI_MAP_HEIGHT + 2, self.MINI_MAP_WIDTH + 2, 13, self.tile_window_width + 4)
-        draw_borders(self.mini_map_window)
-        self.mini_map_window.refresh()
+        # mini map window
+        self.mini_map_window = curses.newwin(self.MINI_MAP_HEIGHT + 2, self.MINI_MAP_WIDTH + 2, 13, self.parent.WIDTH - self.MINI_MAP_WIDTH - 2)
 
         self.full_map = None
         if self.config_file.has('Map path'):
             self.full_map = Map.Map(self.config_file.get('Map path'))
-        self.draw_tile_window()
+        
+        self.draw()
 
         if '_load' in self.game_room.scripts:
             self.exec_script('_load', self.game_room.scripts)
 
-        if self.full_map != None:
-            self.draw_mini_map(self.game_room.name)
-
-        self.tile_window.refresh()
-        if self.game_room.display_name != '':
-            self.draw_room_display_name(self.game_room.display_name)
-
-        self.window.refresh()
         # main game loop
         self.main_game_loop()
 
@@ -105,10 +101,12 @@ class Game:
         update_entities = True
 
         while self.game_running:
+            # check if there is a tick script in current room
             if '_tick' in self.game_room.scripts:
                 self.exec_script('_tick', self.game_room.scripts)
-            key = self.tile_window.getch()
-            self.tile_window.clear()
+
+            # get player input
+            key = self.window.getch()
             if key == 81 and message_box(self.parent, 'Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.tile_window_width - 4, ypos=2, xpos=2) == 'Yes':
                 self.save_enemy_env_vars()
                 SaveFile.save(self.player, self.game_room.name, self.config_file.get('Saves path'), player_y=self.player_y, player_x=self.player_x, env_vars=self.env_vars)
@@ -164,7 +162,7 @@ class Game:
                 if len(interactable_tiles) == 0:
                     message_box(self.parent, 'No tiles to interact with nearby!', ['Ok'],width=self.tile_window_width - 4, ypos=2, xpos=2)
                 else:
-                    interact_key = self.draw_prompt('Interact where?')
+                    interact_key = self.get_prompt('Interact where?')
                     flag = False
                     i_tile = None
                     for o in interactable_tiles:
@@ -222,13 +220,7 @@ class Game:
 
                 # check if encounters are available
 
-                self.draw_tile_window()
-                self.draw_player_info()
-                self.tile_window.refresh()
-                self.window.refresh()
-                if self.game_room.display_name != '':
-                    self.draw_room_display_name(self.game_room.display_name)
-
+                self.draw()
                 encounter_ready, encounter_enemy_code = self.check_for_encounters()
                 
                 if key == 120: # x
@@ -250,10 +242,11 @@ class Game:
         if min_enemy_code != None:
             enemy = self.game_room.enemies_data[min_enemy_code]
             encounter_ready = True
-            s = f'[ Press [c] to initiate combat with {enemy.name} ]'
-            y = self.window_height - 2
-            x = self.tile_window_width // 2 - len(s) // 2
-            self.tile_window.addstr(y, x, s)
+            s = f'[ Press [c] to initiate combat with #red-black {enemy.name} #normal ]'
+            y = self.tile_window_height - 2
+            x = self.tile_window_width // 2 - cct_len(s) // 2
+            put(self.tile_window, y, x, s)
+            self.tile_window.refresh()
         return (encounter_ready, enemy_code)    
 
     def update_entities(self):
@@ -273,7 +266,7 @@ class Game:
 
     def display_dialog(self, message, replies):
         width = self.tile_window_width - 2
-        height = self.window_height // 2
+        height = self.tile_window_height // 2
 
         lines = Utility.str_smart_split(message, width - 2)
         name = '???'
@@ -369,20 +362,20 @@ class Game:
                 display_name = name
                 self.tile_window.addch(cursor_y, cursor_x, char, curses.A_REVERSE)
             for enemy in list(self.game_room.enemies_data.values()):
-                y = enemy.y + self.mid_y - self.player_y
-                x = enemy.x + self.mid_x - self.player_x
-                if distance(self.player_y, self.player_x, enemy.y, enemy.x) < self.game_room.visible_range:
-                    if y == cursor_y and x == cursor_x:
-                        self.tile_window.addch(y, x, enemy.char, curses.A_REVERSE)
-                        display_name = enemy.name
-                    else:
-                        self.tile_window.addch(y, x, enemy.char)
+                if enemy.health > 0:
+                    y = enemy.y + self.mid_y - self.player_y
+                    x = enemy.x + self.mid_x - self.player_x
+                    if distance(self.player_y, self.player_x, enemy.y, enemy.x) < self.game_room.visible_range:
+                        if y == cursor_y and x == cursor_x:
+                            self.tile_window.addch(y, x, enemy.char, curses.A_REVERSE)
+                            display_name = enemy.name
+                        else:
+                            self.tile_window.addch(y, x, enemy.char)
             if len(display_name) != 0:
                 self.tile_window.addstr(1, 1, f'[{display_name}]')
             draw_borders(self.tile_window)
         # clean-up
-        self.tile_window.clear()
-        self.draw_tile_window()
+        self.draw()
 
     def get_interactable_tiles(self, y, x):
         y_lim = self.game_room.height
@@ -464,7 +457,7 @@ class Game:
 
         display_names = self.get_display_names(items)
 
-        win_height = self.window_height
+        win_height = self.tile_window_height
         win_width = self.tile_window_width
         inventory_window = curses.newwin(win_height, win_width, 0, 1)
         inventory_window.keypad(1)
@@ -473,20 +466,6 @@ class Game:
 
         selected_tab = 0
         tabs = ['Items', 'Equipment', 'Spells']
-
-        inventory_window.addch(2, 0, curses.ACS_LTEE)
-        inventory_window.addch(2, win_width - 1, curses.ACS_RTEE)
-        for i in range(win_width - 2):
-            inventory_window.addch(2, 1 + i, curses.ACS_HLINE)
-        # initial tabs display
-        x = 2
-        for i in range(len(tabs)):
-            tab_name = f'[{tabs[i]}]'
-            if i == selected_tab:
-                put(inventory_window, 2, x, tab_name, curses.A_REVERSE)
-            else:
-                put(inventory_window, 2, x, tab_name)
-            x += 2 + len(tab_name)
 
         choice_id = 0
         page_n = 0
@@ -502,33 +481,130 @@ class Game:
         displayed_spell_count = displayed_item_count
 
         # item description window
-        d_window_height = self.parent.HEIGHT
+        d_window_height = self.parent.HEIGHT - self.player_info_window_height
         d_window_width = self.parent.WIDTH - self.tile_window_width - 1
-        description_window = curses.newwin(d_window_height, d_window_width, 0, self.tile_window_width + 1)
-        desc = []
-        if len(display_names) != 0:
-            desc = items[cursor + page_n].get_description(d_window_width - 2)
-        for i in range(len(desc)):
-            put(description_window, 1 + i, 1, desc[i])
-        draw_borders(description_window)
-        description_window.refresh()
+        description_window = curses.newwin(d_window_height, d_window_width, self.player_info_window_height, self.tile_window_width + 1)
 
-        # initial items display
-        for i in range(min(displayed_item_count, len(display_names))):
-            if i == cursor:
-                put(inventory_window, 4 + i, 3, f'{display_names[i]}', curses.A_REVERSE)
-            else:
-                put(inventory_window, 4 + i, 3, f'{display_names[i]}')
-        if len(display_names) > displayed_item_count:
-            inventory_window.addch(win_height - 2, 1, curses.ACS_DARROW)
+        description_limit = d_window_height - 2
+        description_page = 0        
         
         while True:
+            # display
+            draw_borders(inventory_window)
+            inventory_window.addstr(0, 1, 'Inventory')
+            # display the tabs
+            draw_separator(inventory_window, 1)
+            x = 2
+            for i in range(len(tabs)):
+                tab_name = f'[{tabs[i]}]'
+                if i == selected_tab:
+                    put(inventory_window, 1, x, tab_name, curses.A_REVERSE)
+                else:
+                    put(inventory_window, 1, x, tab_name)
+                x += 2 + len(tab_name)
+
+            # display items
+            if selected_tab == 0: # items
+                # displaying the items
+                if len(display_names) > displayed_item_count:
+                    if page_n != 0:
+                        inventory_window.addch(3, 1, curses.ACS_UARROW)
+                    if page_n != len(display_names) - displayed_item_count:
+                        inventory_window.addch(win_height - 2, 1, curses.ACS_DARROW)
+                for i in range(min(len(display_names), displayed_item_count)):
+                    attr = curses.A_REVERSE if i == cursor else 0
+                    put(inventory_window, 3 + i, 3, f'{display_names[i + page_n]}', attr)
+                description_window.clear()
+                if len(display_names) != 0:
+                    desc = items[cursor + page_n].get_description(d_window_width - 2)
+                else:
+                    desc = []
+            if selected_tab == 1: # equipment
+                for i in range(len(slots)):
+                    if i == equip_choice_id:
+                        inventory_window.addstr(3 + 2 * i, 3, f'{slots[i]}  -> ', curses.A_REVERSE)
+                    else:
+                        inventory_window.addstr(3 + 2 * i, 3, f'{slots[i]}  -> ')
+
+                item_name = 'nothing'
+                if self.player.equipment['HEAD'] != None:
+                    item_name = items[self.player.equipment['HEAD']].name
+                inventory_window.addstr(3, 13, item_name)
+
+                item_name = 'nothing'
+                if self.player.equipment['BODY'] != None:
+                    item_name = items[self.player.equipment['BODY']].name
+                inventory_window.addstr(5, 13, item_name)
+
+                item_name = 'nothing'
+                if self.player.equipment['LEGS'] != None:
+                    item_name = items[self.player.equipment['LEGS']].name
+                inventory_window.addstr(7, 13, item_name)
+                
+                if self.player.equipment['ARM1'] == self.player.equipment['ARM2']:
+                    if self.player.equipment['ARM1'] != None:
+                        item_name = items[self.player.equipment['ARM1']].name
+                        inventory_window.addstr(10, 13, item_name)
+                    else:
+                        inventory_window.addstr(9, 13, 'nothing')
+                        inventory_window.addstr(11, 13, 'nothing')
+                else:
+                    item_name = 'nothing'
+                    if self.player.equipment['ARM1'] != None:
+                        item_name = items[self.player.equipment['ARM1']].name
+                    inventory_window.addstr(9, 13, item_name)
+
+                    item_name = 'nothing'
+                    if self.player.equipment['ARM2'] != None:
+                        item_name = items[self.player.equipment['ARM2']].name
+                    inventory_window.addstr(11, 13, item_name)
+                description_window.clear()
+                item_id = self.player.equipment[slots[equip_choice_id]]
+                if item_id != None:
+                    desc = self.player.items[item_id].get_description(d_window_width - 2)
+                else:
+                    desc = []
+            if selected_tab == 2: # spells
+                if len(spell_display_names) > displayed_spell_count:
+                    if spell_page_n != 0:
+                        inventory_window.addch(3, 1, curses.ACS_UARROW)
+                    if spell_page_n != len(spell_display_names) - displayed_spell_count:
+                        inventory_window.addch(win_height - 2, 1, curses.ACS_DARROW)
+                for i in range(min(len(spell_display_names), displayed_spell_count)):
+                    attr = curses.A_REVERSE if i == spell_cursor else 0
+                    inventory_window.addstr(3 + i, 3, f'{spell_display_names[i + page_n]}', attr)
+                description_window.clear()
+                if len(spell_display_names) != 0:
+                    desc = self.player.spells[spell_cursor + spell_page_n].get_description(d_window_width - 2)
+                else:
+                    desc = []
+
+            # display description
+            draw_borders(description_window)
+            put(description_window, 0, 1, '#magenta-black Description')
+            first = 0
+            last = len(desc) - 1
+            if len(desc) > description_limit:
+                first = description_page
+                last = description_page + description_limit - 1
+            for i in range(first, last + 1):
+                put(description_window, 1 + i - first, 1, desc[i])
+            if len(desc) > description_limit:
+                if description_page != 0:
+                    description_window.addch(1, d_window_width - 1, curses.ACS_UARROW)
+                if description_page != len(desc) - description_limit:
+                    description_window.addch(d_window_height - 2, d_window_width - 1, curses.ACS_DARROW)
+            description_window.refresh()
+
+            # key handling
             key = inventory_window.getch()
             if key == 27: # ESC
                 break
             if key == 105: # i
                 break
             if key == 259: # UP
+                description_limit = d_window_height - 2
+                description_page = 0  
                 if selected_tab == 0:
                     choice_id -= 1
                     cursor -= 1
@@ -564,6 +640,8 @@ class Game:
                             spell_cursor = len(spell_display_names) - 1
                             spell_choice_id = spell_cursor
             if key == 258: # DOWN
+                description_limit = d_window_height - 2
+                description_page = 0  
                 if selected_tab == 0:
                     choice_id += 1
                     cursor += 1
@@ -613,7 +691,7 @@ class Game:
                         height = 3
                         width = len('Use') + 2
                         y = 4 + cursor
-                        if y + height > self.window_height:
+                        if y + height > self.tile_window_height:
                             y -= height
                         x = 4 + cct_len(display_names[choice_id])
                         options_window = curses.newwin(height, width, y, x)
@@ -639,7 +717,7 @@ class Game:
                         height = len(options) + 2
                         width = max([len(s) for s in options]) + 2 + len(begin_s)
                         y = 4 + cursor
-                        if y + height > self.window_height:
+                        if y + height > self.tile_window_height:
                             y -= height
                         x = 4 + cct_len(display_names[choice_id])
                         options_window = curses.newwin(height, width, y, x)
@@ -707,7 +785,7 @@ class Game:
                         height = 3
                         width = len(s) + 2
                         y = 4 + cursor
-                        if y + height > self.window_height:
+                        if y + height > self.tile_window_height:
                             y -= height
                         x = 4 + len(display_names[choice_id])
                         options_window = curses.newwin(height, width, y, x)
@@ -758,7 +836,7 @@ class Game:
                         height = 3
                         width = len(s) + 2
                         y = 4 + spell_cursor
-                        if y + height > self.window_height:
+                        if y + height > self.tile_window_height:
                             y -= height
                         x = 5 + len(spell_display_names[spell_choice_id]) + 1
                         options_window = curses.newwin(height, width, y, x)
@@ -778,128 +856,31 @@ class Game:
                                 else:
                                     message_box(self.parent, 'Can\'t cast spell!', ['Ok'])
                                     break
+            if key == 60: # <
+                if len(desc) > description_limit:
+                    description_page -= 1
+                    if description_page < 0:
+                        description_page = 0
+            if key == 62: # >
+                if len(desc) > description_limit:
+                    description_page += 1
+                    if description_page > len(desc) - description_limit:
+                        description_page = len(desc) - description_limit
+            
             # clear the space
             inventory_window.clear()
-
-            inventory_window.addstr(1, 1, 'Inventory')
-            draw_borders(inventory_window)
-            inventory_window.addch(2, 0, curses.ACS_LTEE)
-            inventory_window.addch(2, win_width - 1, curses.ACS_RTEE)
-            for i in range(win_width - 2):
-                inventory_window.addch(2, 1 + i, curses.ACS_HLINE)
-            x = 2
-            for i in range(len(tabs)):
-                tab_name = f'[{tabs[i]}]'
-                if i == selected_tab:
-                    put(inventory_window, 2, x, tab_name, curses.A_REVERSE)
-                else:
-                    put(inventory_window, 2, x, tab_name)
-                x += 2 + len(tab_name)
-
-            # display the tabs
-            x = 2
-            for i in range(len(tabs)):
-                tab_name = f'[{tabs[i]}]'
-                if i == selected_tab:
-                    inventory_window.addstr(2, x, tab_name, curses.A_REVERSE)
-                else:
-                    inventory_window.addstr(2, x, tab_name)
-                x += 2 + len(tab_name)
-
-            if selected_tab == 0: # items
-                # displaying the items
-                if len(display_names) > displayed_item_count:
-                    if page_n != 0:
-                        inventory_window.addch(4, 1, curses.ACS_UARROW)
-                    if page_n != len(display_names) - displayed_item_count:
-                        inventory_window.addch(win_height - 2, 1, curses.ACS_DARROW)
-                for i in range(min(len(display_names), displayed_item_count)):
-                    if i == cursor:
-                        put(inventory_window, 4 + i, 3, f'{display_names[i + page_n]}', curses.A_REVERSE)
-                    else:
-                        put(inventory_window, 4 + i, 3, f'{display_names[i + page_n]}')
-                description_window.clear()
-                if len(display_names) != 0:
-                    desc = items[cursor + page_n].get_description(self.parent.WIDTH - self.tile_window_width - 3)
-                for i in range(len(desc)):
-                    put(description_window, 1 + i, 1, desc[i])
-                draw_borders(description_window)
-                description_window.refresh()
-            if selected_tab == 1: # equipment
-                for i in range(len(slots)):
-                    if i == equip_choice_id:
-                        inventory_window.addstr(4 + 2 * i, 3, f'{slots[i]}  -> ', curses.A_REVERSE)
-                    else:
-                        inventory_window.addstr(4 + 2 * i, 3, f'{slots[i]}  -> ')
-
-                item_name = 'nothing'
-                if self.player.equipment['HEAD'] != None:
-                    item_name = items[self.player.equipment['HEAD']].name
-                inventory_window.addstr(4, 13, item_name)
-
-                item_name = 'nothing'
-                if self.player.equipment['BODY'] != None:
-                    item_name = items[self.player.equipment['BODY']].name
-                inventory_window.addstr(6, 13, item_name)
-
-                item_name = 'nothing'
-                if self.player.equipment['LEGS'] != None:
-                    item_name = items[self.player.equipment['LEGS']].name
-                inventory_window.addstr(8, 13, item_name)
-                
-                if self.player.equipment['ARM1'] == self.player.equipment['ARM2']:
-                    if self.player.equipment['ARM1'] != None:
-                        item_name = items[self.player.equipment['ARM1']].name
-                        inventory_window.addstr(11, 13, item_name)
-                    else:
-                        inventory_window.addstr(10, 13, 'nothing')
-                        inventory_window.addstr(12, 13, 'nothing')
-                else:
-                    item_name = 'nothing'
-                    if self.player.equipment['ARM1'] != None:
-                        item_name = items[self.player.equipment['ARM1']].name
-                    inventory_window.addstr(10, 13, item_name)
-
-                    item_name = 'nothing'
-                    if self.player.equipment['ARM2'] != None:
-                        item_name = items[self.player.equipment['ARM2']].name
-                    inventory_window.addstr(12, 13, item_name)
-
-                # desc = []
-                # desc = items[cursor + page_n].get_description(self.WIDTH - self.tile_window_width - 3)
-                # for i in range(len(desc)):
-                #     description_window.addstr(1 + i, 1, desc[i])
-                description_window.clear()
-                item_id = self.player.equipment[slots[equip_choice_id]]
-                if item_id != None:
-                    desc = self.player.items[item_id].get_description(self.parent.WIDTH - self.tile_window_width - 3)
-                    for i in range(len(desc)):
-                        put(description_window, 1 + i, 1, desc[i])
-                draw_borders(description_window)
-                description_window.refresh()
-            if selected_tab == 2: # spells
-                if len(spell_display_names) > displayed_spell_count:
-                    if spell_page_n != 0:
-                        inventory_window.addch(4, 1, curses.ACS_UARROW)
-                    if spell_page_n != len(spell_display_names) - displayed_spell_count:
-                        inventory_window.addch(win_height - 2, 1, curses.ACS_DARROW)
-                for i in range(min(len(spell_display_names), displayed_spell_count)):
-                    if i == spell_cursor:
-                        inventory_window.addstr(4 + i, 3, f'> {spell_display_names[i + page_n]}')
-                    else:
-                        inventory_window.addstr(4 + i, 3, f'{spell_display_names[i + page_n]}')
-                description_window.clear()
-                if len(spell_display_names) != 0:
-                    desc = self.player.spells[spell_cursor + spell_page_n].get_description(self.parent.WIDTH - self.tile_window_width - 3)
-                for i in range(len(desc)):
-                    put(description_window, 1 + i, 1, desc[i])
-                draw_borders(description_window)
-                description_window.refresh()
+  
         self.window.clear()
-        self.draw_info_ui()
-        self.draw_player_info()
         self.window.refresh()
+        self.draw()
 
+    def get_prompt(self, message):
+        message = '[#green-black {}#normal ]'.format(message)
+        put(self.tile_window, 1, self.mid_x - cct_len(message) // 2, message)
+        self.tile_window.refresh()
+        key = self.window.getch()
+        return key
+    
     # combat
 
     def initiate_encounter_with(self, encounter_enemy_code):
@@ -909,50 +890,36 @@ class Game:
         encounter.start()
 
         if self.player.health == 0:
-            answer = message_box(self.parent, 'PLAYER DEAD', ['Load last', 'Back to menu'], width=self.tile_window_width - 4, ypos=2, xpos=2)
-            if answer == 'Back to menu':
-                self.game_running = False
-                return
-            self.load_character(self.player.name)
+            answer = message_box(self.parent, 'PLAYER DEAD', ['Back to menu'], width=self.tile_window_width - 4, ypos=2, xpos=2)
             self.game_running = False
             return
         if enemy.health == 0:
             # self.game_room.enemies_data.pop(encounter_enemy_code, None)
             self.save_enemy_env_vars()
+
         # clear temporary statuses
         self.player.temporary_statuses = []
+
         # clean-up
         self.window.clear()
-        draw_borders(self.tile_window)
-        self.draw_info_ui()
-        self.draw_player_info()
-        draw_borders(self.mini_map_window)
-        self.mini_map_window.refresh()
         self.window.refresh()
-        self.draw_tile_window()
-        if self.full_map != None:
-            self.draw_mini_map(self.game_room.name)
+        self.draw()
 
-        self.tile_window.refresh()
         if self.game_room.display_name != '':
             self.draw_room_display_name(self.game_room.display_name)
 
     # draw
 
-    def draw_info_ui(self):
-        # s = '1234567891234567891234'
-        start_y = 0
-        put(self.window, start_y + 0, self.tile_window_width + 2, f'Name: #green-black {self.player.name}')
-        put(self.window, start_y + 1, self.tile_window_width + 2, f'Class: #green-black {self.player.class_name}')
-        put(self.window, start_y + 2, self.tile_window_width + 2, f'Gold: ')
-        put(self.window, start_y + 3, self.tile_window_width + 2, f'Armor: ')
-        put(self.window, start_y + 5, self.tile_window_width + 2, f'Health:          (   /   )') # left: 19
-        put(self.window, start_y + 6, self.tile_window_width + 2, f'  Mana:          (   /   )') # left: 21
-        put(self.window, start_y + 8, self.tile_window_width + 2, f'#black-red STR:') # left: 22
-        put(self.window, start_y + 9, self.tile_window_width + 2, f'#black-green DEX:') # left: 22
-        put(self.window, start_y + 10, self.tile_window_width + 2, f'#black-cyan INT:') # left: 22
-        put(self.window, start_y + 12, self.tile_window_width + 2, 'Prompt: ')
-        self.window.refresh()
+    def draw(self):
+        self.draw_player_info()
+        self.draw_tile_window()
+        self.draw_mini_map(self.game_room.name)
+        if self.game_room.display_name != '':
+            self.draw_room_display_name(self.game_room.display_name)
+
+        self.tile_window.refresh()
+        self.player_info_window.refresh()
+        self.mini_map_window.refresh()
 
     def draw_player_info(self):
         # check player mana
@@ -962,48 +929,56 @@ class Game:
         if self.player.health > self.player.get_max_health():
             self.player.health = self.player.get_max_health()
 
-        start_y = 0
-        
-        put(self.window, start_y + 2, self.tile_window_width + 2 + 6, ' ' * (self.parent.WIDTH - self.tile_window_width - 2 - 6))
-        put(self.window, start_y + 2, self.tile_window_width + 2 + 6, f'#yellow-black {self.player.gold}')
+        self.player_info_window.clear()
+        draw_borders(self.player_info_window)
+        put(self.player_info_window, 0, 1, '#magenta-black Player info')
 
-        put(self.window, start_y + 3, self.tile_window_width + 2 + 6, ' ' * (self.parent.WIDTH - self.tile_window_width - 2 - 6))
-        put(self.window, start_y + 3, self.tile_window_width + 2 + 7, f'#white-blue {self.player.get_armor()}')
-        
+        fill = lambda value, max_length: ' ' * (max_length - len(str(value))) + str(value)
+        y = 1
+        x = 1
 
-        health_info = ' ' * (3 - len(str(self.player.health))) + f'{self.player.health}'
-        put(self.window, start_y + 5, self.tile_window_width + 20, f'#red-black {health_info}')
-        max_health_info =  ' ' * (3 - len(str(self.player.get_max_health()))) + f'{self.player.get_max_health()}'
-        put(self.window, start_y + 5, self.tile_window_width + 24, f'#red-black {max_health_info}')
-        put(self.window, start_y + 5, self.tile_window_width + 9, f'#red-black {Utility.calc_pretty_bars(self.player.health, self.player.get_max_health(), 10)}')
-        
-        mana_info =  ' ' * (3 - len(str(self.player.mana))) + f'{self.player.mana}'
-        put(self.window, start_y + 6, self.tile_window_width + 20, f'#cyan-black {mana_info}')
-        max_mana_info =  ' ' * (3 - len(str(self.player.get_max_mana()))) + f'{self.player.get_max_mana()}'
-        put(self.window, start_y + 6, self.tile_window_width + 24, f'#cyan-black {max_mana_info}')
-        put(self.window, start_y + 6, self.tile_window_width + 9, f'#cyan-black {Utility.calc_pretty_bars(self.player.mana, self.player.get_max_mana(), 10)}')
-
-        str_info = ' ' * (3 - len(str(self.player.STR))) + f'{self.player.STR}'
-        put(self.window, start_y + 8, self.tile_window_width + 6, f'{str_info}')
-        dex_info = ' ' * (3 - len(str(self.player.DEX))) + f'{self.player.DEX}'
-        put(self.window, start_y + 9, self.tile_window_width + 6, f'{dex_info}')
-        int_info = ' ' * (3 - len(str(self.player.INT))) + f'{self.player.INT}'
-        put(self.window, start_y + 10, self.tile_window_width + 6, f'{int_info}')
+        # display name
+        put(self.player_info_window, y + 0, x, f'Name: #green-black {self.player.name}')
+        # display class
+        put(self.player_info_window, y + 1, x, f'Name: #green-black {self.player.class_name}')
+        # display gold
+        put(self.player_info_window, y + 2, x, f'Gold: #yellow-black {self.player.gold}')
+        # display armor rating
+        put(self.player_info_window, y + 3, x, f'Armor: #white-blue {self.player.get_armor()}')
+        # display health
+        health_str = 'Health: #red-black {}#normal (#red-black {}#normal /#red-black {}#normal )'.format(Utility.calc_pretty_bars(self.player.health, self.player.get_max_health(), 10), fill(self.player.health, 3), fill(self.player.get_max_health(), 3))
+        put(self.player_info_window, y + 4, x, health_str)
+        # display mana
+        mana_str = '  Mana: #cyan-black {}#normal (#cyan-black {}#normal /#cyan-black {}#normal )'.format(Utility.calc_pretty_bars(self.player.mana, self.player.get_max_mana(), 10), fill(self.player.mana, 3), fill(self.player.get_max_mana(), 3))
+        put(self.player_info_window, y + 5, x, mana_str)
+        # display strength
+        put(self.player_info_window, y + 7, x, f'#black-red STR: #normal {fill(self.player.STR, 3)}')
+        # display dexterity
+        put(self.player_info_window, y + 8, x, f'#black-green DEX: #normal {fill(self.player.DEX, 3)}')
+        # display intelligence
+        put(self.player_info_window, y + 9, x, f'#black-cyan INT: #normal {fill(self.player.INT, 3)}')
 
     def draw_tile_window(self):
+        self.tile_window.clear()
         draw_borders(self.tile_window)
+        put(self.tile_window, 0, 1, '#magenta-black Room display')
         self.draw_tiles(self.player_y, self.player_x, self.game_room.visible_range)
         self.draw_torches()
         # last to display
         real_mid_y = self.mid_y + self.camera_dy
         real_mid_x = self.mid_x - self.camera_dx
-        if real_mid_y > 0 and real_mid_y < self.window_height - 1 and real_mid_x > 0 and real_mid_x < self.tile_window_width - 1:
+        if real_mid_y > 0 and real_mid_y < self.tile_window_height - 1 and real_mid_x > 0 and real_mid_x < self.tile_window_width - 1:
             self.tile_window.addstr(real_mid_y, real_mid_x, '@')
         if self.full_map != None:
             self.draw_mini_map(self.game_room.name)
         self.draw_enemies()
 
     def draw_mini_map(self, room_name):
+        self.mini_map_window.clear()
+        draw_borders(self.mini_map_window)
+        put(self.mini_map_window, 0, 1, '#magenta-black Minimap')
+        if self.full_map == None:
+            return
         hh = self.MINI_MAP_HEIGHT // 2
         hw = self.MINI_MAP_WIDTH // 2
         mini_map_tiles = self.full_map.get_mini_tiles(room_name, self.env_vars, self.MINI_MAP_HEIGHT, self.MINI_MAP_WIDTH, hh, hw)
@@ -1013,22 +988,20 @@ class Game:
                     self.mini_map_window.addch(1 + i, 1 + j, mini_map_tiles[i][j], curses.A_REVERSE)
                 else:
                     self.mini_map_window.addch(1 + i, 1 + j, mini_map_tiles[i][j])
-        self.mini_map_window.refresh()
 
     def draw_room_display_name(self, display_name):
         h = 3
         w = len(display_name) + 2
-        y = self.window_height - 3 - 1
+        y = self.tile_window_height - 3 - 1
         x = self.tile_window_width - w -1
         win = curses.newwin(h, w, y, x)
         win.addstr(1, 1, display_name)
         draw_borders(win)
-        win.refresh()
 
     def draw_tiles(self, y, x, visible_range):
         mid_y = self.mid_y - self.player_y + y + self.camera_dy
         mid_x = self.mid_x - self.player_x + x - self.camera_dx
-        for i in range(max(1, mid_y - visible_range), min(self.window_height - 1, mid_y + visible_range + 1)):
+        for i in range(max(1, mid_y - visible_range), min(self.tile_window_height - 1, mid_y + visible_range + 1)):
             for j in range(max (1, mid_x - visible_range), min(self.tile_window_width - 1, mid_x + visible_range + 1)):
                 if distance(i, j, mid_y, mid_x) < visible_range:
                     room_y = i + y - mid_y
@@ -1067,13 +1040,6 @@ class Game:
                 y = enemy.y + self.mid_y - self.player_y
                 x = enemy.x + self.mid_x - self.player_x
                 self.tile_window.addch(y, x, enemy.char)
-
-    def draw_prompt(self, message):
-        put(self.window, 11, self.tile_window_width + 11, message)
-        key = self.window.getch()
-        put(self.window, 11, self.tile_window_width + 11, ' ' * (self.parent.WIDTH - self.tile_window_width - 11))
-        self.window.refresh()
-        return key
 
     # env vars
 
@@ -1341,9 +1307,9 @@ class Game:
                 return True
             
     def get_terminal_command(self):
-        self.window.addstr(self.window_height, 1, '> ')
+        self.window.addstr(self.tile_window_height, 1, '> ')
         self.window.refresh()
-        w = curses.newwin(1, self.tile_window_width - 3, self.window_height, 3)
+        w = curses.newwin(1, self.tile_window_width - 3, self.tile_window_height, 3)
         curses.curs_set(1)
         w.keypad(1)
         box = textpad.Textbox(w)
@@ -1352,7 +1318,7 @@ class Game:
         curses.curs_set(0)
         w.clear()
         w.refresh()
-        self.window.addstr(self.window_height, 1, '  ')
+        self.window.addstr(self.tile_window_height, 1, '  ')
         self.window.refresh()
         return result
 
@@ -1522,7 +1488,6 @@ class GameWindow(Window):
         if already_exists and message_box(self, f'File with name {player.name} already exists, override?', ['No', 'Yes']) == 'No':
             return
         SaveFile.save(player, self.starting_room, self.config_file.get('Saves path'))
-        self.window.clear()
         self.load_character(player.name)
 
     def load_game_action(self):

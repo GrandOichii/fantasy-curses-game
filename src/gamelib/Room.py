@@ -208,8 +208,8 @@ class Room:
                 if var in env_vars:
                     enemy.mana = env_vars[var]
                 env_vars[var] = enemy.mana
-                if enemy.health > 0:
-                    result.enemies_data[enemy_code] = enemy
+                # if enemy.health > 0:
+                result.enemies_data[enemy_code] = enemy
 
         tiles_data = dict()
         # parse tile data

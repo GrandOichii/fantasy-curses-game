@@ -70,8 +70,8 @@ class AttackWithoutWeaponEnemyAction(Action):
 
     def run(self):
         damage = self.user.STR // 5
-        self.other.add_health(-damage)
-        return [f'{self.user.name} punches {self.other.name} and deals {damage} damage.']
+        dealt_damage = self.other.take_damage(damage)
+        return [f'{self.user.name} punches {self.other.name} and deals {dealt_damage} damage.']
 
 class AttackMeleeEnemyAction(Action):
     def __init__(self, parent, char, caption, user, other, weapon):
@@ -81,8 +81,8 @@ class AttackMeleeEnemyAction(Action):
     def run(self):
         damage = self.weapon.base_damage
         damage += random.randint(0, self.weapon.max_mod)
-        self.other.add_health(-damage)
-        return [f'{self.user.name} attacks with {self.weapon.name} and hits {self.other.name} for {damage} damage.']
+        dealt_damage = self.other.take_damage(damage)
+        return [f'{self.user.name} attacks with {self.weapon.name} and hits {self.other.name} for {dealt_damage} damage.']
 
 class AttackRangedEnemyAction(Action):
     def __init__(self, parent, char, caption, user, other, weapon, ammo):
@@ -95,8 +95,8 @@ class AttackRangedEnemyAction(Action):
         damage += self.ammo.damage
         damage += random.randint(0, self.weapon.max_mod)
         self.ammo.amount -= 1
-        self.other.add_health(-damage)
-        return [f'{self.user.name} attacks with {self.weapon.name} and hits {self.other.name} for {damage} damage.']
+        dealt_damage = self.other.take_damage(damage)
+        return [f'{self.user.name} attacks with {self.weapon.name} and hits {self.other.name} for {dealt_damage} damage.']
 
 class AttackPlayerAction(Action):
     def __init__(self, parent, user, other):
@@ -105,9 +105,9 @@ class AttackPlayerAction(Action):
     def run(self):
         damage = self.user.damage
         damage += random.randint(0, self.user.damage_mod)
-        self.other.add_health(-damage)
+        dealt_damage = self.other.take_damage(damage)
         curses.flash()
-        return [f'{self.user.name} attacks and deals {damage} damage to {self.other.name}.']
+        return [f'{self.user.name} attacks and deals {dealt_damage} damage to {self.other.name}.']
 
 class UseItemAction(Action):
     def __init__(self, parent, char, caption, user, item):
@@ -488,16 +488,16 @@ class CombatEncounter:
             return None
         display_names = [item.get_cct_display_text() for item in ammo_items]
         a_w_height = len(ammo_items) + 2
-        a_w_width = max([len(d) for d in display_names]) + 2
+        a_w_width = max([cct_len(d) for d in display_names]) + 2
         a_window = curses.newwin(a_w_height, a_w_width, 5, 12 + w_width)
         a_window.keypad(1)
         draw_borders(a_window)
         choice_i = 0
         for i in range(len(display_names)):
             if i == choice_i:
-                a_window.addstr(1 + i, 1, display_names[i], curses.A_REVERSE)
+                put(a_window, 1 + i, 1, display_names[i], curses.A_REVERSE)
             else:
-                a_window.addstr(1 + i, 1, display_names[i])
+                put(a_window, 1 + i, 1, display_names[i])
         while True:
             key = a_window.getch()
             if key == 259: # UP
@@ -514,9 +514,9 @@ class CombatEncounter:
                 return
             for i in range(len(display_names)):
                 if i == choice_i:
-                    a_window.addstr(1 + i, 1, display_names[i], curses.A_REVERSE)
+                    put(a_window, 1 + i, 1, display_names[i], curses.A_REVERSE)
                 else:
-                    a_window.addstr(1 + i, 1, display_names[i])
+                    put(a_window, 1 + i, 1, display_names[i])
         ammo = ammo_items[choice_i]
         return AttackRangedEnemyAction(self, 'a', '-', player, enemy, weapon, ammo)
 

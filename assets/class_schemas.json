@@ -31,7 +31,7 @@
         ],
         "countable_items": {}
     },
-    "thief": {
+    "rogue": {
         "name": "Thief",
         "description": "med damage, low armor, high range",
         "max_health": 15,

@@ -91,6 +91,7 @@ def put(window, y, x, message, attr=0):
     # if message.startswith(':raw '):
     #     window.addstr(y, x, attr=0)
     #     return
+    h, w = window.getmaxyx()
     message = '#normal ' + message
     split = re.findall(color_regex, message)
     for t in split:
