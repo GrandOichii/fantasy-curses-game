@@ -613,16 +613,19 @@ class CombatEncounter:
         for item in rewards['countable_items']:
             display_names += [item.get_cct_display_text()]
 
-        r_w_height = self.HEIGHT - 2
-        r_w_width = max(self.WIDTH // 3, max([cct_len(n) for n in display_names])) + 1
+        r_w_height = max(self.HEIGHT // 3, len(display_names))
+        r_w_width = max(self.WIDTH // 3, max([cct_len(n) for n in display_names])) + 5
         
         limit = r_w_height - 3
         page = 0
 
-        rewards_window = curses.newwin(r_w_height, r_w_width, 1, 1)
+        r_w_y = self.HEIGHT // 2 - r_w_height // 2
+        r_w_x = self.WIDTH // 2 - r_w_width // 2 + 1
+
+        rewards_window = curses.newwin(r_w_height, r_w_width, r_w_y, r_w_x)
         rewards_window.keypad(1)
         draw_borders(rewards_window)
-        rewards_window.addstr(0, 1, 'End of combat')
+        put(rewards_window, 0, 1, '#magenta-black End of combat')
         rewards_window.refresh()
         rewards_window.addstr(1, 1, 'Rewards:')
 
