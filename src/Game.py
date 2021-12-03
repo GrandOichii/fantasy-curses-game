@@ -941,15 +941,17 @@ class Game:
 
     def draw_info_ui(self):
         # s = '1234567891234567891234'
-        put(self.window, 0, self.tile_window_width + 2, f'Name: #green-black {self.player.name}')
-        put(self.window, 1, self.tile_window_width + 2, f'Class: #green-black {self.player.class_name}')
-        put(self.window, 2, self.tile_window_width + 2, f'Gold: ')
-        put(self.window, 4, self.tile_window_width + 2, f'Health:          (   /   )') # left: 19
-        put(self.window, 5, self.tile_window_width + 2, f'  Mana:          (   /   )') # left: 21
-        put(self.window, 7, self.tile_window_width + 2, f'#black-red STR:') # left: 22
-        put(self.window, 8, self.tile_window_width + 2, f'#black-green DEX:') # left: 22
-        put(self.window, 9, self.tile_window_width + 2, f'#black-cyan INT:') # left: 22
-        put(self.window, 11, self.tile_window_width + 2, 'Prompt: ')
+        start_y = 0
+        put(self.window, start_y + 0, self.tile_window_width + 2, f'Name: #green-black {self.player.name}')
+        put(self.window, start_y + 1, self.tile_window_width + 2, f'Class: #green-black {self.player.class_name}')
+        put(self.window, start_y + 2, self.tile_window_width + 2, f'Gold: ')
+        put(self.window, start_y + 3, self.tile_window_width + 2, f'Armor: ')
+        put(self.window, start_y + 5, self.tile_window_width + 2, f'Health:          (   /   )') # left: 19
+        put(self.window, start_y + 6, self.tile_window_width + 2, f'  Mana:          (   /   )') # left: 21
+        put(self.window, start_y + 8, self.tile_window_width + 2, f'#black-red STR:') # left: 22
+        put(self.window, start_y + 9, self.tile_window_width + 2, f'#black-green DEX:') # left: 22
+        put(self.window, start_y + 10, self.tile_window_width + 2, f'#black-cyan INT:') # left: 22
+        put(self.window, start_y + 12, self.tile_window_width + 2, 'Prompt: ')
         self.window.refresh()
 
     def draw_player_info(self):
@@ -959,28 +961,34 @@ class Game:
         # check player health
         if self.player.health > self.player.get_max_health():
             self.player.health = self.player.get_max_health()
+
+        start_y = 0
         
-        put(self.window, 2, self.tile_window_width + 2 + 6, ' ' * (self.parent.WIDTH - self.tile_window_width - 2 - 6))
-        put(self.window, 2, self.tile_window_width + 2 + 6, f'#yellow-black {self.player.gold}')
+        put(self.window, start_y + 2, self.tile_window_width + 2 + 6, ' ' * (self.parent.WIDTH - self.tile_window_width - 2 - 6))
+        put(self.window, start_y + 2, self.tile_window_width + 2 + 6, f'#yellow-black {self.player.gold}')
+
+        put(self.window, start_y + 3, self.tile_window_width + 2 + 6, ' ' * (self.parent.WIDTH - self.tile_window_width - 2 - 6))
+        put(self.window, start_y + 3, self.tile_window_width + 2 + 7, f'#white-blue {self.player.get_armor()}')
+        
 
         health_info = ' ' * (3 - len(str(self.player.health))) + f'{self.player.health}'
-        put(self.window, 4, self.tile_window_width + 20, f'#red-black {health_info}')
+        put(self.window, start_y + 5, self.tile_window_width + 20, f'#red-black {health_info}')
         max_health_info =  ' ' * (3 - len(str(self.player.get_max_health()))) + f'{self.player.get_max_health()}'
-        put(self.window, 4, self.tile_window_width + 24, f'#red-black {max_health_info}')
-        put(self.window, 4, self.tile_window_width + 9, f'#red-black {Utility.calc_pretty_bars(self.player.health, self.player.get_max_health(), 10)}')
+        put(self.window, start_y + 5, self.tile_window_width + 24, f'#red-black {max_health_info}')
+        put(self.window, start_y + 5, self.tile_window_width + 9, f'#red-black {Utility.calc_pretty_bars(self.player.health, self.player.get_max_health(), 10)}')
         
         mana_info =  ' ' * (3 - len(str(self.player.mana))) + f'{self.player.mana}'
-        put(self.window, 5, self.tile_window_width + 20, f'#cyan-black {mana_info}')
+        put(self.window, start_y + 6, self.tile_window_width + 20, f'#cyan-black {mana_info}')
         max_mana_info =  ' ' * (3 - len(str(self.player.get_max_mana()))) + f'{self.player.get_max_mana()}'
-        put(self.window, 5, self.tile_window_width + 24, f'#cyan-black {max_mana_info}')
-        put(self.window, 5, self.tile_window_width + 9, f'#cyan-black {Utility.calc_pretty_bars(self.player.mana, self.player.get_max_mana(), 10)}')
+        put(self.window, start_y + 6, self.tile_window_width + 24, f'#cyan-black {max_mana_info}')
+        put(self.window, start_y + 6, self.tile_window_width + 9, f'#cyan-black {Utility.calc_pretty_bars(self.player.mana, self.player.get_max_mana(), 10)}')
 
         str_info = ' ' * (3 - len(str(self.player.STR))) + f'{self.player.STR}'
-        put(self.window, 7, self.tile_window_width + 6, f'{str_info}')
+        put(self.window, start_y + 8, self.tile_window_width + 6, f'{str_info}')
         dex_info = ' ' * (3 - len(str(self.player.DEX))) + f'{self.player.DEX}'
-        put(self.window, 8, self.tile_window_width + 6, f'{dex_info}')
+        put(self.window, start_y + 9, self.tile_window_width + 6, f'{dex_info}')
         int_info = ' ' * (3 - len(str(self.player.INT))) + f'{self.player.INT}'
-        put(self.window, 9, self.tile_window_width + 6, f'{int_info}')
+        put(self.window, start_y + 10, self.tile_window_width + 6, f'{int_info}')
 
     def draw_tile_window(self):
         draw_borders(self.tile_window)
@@ -1177,7 +1185,7 @@ class Game:
                 return False
             raise Exception(f'ERR: variable {var} is not in env_vars')
         if command == 'mb':
-            choices = words[1].split('_')
+            choices = words[1].split('|')
             var = ' '.join(words[2:])
             real_var = self.get_true_value(var)
             if real_var == None:
@@ -1253,12 +1261,24 @@ class Game:
             if words[0] == 'set':
                 var = words[1]
                 do_if = var in self.env_vars.keys()
-            if words[1] == '==':
+            # conditionals
+            if words[1] in ['==', '>', '<', '>=', '<=']:
                 var1 = words[0]
                 var2 = ' '.join(words[2:words.index('then')])
                 real_var1 = self.get_true_value(var1)
                 real_var2 = self.get_true_value(var2)
-                do_if = real_var1 == real_var2
+                if words[1] == '==':
+                    do_if = real_var1 == real_var2
+                if words[1] == '!=':
+                    do_if = real_var1 != real_var2
+                if words[1] == '>':
+                    do_if = real_var1 > real_var2
+                if words[1] == '<':
+                    do_if = real_var1 > real_var2
+                if words[1] == '>=':
+                    do_if = real_var1 >= real_var2
+                if words[1] == '<=':
+                    do_if = real_var1 >= real_var2
             if reverse != do_if:
                 return self.exec_line(' '.join(words[words.index('then') + 1:]), scripts)
             return False
@@ -1476,8 +1496,7 @@ class GameWindow(Window):
 
     def to_character_creation_action(self):
         self.character_creation_menu.unfocus_all()
-        self.character_creation_menu.selectedElementId = 0
-        self.character_creation_menu.focus_selected()
+        self.character_creation_menu.focus(0)
 
         self.name_text_field.text = ''
         self.name_text_field.cursor = 0
@@ -1559,7 +1578,7 @@ class GameWindow(Window):
 
     def load_character_pick_action(self):
         names = SaveFile.character_names(self.config_file.get('Saves path'))
-        name = names[self.current_menu.selectedElementId - 1]
+        name = names[self.current_menu.get_focused_element_id() - 1]
         response = message_box(self, f'Load character {name}?', ['Load', 'Delete', 'Cancel'])
         if response == 'Cancel':
             return

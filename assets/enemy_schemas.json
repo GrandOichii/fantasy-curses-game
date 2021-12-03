@@ -9,30 +9,14 @@
         "max_health": 10,
         "mana": 0,
         "max_mana": 0,
+        "armor": 0,
         "description": "A stinky sewer rat.",
         "statuses": ["slow"],
         "reward_items": {
-            "Iron Sword": 100,
-            "Iron Shield": 100,
-            "Iron Armor": 100,
-            "Mage's Robe": 100,
-            "Mage's Hat": 100,
-            "Hood": 100,
-            "Spellbook of Fireball": 100,
-            "Iron Helmet": 100,
-            "Iron Leggins": 100,
-            "Leather Armor": 100,
-            "Long Bow": 100,
-            "Iron Dagger": 100,
-            "temp": 100,
-            "Spellbook of Boost": 100,
-            "Spellbook of Heal": 100
+            
         },
         "reward_countable_items": {
-            "Wooden Arrow": 20,
-            "Iron Arrow": 10,
-            "Small Health Potion": 3,
-            "Small Mana Potion": 3
+            
         },
         "min_reward_gold": 3,
         "max_reward_gold": 5

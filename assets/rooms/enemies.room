@@ -2,7 +2,7 @@
 ##                #
 ##                #
 ##                #
-##                #
+##   A            #
 #D                #
 ##                #
 ##                #
@@ -13,8 +13,14 @@ visible_range=12
 ---
 D D door index to_enemies
 C C chest potion_chest
+A * script_tile button revive_rat
 ---
-
+revive_rat:
+if enemies_enemies_r1_health > 0 then stop
+set message "Revive rat?"
+mb Yes|No message
+set yes_result "Yes"
+if _mb_result == yes_result then revive r1
 ---
 potion_chest:
 10 Small Health Potion

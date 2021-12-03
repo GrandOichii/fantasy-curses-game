@@ -34,7 +34,6 @@ class Menu:
         self.parent = parent
         self.title = title
         self.elements = []
-        self.selectedElementId = 0
         self.border_color_pair = 'normal'
         self.bottom_description = ''
 
@@ -42,14 +41,17 @@ class Menu:
         for e in self.elements:
             e.set_focused(False)
 
-    def focus_selected(self):
-        self.elements[self.selectedElementId].set_focused(True)
+    def focus(self, id):
+        self.elements[id].set_focused(True)
+
+    def get_focused_element_id(self):
+        for i in range(len(self.elements)):
+            if self.elements[i].focused:
+                return i
 
     def handle_key(self, key):
-        for element in self.elements:
-            if element.focused:
-                element.handle_key(key)
-                return
+        element = self.elements[self.get_focused_element_id()]
+        element.handle_key(key)
 
     def add_element(self, element):
         self.elements += [element]

@@ -14,6 +14,9 @@ class Entity:
         self.description = ''
         self.statuses = []
 
+    def get_armor(self):
+        return 0
+
     def get_max_mana(self):
         return self.max_mana
 
@@ -54,6 +57,7 @@ class Enemy(Entity):
         self.range = 0
         self.damage = 0
         self.damage_mod = 0
+        self.armor = 0
         self.statuses = []
         self.y = 0
         self.x = 0
@@ -62,6 +66,9 @@ class Enemy(Entity):
         self.reward_countable_items = {}
         self.min_reward_gold = 0
         self.max_reward_gold = 0
+
+    def get_armor(self):
+        return self.armor
 
     def add_statuses(self, statuses):
         self.statuses += statuses
@@ -111,6 +118,9 @@ class Player(Entity):
         self.equipment = dict()
         self.spells = []
         self.temporary_statuses = []
+
+    def get_armor(self):
+        return self._get_mods_from_equipment('armor')
 
     def _get_mods_from_equipment(self, mod):
         result = 0

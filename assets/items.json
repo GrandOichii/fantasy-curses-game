@@ -44,7 +44,7 @@
         "mods": {
             "armor": 1,
             "mana": 3,
-            "health": 10
+            "health": 1
         },
         "slot": "HEAD",
         "gives_statuses": [],
@@ -56,7 +56,8 @@
         "itype": "armor",
         "mods": {
             "armor": 1,
-            "mana": 5
+            "mana": 5,
+            "health": 2
         },
         "slot": "BODY",
         "gives_statuses": [],
