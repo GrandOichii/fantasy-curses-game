@@ -2,6 +2,8 @@ import json
 
 from cursesui.Utility import str_smart_split
 
+from gamelib.Entities import Player
+
 class Spell:
     def __init__(self):
         self.name = ''
@@ -9,7 +11,7 @@ class Spell:
         self.description = ''
 
     def cast(self, user):
-        return [f'{user.name} casts {self.name}, but it doesn\'t seem to do anything']
+        return [f'{user.get_cct_name_color()} {user.name} #normal casts #cyan-black {self.name}#normal , but it doesn\'t seem to do anything']
 
     def json(self):
         return self.__dict__
@@ -104,7 +106,7 @@ class HealSpell(ManaSpell):
     def cast(self, user):
         super().cast(user)
         user.add_health(self.restores)
-        return [f'{user.name} casts {self.name} and heals {self.restores} hp']
+        return [f'{user.get_cct_name_color()} {user.name} #normal casts #cyan-black {self.name} #normal and heals #red-black {self.restores} #normal hp']
 
     def get_description(self, max_width):
         result = super().get_description(max_width)
@@ -119,7 +121,7 @@ class BloodManaSpell(BloodSpell):
     def cast(self, user):
         super().cast(user)
         user.add_mana(self.restores)
-        return [f'{user.name} casts {self.name} and restores {self.restores} mana']
+        return [f'{user.get_cct_name_color()} {user.name} #normal casts #red-black {self.name} #normal and restores #cyan-black {self.restores} #normal mana']
 
     def get_description(self, max_width):
         result = super().get_description(max_width)
@@ -138,11 +140,11 @@ class CombatSpell(Spell):
         user.add_mana(-self.manacost)
         user.add_statuses(self.user_statuses)
         enemy.add_statuses(self.enemy_statuses)
-        result = [f'{user.name} casts {self.name}']
+        result = [f'{user.get_cct_name_color()} {user.name} #normal casts #cyan-black {self.name}']
         for status in self.user_statuses:
-            result += [f'{user.name} has gained status {status}']
+            result += [f'{user.name} has gained status #yellow-black {status}']
         for status in self.enemy_statuses:
-            result += [f'{enemy.name} has gained status {status}']
+            result += [f'{enemy.name} has gained status #yellow-black {status}']
         return result
 
     def get_description(self, max_width):
@@ -183,7 +185,7 @@ class DamageSpell(CombatSpell):
     def cast(self, user, enemy):
         result = super().cast(user, enemy)
         enemy.add_health(-self.damage)
-        result += [f'{self.name} deals {self.damage} to {enemy.name}']
+        result += [f'{user.get_cct_name_color()} {self.name} #normal deals #red-black {self.damage} #normal to {enemy.get_cct_name_color()} {enemy.name}']
         return result
 
     def get_description(self, max_width):

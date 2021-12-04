@@ -7,7 +7,7 @@ from Settings import SettingsMenu
 from gamelib.Spells import BloodSpell, NormalSpell
 
 from cursesui.Elements import Menu, Window, Button, UIElement, Widget, TextField, WordChoice, Separator
-from cursesui.Utility import draw_separator, message_box, cct_len, draw_borders, drop_down_box, put, MULTIPLE_ELEMENTS
+from cursesui.Utility import draw_separator, message_box, cct_len, draw_borders, drop_down_box, put, MULTIPLE_ELEMENTS, str_smart_split
 
 import cursesui.Utility as Utility
 import gamelib.Room as Room
@@ -20,6 +20,28 @@ from gamelib.Combat import CombatEncounter
 
 def distance(ay, ax, by, bx):
     return sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by))
+
+class GameLog:
+    MAX_SIZE = 20
+    def __init__(self):
+        self.messages = []
+
+    def add(self, messages):
+        messages[0] = '- ' + messages[0]
+        self.messages += messages
+
+    def length(self):
+        return len(self.messages)
+
+    def get_splits(self, max_width):
+        splits = []
+        for message in self.messages:
+            splits += str_smart_split(message, max_width)
+        return splits
+
+    def get_last(self, max_width, amount):
+        # optimize
+        return self.get_splits(max_width)[-amount:]
 
 class Game:
     def __init__(self, parent, character_name, config_file):
@@ -60,6 +82,10 @@ class Game:
         self.MINI_MAP_HEIGHT = 7
         self.MINI_MAP_WIDTH = 7
 
+        self.log_window_height = self.parent.HEIGHT - self.tile_window_height
+        self.log_window_width = self.tile_window_width
+        self.game_log = GameLog()
+
         self.mid_y = self.tile_window_height // 2 
         self.mid_x = self.tile_window_width // 2
             
@@ -79,6 +105,9 @@ class Game:
         
         # mini map window
         self.mini_map_window = curses.newwin(self.MINI_MAP_HEIGHT + 2, self.MINI_MAP_WIDTH + 2, 13, self.parent.WIDTH - self.MINI_MAP_WIDTH - 2)
+
+        # log window
+        self.log_window = curses.newwin(self.log_window_height, self.log_window_width, self.tile_window_height, 1)
 
         self.full_map = None
         if self.config_file.has('Map path'):
@@ -156,6 +185,10 @@ class Game:
                 self.player_y += 1
                 self.player_x += 1
                 entered_room = True
+            # open big log window
+            if key == 76: # L
+                self.open_big_log_window()
+                continue
             # interact
             if key == 101: # e
                 interactable_tiles = self.get_interactable_tiles(self.player_y, self.player_x)
@@ -250,6 +283,7 @@ class Game:
         return (encounter_ready, enemy_code)    
 
     def update_entities(self):
+        self.player.check_items()
         self.player.regenerate_mana()
         for enemy_code in self.game_room.enemies_data:
             enemy = self.game_room.enemies_data[enemy_code]
@@ -461,8 +495,6 @@ class Game:
         win_width = self.tile_window_width
         inventory_window = curses.newwin(win_height, win_width, 0, 1)
         inventory_window.keypad(1)
-        inventory_window.addstr(1, 1, 'Inventory')
-        draw_borders(inventory_window)
 
         selected_tab = 0
         tabs = ['Items', 'Equipment', 'Spells']
@@ -491,7 +523,7 @@ class Game:
         while True:
             # display
             draw_borders(inventory_window)
-            inventory_window.addstr(0, 1, 'Inventory')
+            put(inventory_window, 0, 1, '#magenta-black Inventory')
             # display the tabs
             draw_separator(inventory_window, 1)
             x = 2
@@ -595,6 +627,10 @@ class Game:
                 if description_page != len(desc) - description_limit:
                     description_window.addch(d_window_height - 2, d_window_width - 1, curses.ACS_DARROW)
             description_window.refresh()
+
+            # display player info
+            self.draw_player_info()
+            self.player_info_window.refresh()
 
             # key handling
             key = inventory_window.getch()
@@ -704,9 +740,17 @@ class Game:
                             if key == 27: # ESC
                                 break
                             if key == 10: # ENTER
-                                item.use(self.player)
+                                # TO-DO: fix this
+                                if item.amount < 1:
+                                    choice_id = 0
+                                    cursor = 0
+                                    page_n = 0
+                                messages = item.use(self.player)
+                                self.game_log.add(messages)
+                                self.player.check_items()
+                                items = list(self.player.items)
+                                items += self.player.countable_items
                                 display_names = self.get_display_names(items)
-                                # inventory_window.clear()
                                 break        
                     if issubclass(type(item), Items.EquipableItem):
                         begin_s = 'Equip to '
@@ -850,12 +894,14 @@ class Game:
                                 break
                             if key == 10: # ENTER
                                 if self.player.can_cast(spell):
-                                    response = spell.cast(self.player)
-                                    # add response to log
+                                    messages = spell.cast(self.player)
+                                    self.game_log.add(messages)
                                     break
                                 else:
                                     message_box(self.parent, 'Can\'t cast spell!', ['Ok'])
                                     break
+                self.draw_log_window()
+                self.log_window.refresh()
             if key == 60: # <
                 if len(desc) > description_limit:
                     description_page -= 1
@@ -881,6 +927,59 @@ class Game:
         key = self.window.getch()
         return key
     
+    def open_big_log_window(self):
+        b_l_window_height = self.parent.HEIGHT - 6
+        b_l_window_width = self.parent.WIDTH // 2
+
+        b_l_window_y = self.parent.HEIGHT // 2 - b_l_window_height // 2
+        b_l_window_x = self.parent.WIDTH // 2 - b_l_window_width // 2
+
+        big_log_window = curses.newwin(b_l_window_height, b_l_window_width, b_l_window_y, b_l_window_x)
+        big_log_window.keypad(1)
+
+        splits = self.game_log.get_splits(b_l_window_width - 2)
+
+        limit = b_l_window_height - 2
+        page = 0
+
+        while True:
+            # display
+            big_log_window.clear()
+            draw_borders(big_log_window)
+            put(big_log_window, 0, 1, '#magenta-black Log')
+            first = 0
+            last = len(splits) - 1
+            if len(splits) > limit:
+                first = page
+                last = page + limit - 1
+            y = 1
+            for i in range(first, last + 1):
+                put(big_log_window, y, 1, splits[i])
+                y += 1
+            if len(splits) > limit:
+                if page != 0:
+                    big_log_window.addch(1, b_l_window_width - 1, curses.ACS_UARROW)
+                if page != len(splits) - limit:
+                    big_log_window.addch(b_l_window_height - 2, b_l_window_width - 1, curses.ACS_DARROW)
+
+            # key handling
+            key = big_log_window.getch()
+            if key == 27: # ESC
+                break
+            if key == 259: # UP
+                if len(splits) > limit:
+                    page -= 1
+                    if page < 0:
+                        page = 0
+            if key == 258: # DOWN
+                if len(splits) > limit:
+                    page += 1
+                    if page > len(splits) - limit:
+                        page = len(splits) - limit
+            
+        self.window.clear()
+        self.window.refresh()
+        self.draw()
     # combat
 
     def initiate_encounter_with(self, encounter_enemy_code):
@@ -914,12 +1013,22 @@ class Game:
         self.draw_player_info()
         self.draw_tile_window()
         self.draw_mini_map(self.game_room.name)
+        self.draw_log_window()
         if self.game_room.display_name != '':
             self.draw_room_display_name(self.game_room.display_name)
 
         self.tile_window.refresh()
         self.player_info_window.refresh()
         self.mini_map_window.refresh()
+        self.log_window.refresh()
+
+    def draw_log_window(self):
+        draw_borders(self.log_window)
+        put(self.log_window, 0, 1, '#magenta-black Log')
+        max_amount = self.log_window_height - 2
+        messages = self.game_log.get_last(self.log_window_width, max_amount)
+        for i in range(len(messages)):
+            put(self.log_window, 1 + i, 1, messages[i])
 
     def draw_player_info(self):
         # check player mana

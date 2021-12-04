@@ -30,7 +30,7 @@ class WaitAction(Action):
         super().__init__(parent, char, 'Wait', '..', user, None)
 
     def run(self):
-        return [f'{self.user.name} waits.']      
+        return [f'{self.user.get_cct_name_color()} {self.user.name} #normal waits.']      
 
 class MoveAction(Action):
     def __init__(self, parent, char, caption, user, other, move_val):
@@ -61,7 +61,7 @@ class MoveAction(Action):
             action = 'runs toward to'
         if self.move_val == 3:
             action = 'sprints toward to'
-        result = [f'{self.user.name} {action} {self.other.name}.']
+        result = [f'{self.user.get_cct_name_color()} {self.user.name} #normal {action} {self.other.get_cct_name_color()} {self.other.name}.']
         return result
 
 class AttackWithoutWeaponEnemyAction(Action):
@@ -71,7 +71,7 @@ class AttackWithoutWeaponEnemyAction(Action):
     def run(self):
         damage = self.user.STR // 5
         dealt_damage = self.other.take_damage(damage)
-        return [f'{self.user.name} punches {self.other.name} and deals {dealt_damage} damage.']
+        return [f'{self.user.get_cct_name_color()} {self.user.name} #normal punches {self.other.get_cct_name_color()} {self.other.name} #normal and deals #red-black {dealt_damage} #normal damage.']
 
 class AttackMeleeEnemyAction(Action):
     def __init__(self, parent, char, caption, user, other, weapon):
@@ -82,7 +82,7 @@ class AttackMeleeEnemyAction(Action):
         damage = self.weapon.base_damage
         damage += random.randint(0, self.weapon.max_mod)
         dealt_damage = self.other.take_damage(damage)
-        return [f'{self.user.name} attacks with {self.weapon.name} and hits {self.other.name} for {dealt_damage} damage.']
+        return [f'{self.user.get_cct_name_color()} {self.user.name} #normal attacks with {self.weapon.name} and hits {self.other.get_cct_name_color()} {self.other.name} #normal for #red-black {dealt_damage} #normal damage.']
 
 class AttackRangedEnemyAction(Action):
     def __init__(self, parent, char, caption, user, other, weapon, ammo):
@@ -96,7 +96,7 @@ class AttackRangedEnemyAction(Action):
         damage += random.randint(0, self.weapon.max_mod)
         self.ammo.amount -= 1
         dealt_damage = self.other.take_damage(damage)
-        return [f'{self.user.name} attacks with {self.weapon.name} and hits {self.other.name} for {dealt_damage} damage.']
+        return [f'{self.user.get_cct_name_color()} {self.user.name} #normal attacks with {self.weapon.name} and hits {self.other.get_cct_name_color()} {self.other.name} #normal for #red-black {dealt_damage} #normal damage.']
 
 class AttackPlayerAction(Action):
     def __init__(self, parent, user, other):
@@ -107,7 +107,7 @@ class AttackPlayerAction(Action):
         damage += random.randint(0, self.user.damage_mod)
         dealt_damage = self.other.take_damage(damage)
         curses.flash()
-        return [f'{self.user.name} attacks and deals {dealt_damage} damage to {self.other.name}.']
+        return [f'{self.user.get_cct_name_color()} {self.user.name} #normal attacks and deals #red-black {dealt_damage} #normal damage to {self.other.get_cct_name_color()} {self.other.name}.']
 
 class UseItemAction(Action):
     def __init__(self, parent, char, caption, user, item):
@@ -145,7 +145,7 @@ class CombatEncounter:
         self.turn_id = 0
         self.combat_log = []
         self.cl_page = 0
-        self.add_to_combat_log(f'{attacker.name} attacks {defender.name}!')
+        self.add_to_combat_log(f'{attacker.get_cct_name_color()} {attacker.name} #normal attacks {defender.get_cct_name_color()} {defender.name}!')
         self.distance = int(distance)
 
         self.action_id = 0
@@ -182,6 +182,7 @@ class CombatEncounter:
         w.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE, curses.ACS_ULCORNER, curses.ACS_URCORNER, curses.ACS_LLCORNER, curses.ACS_LRCORNER)
 
     def update_player_options(self):
+        self.get_player().check_items()
         self.player_actions = []
         player = self.get_player()
         enemy = self.get_enemy()
@@ -241,11 +242,13 @@ class CombatEncounter:
 
         # display statuses
         self.enemy_window.addstr(y_first + 2, 1, 'Statuses:')
+        i = 0
         for i in range(len(enemy.statuses)):
             self.enemy_window.addstr(y_first + 3 + i, 2, enemy.statuses[i])
 
         y_first = y_first + 5 + i
-              # display distance
+        # display distance
+        # h, w = self.enemy_window.getmaxyx()
         self.enemy_window.addstr(y_first, 1, f'DISTANCE: {self.distance}')
 
     def draw_player_info(self):
@@ -574,7 +577,7 @@ class CombatEncounter:
         return result
     
     def choose_player_spell(self):
-        max_spells = 4
+        max_spells = 6
         spells = self.get_usable_spells()
         spell_names = self.get_usable_spell_display_names(spells)
         if len(spell_names) == 0:

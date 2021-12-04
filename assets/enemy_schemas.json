@@ -11,7 +11,7 @@
         "max_mana": 0,
         "armor": 0,
         "description": "A stinky sewer rat.",
-        "statuses": ["slow"],
+        "statuses": [],
         "reward_items": {
             
         },

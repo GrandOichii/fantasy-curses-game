@@ -1,6 +1,8 @@
 import json
 from cursesui.Utility import str_smart_split, pos_neg_int
-from gamelib.Spells import Spell
+# from gamelib.Spells import Spell
+
+import gamelib.Entities
 
 class Item:
     def get_base_items(names, path):
@@ -226,7 +228,7 @@ class HealthPotion(UsableItem):
     def use(self, entity):
         super().use(entity)
         entity.add_health(self.restores)
-        return [f'{entity.name} drinks {self.name} and restores {self.restores} health']
+        return [f'{entity.get_cct_name_color()} {entity.name} #normal drinks {self.name} and restores #red-black {self.restores} #normal health']
 
 class ManaPotion(UsableItem):
     def __init__(self):
@@ -236,7 +238,7 @@ class ManaPotion(UsableItem):
     def use(self, entity):
         super().use(entity)
         entity.add_mana(self.restores)
-        return [f'{entity.name} drinks {self.name} and restores {self.restores} mana']
+        return [f'{entity.get_cct_name_color()} {entity.name} #normal drinks {self.name} and restores #cyan-black {self.restores} #normal mana']
 
 class SpellBook(Item):
     def __init__(self):

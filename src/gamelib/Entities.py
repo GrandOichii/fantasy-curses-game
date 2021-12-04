@@ -2,7 +2,8 @@ import json
 # from random import Random
 import random
 import gamelib.Items as Items
-from gamelib.Spells import BloodSpell, CombatSpell, ManaSpell, Spell
+import gamelib.Spells as Spells
+# from gamelib.Spells import BloodSpell, CombatSpell, Spell
 
 class Entity:
     def __init__(self):
@@ -13,6 +14,9 @@ class Entity:
         self.max_mana = 0
         self.description = ''
         self.statuses = []
+
+    def get_cct_name_color(self):
+        return '#normal'
 
     def take_damage(self, damage):
         armor = self.get_armor() // 2
@@ -56,7 +60,7 @@ class Entity:
             self.mana = 0
 
     def can_cast(self, spell):
-        if issubclass(type(spell), BloodSpell):
+        if issubclass(type(spell), Spells.BloodSpell):
             return self.health > spell.bloodcost
         return self.mana >= spell.manacost
 
@@ -75,6 +79,9 @@ class Enemy(Entity):
         self.reward_countable_items = {}
         self.min_reward_gold = 0
         self.max_reward_gold = 0
+
+    def get_cct_name_color(self):
+        return '#red-black'
 
     def get_armor(self):
         return self.armor
@@ -128,6 +135,14 @@ class Player(Entity):
         self.spells = []
         self.temporary_statuses = []
 
+    def get_cct_name_color(self):
+        return '#green-black'
+
+    def check_items(self):
+        for item in self.countable_items:
+            if isinstance(item, Items.UsableItem) and item.amount < 1:
+                self.countable_items.remove(item)
+
     def get_armor(self):
         return self._get_mods_from_equipment('armor')
 
@@ -162,7 +177,7 @@ class Player(Entity):
         return result 
 
     def learn_spells(self, spell_names, spells_path):
-        spells = Spell.get_base_spells(spell_names, spells_path)
+        spells = Spells.Spell.get_base_spells(spell_names, spells_path)
         spell_names = [spell.name for spell in self.spells]
         for spell in spells:
             if not spell.name in spell_names:
@@ -238,7 +253,7 @@ class Player(Entity):
         if self.equipment['ARM2'] != None:
             highest_range = max(self.items[self.equipment['ARM2']].range, highest_range)
         for spell in self.spells:
-            if issubclass(type(spell), CombatSpell) and spell.range > highest_range:
+            if issubclass(type(spell), Spells.CombatSpell) and spell.range > highest_range:
                 highest_range = spell.range
         return highest_range + visible_range // 3
     
@@ -291,7 +306,7 @@ class Player(Entity):
         result.countable_items = Items.CountableItem.get_base_items(countable_items, config_file.get('Items path'))
         
         spells = result.spells
-        result.spells = Spell.get_base_spells(spells, config_file.get('Spells path'))
+        result.spells = Spells.Spell.get_base_spells(spells, config_file.get('Spells path'))
 
         return result
 
