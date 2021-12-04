@@ -13,7 +13,7 @@ class Tile:
         self.solid = solid
         self.interactable = interactable
 
-    def from_info(tile_char, tiles_data, scripts, chest_content_info, config_file):
+    def from_info(tile_char, tiles_data, scripts, containers_info, config_file):
         if tile_char == ' ' or tile_char == '@':
             return Tile('floor', ' ', False, False)
         if tile_char == '#':
@@ -46,7 +46,7 @@ class Tile:
                 actual_tile_tiles_data[actual_tile_tile_char] = [' '.join(split[2].split('_'))]
                 actual_tile_tiles_data[actual_tile_tile_char] += [actual_tile_tile_char]
                 actual_tile_tiles_data[actual_tile_tile_char] += [split[3 : len(split)]]
-                actual_tile = Tile.from_info(actual_tile_tile_char, actual_tile_tiles_data, scripts, chest_content_info, config_file)
+                actual_tile = Tile.from_info(actual_tile_tile_char, actual_tile_tiles_data, scripts, containers_info, config_file)
                 return HiddenTile(tile_name, tile_actual_char, True, False, actual_tile, signal)
         # in case of unknown tile
         return Tile('ERR', '!', True, False)
@@ -63,9 +63,9 @@ class TorchTile(Tile):
         self.visible_range = int(visible_range)
 
 class ChestTile(Tile):
-    def __init__(self, name, char, solid, chest_code):
+    def __init__(self, name, char, solid, container_code):
         super().__init__(name, char, solid, True)
-        self.chest_code = chest_code
+        self.container_code = container_code
 
 class PressurePlateTile(Tile):
     def __init__(self, name, char, script_name):
@@ -93,6 +93,7 @@ class Room:
         self.player_spawn_y = 0
         self.player_spawn_x = 0
         self.visible_range = 0
+        self.container_info = {}
         self.player_spawn_char = player_spawn_char
 
     def by_name(name, config_file, env_vars, door_code=None):
@@ -108,13 +109,13 @@ class Room:
         room_data = data[1]
         tiles_raw_data = data[2]
         scripts_data = data[3]
-        chest_content_data = data[4]
+        containers_data = data[4]
         enemies_data = data[5]
         tiles_data = tiles_raw_data.split('\n')
-        result = Room.from_str(name, layout_data, tiles_data, room_data, scripts_data, chest_content_data, enemies_data, '@', config_file, door_code, env_vars)
+        result = Room.from_str(name, layout_data, tiles_data, room_data, scripts_data, containers_data, enemies_data, '@', config_file, door_code, env_vars)
         return result
 
-    def from_str(name, layout_data, raw_tiles_data, room_data, scripts_data, chest_content_data, enemies_data, player_spawn_char, config_file, door_code, env_vars):
+    def from_str(name, layout_data, raw_tiles_data, room_data, scripts_data, containers_data, enemies_data, player_spawn_char, config_file, door_code, env_vars):
         lines = layout_data.split('\n')
         height = len(lines)
         width = len(lines[0])
@@ -130,14 +131,14 @@ class Room:
             result.scripts[script_name] = script_lines
         
         # chest contents
-        result.chest_contents = dict()
-        for chunk in chest_content_data.split('\n\n'):
+        result.container_info = dict()
+        for chunk in containers_data.split('\n\n'):
             l = chunk.split('\n')
-            chest_code = l[0][:-1]
-            raw_chest_content = l[1:]
+            container_code = l[0][:-1]
+            raw_container_info = l[1:]
             d = dict()
-            for i in range(len(raw_chest_content)):
-                raw_item = raw_chest_content[i]
+            for i in range(len(raw_container_info)):
+                raw_item = raw_container_info[i]
                 sri = raw_item.split(' ')
                 item = None
                 if sri[0].isdigit():
@@ -148,15 +149,15 @@ class Room:
                     else:
                         item = Items.Item.get_base_items([item_name], config_file.get('Items path'))[0]
                     item.amount = amount
-                    d[item] = f'{chest_code}_{i}'
+                    d[item] = f'{container_code}_{i}'
                 else: 
                     item_name = ' '.join(sri)
                     item = Items.Item.get_base_items([item_name], config_file.get('Items path'))[0]
-                    d[item] = f'{chest_code}_{i}'
+                    d[item] = f'{container_code}_{i}'
                 if item == None:
                     data = ' '.join(sri)
                     raise Exception(f'ERR: item with data {data} not parsable')
-            result.chest_contents[chest_code] = d
+            result.container_info[container_code] = d
         
         # enemy data
         result.enemies_data = dict()
@@ -227,7 +228,7 @@ class Room:
         for i in range(height):
             result.tiles += [[]]
             for j in range(width):
-                result.tiles[i] += [Tile.from_info(lines[i][j], tiles_data, result.scripts, result.chest_contents, config_file)]
+                result.tiles[i] += [Tile.from_info(lines[i][j], tiles_data, result.scripts, result.container_info, config_file)]
 
         # find the player spawn point
         if not door_code:

@@ -13,6 +13,7 @@ C # hidden_tile is_friends C chest chests_test_friend_chest
 ---
 _load:
 set npc_name "Oskar"
+set oskar_gold_amount 100
 if set bat then unset bat
 
 npc_script:
@@ -30,6 +31,14 @@ stop
 friend_talk:
 say Hi! "Hello, friend!"
 if not chests_test_friend_chest.length == 0 then say Ok "Don't be shy, I don't need the stuff in the chest anyway"
+say Yes_No "Do you want to trade?"
+set _vendor_name npc_name
+if _reply == "Yes" then run trade_with_player
+
+trade_with_player:
+set temp_gold oskar_gold_amount
+trade oskar_gold_amount oskar_trade_items
+if not temp_gold == oskar_gold_amount then say Bye "Thanks for the trade!"
 
 become_friends:
 say Cool! "Yay! You are my friend now"
@@ -62,4 +71,11 @@ chests_test_friend_chest:
 Iron Helmet
 Iron Armor
 Iron Leggins
+
+oskar_trade_items:
+Iron Helmet
+Iron Armor
+Iron Helmet
+Iron Dagger
+Spellbook of Fireball
 ---

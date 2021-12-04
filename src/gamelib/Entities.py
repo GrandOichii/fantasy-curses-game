@@ -218,6 +218,12 @@ class Player(Entity):
         else:
             self.items += [item]
 
+    def remove_item(self, i_id):
+        for key in self.equipment:
+            if self.equipment[key] == i_id:
+                self.equipment[key] = None
+        self.items.remove(self.items[i_id])
+
     def load_class(self, class_data, config_file):
         self.max_health = class_data['max_health']
         self.health = self.max_health

@@ -2,8 +2,6 @@ import json
 from cursesui.Utility import str_smart_split, pos_neg_int
 # from gamelib.Spells import Spell
 
-import gamelib.Entities
-
 class Item:
     def get_base_items(names, path):
         data = json.loads(open(path).read())
@@ -41,11 +39,18 @@ class Item:
     def __init__(self):
         self.name = ''
         self.itype = 'item'
+        self.price = 0
         self.description = ''
 
     def __str__(self):
         result = f'Name: {self.name}'
         return result
+
+    def get_buy_price(self):
+        return self.price // 3 * 4 # one third more expensive
+
+    def get_sell_price(self):
+        return self.price
 
     def json(self):
         return self.__dict__

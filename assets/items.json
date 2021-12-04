@@ -10,6 +10,7 @@
         "requires": {
             "STR": 14
         },
+        "price": 10,
         "description": "An iron helmet."
     },
     "Iron Armor": {
@@ -23,6 +24,7 @@
         "requires": {
             "STR": 14
         },
+        "price": 20,
         "description": "An iron plated armor."
     },
     "Iron Leggins": {
@@ -36,6 +38,7 @@
         "requires": {
             "STR": 14
         },
+        "price": 8,
         "description": "A pair of iron leggins."
     },
     "Mage's Hat": {
@@ -49,6 +52,7 @@
         "slot": "HEAD",
         "gives_statuses": [],
         "requires": {},
+        "price": 15,
         "description": "A silly hat, pulsates with magical energy."
     },
     "Mage's Robe": {
@@ -62,6 +66,7 @@
         "slot": "BODY",
         "gives_statuses": [],
         "requires": {},
+        "price": 20,
         "description": "A long, brown robe, pulsates with magical energy."
     },
     "Hood": {
@@ -75,6 +80,7 @@
         "gives_statuses": [
             "fast"
         ],
+        "price": 5,
         "description": "A regular hood."
     },
     "Leather Armor": {
@@ -88,6 +94,7 @@
         "requires": {
             "STR": 10
         },
+        "price": 10,
         "description": "A piece of lether. Protects the wearer's body somewhat."
     },
     "Iron Sword": {
@@ -102,6 +109,7 @@
         "requires": {
             "STR": 14
         },
+        "price": 10,
         "description": "A trusty iron sword. Deals moderate damage."
     },
     "Iron Dagger": {
@@ -116,6 +124,7 @@
         "requires": {
             "STR": 10
         },
+        "price": 6,
         "description": "A regular iron dagger. Used for stealthfully slitting throats."
     },
     "Iron Shield": {
@@ -132,6 +141,7 @@
         "requires": {
             "STR": 14
         },
+        "price": 10,
         "description": "An iron shield. A bit unwieldy."
     },
     "Long Bow": {
@@ -147,6 +157,7 @@
             "STR": 12
         },
         "mods": {},
+        "price": 10,
         "description": "Just a regular long bow. Can use any type of arrow."
     },
     "temp": {
@@ -160,6 +171,7 @@
         "ammo_type": "arrow",
         "requires": {},
         "mods": {},
+        "price": 1,
         "description": "temp weapon"
     },
     "Wooden Arrow": {
@@ -167,6 +179,7 @@
         "itype": "ammo",
         "damage": 1,
         "type": "arrow",
+        "price": 2,
         "description": "The simplest type of arrow there could be."
     },
     "Iron Arrow": {
@@ -174,18 +187,21 @@
         "itype": "ammo",
         "damage": 3,
         "type": "arrow",
+        "price": 5,
         "description": "An arrow with a serrated iron tip. Deals moderate damage."
     },
     "Small Health Potion": {
         "name": "Small Health Potion",
         "itype": "health potion",
         "restores": 10,
+        "price": 5,
         "description": "A small bottle of eliksir, restores a little amount of health."
     },
     "Small Mana Potion": {
         "name": "Small Mana Potion",
         "itype": "mana potion",
         "restores": 15,
+        "price": 4,
         "description": "A small bottle of eliksir, restores a little amount of mana."
     },
     "Spellbook of Fireball": {
@@ -193,6 +209,7 @@
         "itype": "spell book",
         "description": "Read this spell book to learn Fireball.",
         "spell_names": ["Fireball"],
+        "price": 50,
         "int_to_learn": 12
     },
     "Spellbook of Heal": {
@@ -200,6 +217,7 @@
         "itype": "spell book",
         "description": "Read this spell book to learn Heal.",
         "spell_names": ["Heal"],
+        "price": 50,
         "int_to_learn": 12
     },
     "Spellbook of Boost": {
@@ -207,6 +225,7 @@
         "itype": "spell book",
         "description": "Read this spell book to learn Boost.",
         "spell_names": ["Boost"],
+        "price": 40,
         "int_to_learn": 12
     }
 }

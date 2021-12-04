@@ -17,6 +17,7 @@ import gamelib.SaveFile as SaveFile
 
 from gamelib.Entities import Player
 from gamelib.Combat import CombatEncounter
+from gamelib.Trade import Trade
 
 def distance(ay, ax, by, bx):
     return sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by))
@@ -46,6 +47,7 @@ class GameLog:
 class Game:
     def __init__(self, parent, character_name, config_file):
         self.parent = parent
+        
         self.window = parent.window
         self.character_name = character_name
         self.config_file = config_file
@@ -442,7 +444,7 @@ class Game:
         return result
 
     def interact_with_chest(self, chest_tile):
-        items_dict = self.game_room.chest_contents[chest_tile.chest_code]
+        items_dict = self.game_room.container_info[chest_tile.container_code]
 
         item_names = []
         codes = []
@@ -741,11 +743,11 @@ class Game:
                                 break
                             if key == 10: # ENTER
                                 # TO-DO: fix this
+                                messages = item.use(self.player)
                                 if item.amount < 1:
                                     choice_id = 0
                                     cursor = 0
                                     page_n = 0
-                                messages = item.use(self.player)
                                 self.game_log.add(messages)
                                 self.player.check_items()
                                 items = list(self.player.items)
@@ -980,6 +982,43 @@ class Game:
         self.window.clear()
         self.window.refresh()
         self.draw()
+    
+    def initiate_trade(self, vendor_name, gold_var, container_code):
+        items = self.game_room.container_info[container_code]
+        vendor_items = []
+        for item in items:
+            if self.get_env_var(items[item]) != True:
+                vendor_items += [item]
+        trade = Trade(self.parent, self.player, vendor_name, self.get_env_var(gold_var), vendor_items)   
+        trade.start()
+        # sold_item_codes = trade.sold_item_codes
+
+        # set gold values
+        self.set_env_var(gold_var, trade.get_vendor_final_gold())
+        self.player.gold = trade.get_player_final_gold()
+
+        # remove sold items
+        for i in range(len(trade.sold_item_ids) - 1, -1, -1):
+            i_id = trade.sold_item_ids[i]
+            self.player.remove_item(i_id)
+
+        # add bought items
+        for i in trade.bought_item_ids:
+            self.player.add_item(trade.vendor_items[i])
+
+        # manage bought item codes
+        item_codes = list(items.values())
+        for i in trade.bought_item_ids:
+            code = item_codes[i]
+            self.set_env_var(code, True)
+            
+        # set item codes
+        # for code in results:
+        #     self.set_env_var(codes[i], True)
+        # clean-up
+        self.window.clear()
+        self.window.refresh()
+        self.draw()
     # combat
 
     def initiate_encounter_with(self, encounter_enemy_code):
@@ -1077,7 +1116,7 @@ class Game:
         real_mid_y = self.mid_y + self.camera_dy
         real_mid_x = self.mid_x - self.camera_dx
         if real_mid_y > 0 and real_mid_y < self.tile_window_height - 1 and real_mid_x > 0 and real_mid_x < self.tile_window_width - 1:
-            self.tile_window.addstr(real_mid_y, real_mid_x, '@')
+            put(self.tile_window, real_mid_y, real_mid_x, '#green-black @')
         if self.full_map != None:
             self.draw_mini_map(self.game_room.name)
         self.draw_enemies()
@@ -1357,6 +1396,14 @@ class Game:
             if reverse != do_if:
                 return self.exec_line(' '.join(words[words.index('then') + 1:]), scripts)
             return False
+        if command == 'trade':
+            gold_var = words[1]
+            container_code = words[2]
+            vendor_name = '???'
+            if '_vendor_name' in self.env_vars:
+                vendor_name = self.get_env_var('_vendor_name')
+            self.initiate_trade(vendor_name, gold_var, container_code)
+            return False
         if command == 'stop':
             return True
         if command == 'return':
@@ -1394,9 +1441,9 @@ class Game:
         if s in self.env_vars:
             return self.get_env_var(s)
         ss = s.split('.')
-        if ss[0] in self.game_room.chest_contents:
+        if ss[0] in self.game_room.container_info:
             if ss[1] == 'length':
-                items = self.game_room.chest_contents[ss[0]]
+                items = self.game_room.container_info[ss[0]]
                 result = 0
                 for item in items:
                     key = items[item]
@@ -1439,6 +1486,8 @@ class Game:
 class GameWindow(Window):
     def __init__(self, window, config_file):
         super().__init__(window)
+        if self.WIDTH < 102:
+            message_box(self, f'Termainal window too slow, you may encounter bugs', ['Ok'])
         self.debug = False
         self.config_file = config_file
         self.starting_room = 'index'

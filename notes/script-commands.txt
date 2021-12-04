@@ -7,3 +7,4 @@ if (not) set <var_name> then <command> - if condition is met, executes command a
 if (not) <var_name> == <var_name/value> then <command> - --||--
 return <var_name/value> - sets return_value and ends script
 stop - ends all scripts
+trade <vendor_gold_var> <container_code>
