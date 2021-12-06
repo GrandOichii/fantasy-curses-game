@@ -449,7 +449,14 @@ class Game:
         item_names = []
         codes = []
         for item in items_dict:
-            if self.get_env_var(items_dict[item]) != True:
+            if isinstance(item, Items.CountableItem):
+                # item is countable item
+                amount = self.get_env_var(items_dict[item])
+                if amount == None or amount > 0:
+                    item_names += [item.get_cct_display_text()]
+                    codes += [items_dict[item]]
+            elif self.get_env_var(items_dict[item]) != True:
+                # item is normal item
                 item_names += [item.get_cct_display_text()]
                 codes += [items_dict[item]]
 
@@ -459,11 +466,14 @@ class Game:
         results = drop_down_box(item_names, 4, self.mid_y, self.mid_x + 3, MULTIPLE_ELEMENTS)
         if len(results) == 0:
             return
+        items = list(items_dict.keys())
         # remove taken items
         for i in results:
-            self.set_env_var(codes[i], True)
+            if isinstance(items[i], Items.CountableItem):
+                self.set_env_var(codes[i], 0)
+            else:
+                self.set_env_var(codes[i], True)
         # add items to inventory
-        items = list(items_dict.keys())
         for i in results:
             self.player.add_item(items[i])
 
@@ -984,14 +994,32 @@ class Game:
         self.draw()
     
     def initiate_trade(self, vendor_name, gold_var, container_code):
-        items = self.game_room.container_info[container_code]
+        items_dict = self.game_room.container_info[container_code]
+        items = [key for key in items_dict]
+        normal_items, countable_items = Items.Item.separate_items(items)
+        
+        # normal items
         vendor_items = []
-        for item in items:
-            if self.get_env_var(items[item]) != True:
+        for item in normal_items:
+            if self.get_env_var(items_dict[item]) != True:
                 vendor_items += [item]
-        trade = Trade(self.parent, self.player, vendor_name, self.get_env_var(gold_var), vendor_items)   
-        trade.start()
-        # sold_item_codes = trade.sold_item_codes
+
+        # countable items
+        vendor_countable_items = []
+        for item in countable_items:
+            if self.get_env_var(items_dict[item]) != 0:
+                c_item = item.copy()
+                real_amount = self.get_env_var(items_dict[item])
+                c_item.amount = real_amount if real_amount != None else item.amount
+                vendor_countable_items += [c_item]
+
+        trade = Trade(self.parent, self.player, vendor_name, self.get_env_var(gold_var), vendor_items, vendor_countable_items)   
+        state = trade.start()
+        if not state:
+            self.window.clear()
+            self.window.refresh()
+            self.draw()
+            return
 
         # set gold values
         self.set_env_var(gold_var, trade.get_vendor_final_gold())
@@ -1002,19 +1030,34 @@ class Game:
             i_id = trade.sold_item_ids[i]
             self.player.remove_item(i_id)
 
+        # remove sold countable items
+        for key in trade.sold_countable_item_amounts:
+            amount = trade.sold_countable_item_amounts[key]
+            self.player.countable_items[key].amount -= amount
+
         # add bought items
         for i in trade.bought_item_ids:
             self.player.add_item(trade.vendor_items[i])
 
+        # add bought countable items
+        for key in trade.bought_countable_item_amounts:
+            amount = trade.bought_countable_item_amounts[key]
+            item = trade.vendor_countable_items[key].copy()
+            item.amount = amount
+            self.player.add_item(item)
+
         # manage bought item codes
-        item_codes = list(items.values())
         for i in trade.bought_item_ids:
-            code = item_codes[i]
+            code = items_dict[vendor_items[i]]
             self.set_env_var(code, True)
+
+        codes = list(items_dict.values())
+        # manage bought countable item amounts
+        for key in trade.bought_countable_item_amounts:
+            item = trade.vendor_countable_items[key]
+            code = codes[key + len(normal_items)]
+            self.set_env_var(code, item.amount)
             
-        # set item codes
-        # for code in results:
-        #     self.set_env_var(codes[i], True)
         # clean-up
         self.window.clear()
         self.window.refresh()
@@ -1447,7 +1490,7 @@ class Game:
                 result = 0
                 for item in items:
                     key = items[item]
-                    if self.get_env_var(key) != True:
+                    if self.get_env_var(key) != 0 and self.get_env_var(key) != True:
                         result += 1
                 return result
         return None
@@ -1486,8 +1529,8 @@ class Game:
 class GameWindow(Window):
     def __init__(self, window, config_file):
         super().__init__(window)
-        if self.WIDTH < 102:
-            message_box(self, f'Termainal window too slow, you may encounter bugs', ['Ok'])
+        if self.WIDTH < 135:
+            message_box(self, f'Termainal window too small, you may encounter bugs', ['Ok'])
         self.debug = False
         self.config_file = config_file
         self.starting_room = 'index'

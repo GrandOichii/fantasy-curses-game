@@ -34,7 +34,7 @@
     },
     "Slow Down": {
         "name": "Slow Down",
-        "description": "Upon castring this spell makes enemy slower.",
+        "description": "Makes the enemy slower when cast.",
         "type": "combat_spell",
         "user_statuses": [],
         "enemy_statuses": ["slow"],

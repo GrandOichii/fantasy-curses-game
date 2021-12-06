@@ -1,22 +1,37 @@
 import curses
 
-from cursesui.Utility import cct_real_str, draw_borders, draw_separator, message_box, put
+from cursesui.Utility import cct_len, cct_real_str, draw_borders, draw_separator, message_box, put
+from gamelib.Items import CountableItem
 
 class Trade:
-    def __init__(self, parent, player, vendor_name, vendor_gold, vendor_items):
+    def __init__(self, parent, player, vendor_name, vendor_gold, vendor_items, vendor_countable_items):
         self.parent = parent
         self.HEIGHT, self.WIDTH = parent.window.getmaxyx()
 
         self.player = player
         self.vendor_name = vendor_name
         self.vendor_gold = vendor_gold
-        self.vendor_items = vendor_items
+        self.vendor_items = list(vendor_items)
+        self.vendor_countable_items = []
+        for item in vendor_countable_items:
+            self.vendor_countable_items += [item.copy()]
+
+        self.player_items = list(player.items)
+        self.player_countable_items = []
+        for item in player.countable_items:
+            self.player_countable_items += [item.copy()]
 
         self.choice = 0
         self.selling = True
         self.info_window_selected = False
         self.bought_item_ids = []
         self.sold_item_ids = []
+        self.bought_countable_item_amounts = {}
+        for i in range(len(self.vendor_countable_items)):
+            self.bought_countable_item_amounts[i] = 0
+        self.sold_countable_item_amounts = {}
+        for i in range(len(self.player_countable_items)):
+            self.sold_countable_item_amounts[i] = 0
         self.max_amount = 0
 
         self.player_window_height = self.HEIGHT
@@ -47,17 +62,15 @@ class Trade:
             # key handling
             key = self.get_key()
             if key == 27: # ESC
-                break
+                return False
             if key == 63: # ?
                 self.display_current_item_description()
             if key == 32: # SPACE
                 self.move_selected_item()
             if key == 9: # TAB
                 self.switch_selected_mode()
-            if key == 260 or key == 261: # LEFT
+            if key == 260 or key == 261: # LEFT/RIGHT
                 self.switch_selected_window()
-            if key == 261: # RIGHT
-                pass
             if key == 259: # UP
                 self.move_up()
             if key == 258: # DOWN
@@ -75,11 +88,9 @@ class Trade:
                 answer = message_box(self.parent, 'Finish trading?', ['Yes', 'No'])
                 if answer == 'Yes':
                     # end trading
-                    break
+                    return True
             # draw
-            self.draw()
-
-            
+            self.draw()        
 
     def move_up(self):
         self.choice -= 1
@@ -102,48 +113,184 @@ class Trade:
         self.info_window_selected = False
         self.choice = 0
 
+    def request_amount(self, item, buying):
+        result = 0
+        price = item.get_buy_price() if buying else item.get_sell_price()
+        top = '#yellow-black {}#normal : {} (#yellow-black {} #normal gold per piece)'.format('Buying' if buying else 'Selling', item.name, price)
+        pfg = self.get_player_final_gold()
+        # amount window
+        window_height = 7
+        window_width = cct_len(top) + 2
+        window_y = self.HEIGHT // 2 - window_height // 2
+        window_x = self.WIDTH // 2 - window_width // 2
+        window = curses.newwin(window_height, window_width, window_y, window_x)
+        window.keypad(1)
+        while True:
+            # draw
+            window.clear()
+            draw_borders(window)
+            put(window, 0, 1, '#magenta-black Select amount')
+            put(window, 1, 1, top)
+            fp = pfg
+            mult = price * result
+            if buying:
+                fp -= mult
+            else:
+                fp += mult
+            bottom = '#yellow-black {} #normal {} #black-white <#normal {}#black-white >#normal  x #yellow-black {} #normal = #{} {}'.format(
+                pfg, 
+                '-' if buying else '+', 
+                result, 
+                price, 
+                'red-black' if fp < 0 else 'yellow-black', 
+                fp)
+            put(window, 2, window_width // 2 - cct_len(bottom) // 2, bottom)
+            window.refresh()
+            # 
+            key = self.get_key()
+            if key == 27: # ESC
+                return 0
+            if key == 261: # RIGHT
+                if result < item.amount:
+                    result += 1
+            if key == 260: # LEFT
+                if result > 0:
+                    result -= 1
+            if key == 10: # ENTER
+                break
+        return result
+
     def move_selected_item(self):
-        # TO-DO: This is horribly unoptimized
+        # TO-DO: This is ugly
+        # item = self.get_selected_item()
         if self.selling:
+            # player windows
             if not self.info_window_selected:
                 # player window is selected
-                if self.choice in self.sold_item_ids:
-                    self.sold_item_ids.remove(self.choice)
+                if self.choice >= len(self.player_items):
+                    # countable item
+                    index = self.choice - len(self.player_items)
+                    item = self.get_selected_item()
+                    if self.sold_countable_item_amounts[index] != 0:
+                        item.amount += self.sold_countable_item_amounts[index]
+                        self.sold_countable_item_amounts[index] = 0
+                    else:
+                        amount = self.request_amount(item, False)
+                        item.amount -= amount
+                        self.sold_countable_item_amounts[index] += amount
                 else:
-                    self.sold_item_ids += [self.choice]
+                    # normal item
+                    if self.choice in self.sold_item_ids:
+                        self.sold_item_ids.remove(self.choice)
+                    else:
+                        self.sold_item_ids += [self.choice]
+                        self.sold_item_ids = sorted(self.sold_item_ids)
             else:
                 # player info window is selected
+                if self.choice >= len(self.sold_item_ids):
+                    # countable item
+                    offset = self.get_offset(self.sold_countable_item_amounts, self.choice - len(self.sold_item_ids))
+                    id = self.choice - len(self.sold_item_ids) + offset
+                    item = self.player_countable_items[id]
+                    item.amount += self.sold_countable_item_amounts[id]
+                    self.sold_countable_item_amounts[id] = 0
+                else:
+                    # normal item
+                    self.sold_item_ids.remove(self.sold_item_ids[self.choice])
                 self.choice = 0
-                self.sold_item_ids.remove(self.sold_item_ids[self.choice])
         else:
+            # vendor windows
             if not self.info_window_selected:
                 # vendor window is selected
-                if self.choice in self.bought_item_ids:
-                    self.bought_item_ids.remove(self.choice)
+                if self.choice >= len(self.vendor_items):
+                    # countable item
+                    index = self.choice - len(self.vendor_items)
+                    item = self.get_selected_item()
+                    if self.bought_countable_item_amounts[index] != 0:
+                        item.amount += self.bought_countable_item_amounts[index]
+                        self.bought_countable_item_amounts[index] = 0
+                    else:
+                        amount = self.request_amount(item, True)
+                        item.amount -= amount
+                        self.bought_countable_item_amounts[index] += amount
                 else:
-                    self.bought_item_ids += [self.choice]
+                    # normal item
+                    if self.choice in self.bought_item_ids:
+                        self.bought_item_ids.remove(self.choice)
+                    else:
+                        self.bought_item_ids += [self.choice]
+                        self.bought_item_ids = sorted(self.bought_item_ids)
             else:
                 # vendor info window is selected
+                if self.choice >= len(self.bought_item_ids):
+                    # countable item
+                    offset = self.get_offset(self.bought_countable_item_amounts, self.choice - len(self.bought_item_ids))
+                    id = self.choice - len(self.bought_item_ids) + offset
+                    item = self.vendor_countable_items[id]
+                    item.amount += self.bought_countable_item_amounts[id]
+                    self.bought_countable_item_amounts[id] = 0
+                else:
+                    # normal item
+                    self.bought_item_ids.remove(self.bought_item_ids[self.choice])
                 self.choice = 0
-                self.bought_item_ids.remove(self.bought_item_ids[self.choice])
-            
+
+    def get_offset(self, d, to):
+        result = 0
+        values = list(d.values())
+        for i in range(to + 1):
+            if values[i] == 0:
+                result += 1
+        # for key in d:
+        #     if d[key] == 0:
+        #         result += 1
+        return result
+
+    def get_player_item(self, id):
+        l = len(self.player_items)
+        if id >= l:
+            # select countable item
+            id -= l
+            return self.player_countable_items[id]
+        # select normal item
+        return self.player_items[id]
+
+    def get_vendor_item(self, id):
+        l = len(self.vendor_items)
+        if id >= l:
+            # select countable item
+            id -= l
+            return self.vendor_countable_items[id]
+        # select normal item
+        return self.vendor_items[id]
+
+    def get_sold_item(self, choice):
+        l = len(self.sold_item_ids)
+        if choice >= l:
+            return self.get_player_item(choice + len(self.player_items) - l)
+        return self.get_player_item(self.sold_item_ids[choice])
+
+    def get_bought_item(self, choice):
+        l = len(self.bought_item_ids)
+        if choice >= l:
+            return self.get_vendor_item(choice + len(self.vendor_items) - l)
+        return self.get_vendor_item(self.bought_item_ids[choice])
+
     def get_selected_item(self):
         # TO-DO: This is horribly unoptimized
         if self.selling:
             if not self.info_window_selected:
                 # player window is selected
-                return self.get_player_items()[self.choice]
+                return self.get_player_item(self.choice)
             else:
                 # player info window is selected
-                return self.get_player_items()[self.sold_item_ids[self.choice]]
+                return self.get_sold_item(self.choice)
         else:
             if not self.info_window_selected:
                 # vendor window is selected
-                return self.vendor_items[self.choice]
+                return self.get_vendor_item(self.choice)
             else:
                 # vendor info window is selected
-                return self.vendor_items[self.bought_item_ids[self.choice]]
-        return None  
+                return self.get_bought_item(self.choice)
 
     def display_current_item_description(self):
         item = self.get_selected_item()
@@ -170,28 +317,30 @@ class Trade:
             if key == 27 or key == 32: # ESC/SPACE
                 break
 
-    def get_player_items(self):
-        # return self.player.items + self.player.countable_items
-        return self.player.items
-
     def get_item_display_names(self, items, buying):
         result = []
         for item in items:
             cost = item.get_buy_price() if buying else item.get_sell_price()
-            result += [f'{item.name} (#yellow-black {cost} #normal gold)']
+            if isinstance(item, CountableItem):
+                result += [f'{item.name} x#magenta-black {item.amount} #normal (#yellow-black {cost} #normal gold per piece)']
+            else:
+                result += [f'{item.name} (#yellow-black {cost} #normal gold)']
         return result
 
     def get_sold_value(self):
         result = 0
-        player_items = self.get_player_items()
         for i in self.sold_item_ids:
-            result += player_items[i].get_sell_price()
+            result += self.player_items[i].get_sell_price()
+        for key in self.sold_countable_item_amounts:
+            result += self.player_countable_items[key].get_sell_price() * self.sold_countable_item_amounts[key]
         return result
 
     def get_bought_value(self):
         result = 0
         for i in self.bought_item_ids:
             result += self.vendor_items[i].get_buy_price()
+        for key in self.bought_countable_item_amounts:
+            result += self.vendor_countable_items[key].get_buy_price() * self.bought_countable_item_amounts[key]
         return result
     
     def get_player_final_gold(self):
@@ -220,13 +369,20 @@ class Trade:
 
         # display items
         flag = self.selling and not self.info_window_selected
-        display_names = self.get_item_display_names(self.get_player_items(), False)
+        display_names = self.get_item_display_names(self.player_items + self.player_countable_items, False)
         if flag:
             self.max_amount = len(display_names)
+        HCOLOR = '#cyan-black'
         for i in range(len(display_names)):
-            color = '#cyan-black' if i in self.sold_item_ids else '#normal'
+            color = '#normal'
+            item = self.get_player_item(i)
+            if isinstance(item, CountableItem):
+                if self.sold_countable_item_amounts[i - len(self.player_items)] != 0:
+                    color = HCOLOR
+            elif i in self.sold_item_ids:
+                color = HCOLOR
             attr = curses.A_REVERSE if flag and self.choice == i else 0
-            put(self.player_window, 2 + i, 2, f'{color} {cct_real_str(display_names[i]) if i in self.sold_item_ids else display_names[i]}', attr)
+            put(self.player_window, 2 + i, 2, f'{color} {cct_real_str(display_names[i]) if color == HCOLOR else display_names[i]}', attr)
 
         # draw gold info
         draw_separator(self.player_window, self.player_window_height - 3, 'black-white' if self.selling else 'normal')
@@ -249,13 +405,20 @@ class Trade:
 
         # display items
         flag = not self.selling and not self.info_window_selected
-        display_names = self.get_item_display_names(self.vendor_items, True)
+        display_names = self.get_item_display_names(self.vendor_items + self.vendor_countable_items, True)
         if flag:
             self.max_amount = len(display_names)
+        HCOLOR = '#cyan-black'
         for i in range(len(display_names)):
-            color = '#cyan-black' if i in self.bought_item_ids else '#normal'
+            color = '#normal'
+            item = self.get_vendor_item(i)
+            if isinstance(item, CountableItem):
+                if self.bought_countable_item_amounts[i - len(self.vendor_items)] != 0:
+                    color = HCOLOR
+            elif i in self.bought_item_ids:
+                color = HCOLOR
             attr = curses.A_REVERSE if flag and self.choice == i else 0
-            put(self.vendor_window, 2 + i, 2, f'{color} {cct_real_str(display_names[i]) if i in self.bought_item_ids else display_names[i]}', attr)
+            put(self.vendor_window, 2 + i, 2, f'{color} {cct_real_str(display_names[i]) if color == HCOLOR else display_names[i]}', attr)
         # draw gold info
         draw_separator(self.vendor_window, self.vendor_window_height - 3, 'black-white' if not self.selling else 'normal')
         gold_str = f'Gold: #yellow-black {self.vendor_gold} '
@@ -278,11 +441,17 @@ class Trade:
         # display items
         flag = self.selling and self.info_window_selected
         items = []
-        player_items = self.get_player_items()
-        for i in range(len(player_items)):
+        for i in range(len(self.player_items)):
             if i in self.sold_item_ids:
-                items += [player_items[i]]
-        display_names = self.get_item_display_names(items, False)
+                items += [self.player_items[i]]
+        c_items = []
+        for key in self.sold_countable_item_amounts:
+            amount = self.sold_countable_item_amounts[key]
+            if amount > 0:
+                item = self.player_countable_items[key].copy()
+                item.amount = self.sold_countable_item_amounts[key]
+                c_items += [item]
+        display_names = self.get_item_display_names(items + c_items, False)
         if flag:
             self.max_amount = len(display_names)
         for i in range(len(display_names)):
@@ -295,12 +464,19 @@ class Trade:
         # display 
         put(self.vendor_info_window, 0, 1, f'#yellow-black Buying')
         flag = not self.selling and self.info_window_selected
-        v_items = list(self.vendor_items)
         items = []
-        for i in range(len(v_items)):
+        for i in range(len(self.vendor_items)):
             if i in self.bought_item_ids:
-                items += [v_items[i]]
-        display_names = self.get_item_display_names(items, True)
+                items += [self.vendor_items[i]]
+        # add countable items
+        c_items = []
+        for key in self.bought_countable_item_amounts:
+            amount = self.bought_countable_item_amounts[key]
+            if amount > 0:
+                item = self.vendor_countable_items[key].copy()
+                item.amount = self.bought_countable_item_amounts[key]
+                c_items += [item]
+        display_names = self.get_item_display_names(items + c_items, True)
         if flag:
             self.max_amount = len(display_names)
         for i in range(len(display_names)):

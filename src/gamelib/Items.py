@@ -3,6 +3,23 @@ from cursesui.Utility import str_smart_split, pos_neg_int
 # from gamelib.Spells import Spell
 
 class Item:
+    def get_template_from_type(t):
+        if t == 'melee':
+            return MeleeWeapon()
+        if t == 'ranged':
+            return RangedWeapon()
+        if t == 'armor':
+            return Armor()
+        if t == 'ammo':
+            return Ammo()
+        if t == 'health potion':
+            return HealthPotion()
+        if t == 'mana potion':
+            return ManaPotion()
+        if t == 'spell book':
+            return SpellBook()
+        return Item()
+
     def get_base_items(names, path):
         data = json.loads(open(path).read())
         result = []
@@ -16,23 +33,19 @@ class Item:
             result += [item.json()]
         return result
     
+    def separate_items(items):
+        normal_items = []
+        countable_items = []
+        for item in items:
+            if isinstance(item, CountableItem):
+                countable_items += [item]
+            else:
+                normal_items += [item]
+        return normal_items, countable_items
+
     def from_json(js):
-        result = Item()
         t = js['itype']
-        if t == 'melee':
-            result = MeleeWeapon()
-        if t == 'ranged':
-            result = RangedWeapon()
-        if t == 'armor':
-            result = Armor()
-        if t == 'ammo':
-            result = Ammo()
-        if t == 'health potion':
-            result = HealthPotion()
-        if t == 'mana potion':
-            result = ManaPotion()
-        if t == 'spell book':
-            result = SpellBook()
+        result = Item.get_template_from_type(t)
         result.__dict__ = js
         return result
 
@@ -47,7 +60,10 @@ class Item:
         return result
 
     def get_buy_price(self):
-        return self.price // 3 * 4 # one third more expensive
+        result = self.price * 4 // 3
+        if result == self.price:
+            return self.price + 1
+        return result # one third more expensive
 
     def get_sell_price(self):
         return self.price
@@ -68,6 +84,11 @@ class Item:
 
     def get_cct_display_text(self):
         return self.name
+
+    def copy(self):
+        result = Item.get_template_from_type(self.itype)
+        result.__dict__ = dict(self.__dict__)
+        return result
 
 class GoldPouch(Item):
     def __init__(self):
