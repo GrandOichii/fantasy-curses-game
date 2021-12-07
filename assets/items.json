@@ -1,4 +1,10 @@
 {
+    "Rat Meat": {
+        "name": "Rat Meat",
+        "itype": "dubious food",
+        "price": 2,
+        "description": "Meat from a stinky sewer rat. Can't do anything interesting with it."
+    },
     "Iron Helmet": {
         "name": "Iron Helmet",
         "itype": "armor",
@@ -226,6 +232,14 @@
         "description": "Read this spell book to learn Boost.",
         "spell_names": ["Boost"],
         "price": 40,
+        "int_to_learn": 12
+    },
+    "Spellbook of Slow": {
+        "name": "Spellbook of Slow",
+        "itype": "spell book",
+        "descrition": "Read this spell book to learn how to slow down an enemy.",
+        "spell_names": ["Slow Down"],
+        "price": 30,
         "int_to_learn": 12
     }
 }
