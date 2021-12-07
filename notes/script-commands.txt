@@ -4,7 +4,7 @@ sub <var_name> <var_name/value> - subtracts from the value
 mb <message_box_choices> <var_name/value> - shows a message box, using message_box_choices as choices
 say <reply_choices> <var_name/value> - displays a dialog box
 if (not) set <var_name> then <command> - if condition is met, executes command after then
-if (not) <var_name> == <var_name/value> then <command> - --||--
+if (not) <var_name> (==|>|<|>=|<=) <var_name/value> then <command> - --||--
 return <var_name/value> - sets return_value and ends script
 stop - ends all scripts
-trade <vendor_gold_var> <container_code>
+trade <vendor_gold_var> <container_code> - starts trading with player

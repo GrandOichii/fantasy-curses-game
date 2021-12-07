@@ -1,0 +1,115 @@
+##I######I###
+#       A  ##
+#@         D#
+#          ##
+##I#*BB##I###
+#####BB######
+#####BB######
+####CBBC#####
+###      ####
+### 1  2 ####
+#############
+---
+visible_range=2
+---
+D D door sewer_hall1 sewer_hall1_index_connector
+A @ script_tile Stranger stranger_talk_script
+I I torch 4
+* # script_tile wall open_secret_wall
+B # hidden_tile index_secret_wall_open
+C # hidden_tile index_secret_wall_open I torch 5
+1 C chest hidden_chest_1_contents
+2 C chest hidden_chest_2_contents
+---
+_load:
+if set index_room_loaded then stop
+set index_room_loaded true
+set player.gold 12
+draw
+set sewer_stranger_gold 10
+run first_talk_with_stranger
+
+first_talk_with_stranger:
+sleep 500
+say Where_am_I? "Hey, you're finally awake."
+say Ok "Welcome to the local sewers. I'm pretty sure that you can get out of here by going through that door."
+say Sure "Be careful though, it is populated with rats and goblins."
+
+stranger_talk_script:
+if set sewer_stranger_beat_up then run beat_up_stranger_response
+say Who_are_you?|Can_you_help_me?|What_are_you_doing? "Hm?"
+set who_are_you_reply "Who are you?"
+set can_you_help_me_reply "Can you help me?"
+set what_are_you_doing_reply "What are you doing?"
+set reply _reply
+if reply == who_are_you_reply then run ask_stranger_about_identity
+if reply == what_are_you_doing_reply then run ask_stranger_about_activity
+if reply == can_you_help_me_reply then say Let's_trade!|Nevermind "I have some items on me, I guess we could trade."
+set lets_trade_reply "Let's trade!"
+if _reply == lets_trade_reply then run trade_with_player
+
+beat_up_stranger_response:
+say Ok "Please, leave me alone."
+stop
+
+ask_stranger_about_identity:
+if set asked_stranger_about_identity then say I_forgor "You've already aksed that."
+set asked_stranger_about_identity true
+say Ok "I don't know, the programmer hasn't defined that yet."
+stop
+
+ask_stranger_about_activity:
+say Ok "I found a note that says that there is a secret door in this room somewhere, I want to find it."
+stop
+
+trade_with_player:
+set temp_gold sewer_stranger_gold
+trade sewer_stranger_gold stranger_trade_items
+if not temp_gold == sewer_stranger_gold then say Bye "Thanks for the trade!"
+
+open_secret_wall:
+if set index_secret_wall_open then stop
+set index_secret_wall_open true
+sleep 1000
+draw
+say <agree>|<disagree> "Hey, you found the secret room I was looking for! Well, thank you very much, I'll be taking that for myself."
+set agree_reply "<agree>"
+set disagree_reply "<disagree>"
+if _reply == agree_reply then run stranger_takes_treasure
+if _reply == disagree_reply then run fight_with_stranger
+
+stranger_takes_treasure:
+mb ok "Not implemented yet!"
+stop
+
+fight_with_stranger:
+set iron_dagger_str "Iron Dagger"
+if iron_dagger_str in stranger_trade_items then fight stranger_enemy_dagger
+if not iron_dagger_str in stranger_trade_items then fight stranger_enemy_fists
+say <agree> "ALRIGHT, ALRIGHT. You beat me to a pulp, the treasure is yours, leave me alone."
+set sewer_stranger_beat_up true
+stop
+
+---
+stranger_trade_items:
+Iron Dagger
+Spellbook of Slow
+2 Small Health Potion
+2 Small Mana Potion
+
+hidden_chest_1_contents:
+30 Gold
+
+hidden_chest_2_contents:
+5 Small Health Potion
+5 Small Mana Potion
+---
+stranger_enemy_dagger:
+e_type=Sewer Stranger(Dagger)
+y=-1
+x=-1
+
+stranger_enemy_fists:
+e_type=Sewer Stranger(Fists)
+y=-1
+x=-1

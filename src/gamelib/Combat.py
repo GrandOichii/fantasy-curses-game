@@ -107,7 +107,8 @@ class AttackPlayerAction(Action):
         damage += random.randint(0, self.user.damage_mod)
         dealt_damage = self.other.take_damage(damage)
         curses.flash()
-        return [f'{self.user.get_cct_name_color()} {self.user.name} #normal attacks and deals #red-black {dealt_damage} #normal damage to {self.other.get_cct_name_color()} {self.other.name}.']
+        result = self.user.attack_format.format(damage, self.other.name)
+        return [result]
 
 class UseItemAction(Action):
     def __init__(self, parent, char, caption, user, item):
@@ -297,12 +298,12 @@ class CombatEncounter:
 
         draw_borders(self.window)
         draw_borders(self.player_window)
-        self.player_window.addstr(0, 1, self.get_player().name)
+        put(self.player_window, 0, 1, f'#green-black {self.get_player().name}')
         self.draw_option_boxes()
         draw_borders(self.enemy_window)
-        self.enemy_window.addstr(0, 1, self.get_enemy().name)
+        put(self.enemy_window, 0, 1, f'#red-black {self.get_enemy().name}')
         draw_borders(self.player_actions_window)
-        self.player_actions_window.addstr(0, 1, 'Player options')
+        put(self.player_actions_window, 0, 1, '#magenta-black Player options')
 
         self.window.refresh()
         self.player_window.refresh()
@@ -313,7 +314,7 @@ class CombatEncounter:
     def draw_combat_log(self):
         self.combat_log_window.clear()
         draw_borders(self.combat_log_window)
-        self.combat_log_window.addstr(0, 1, 'Combat log')
+        put(self.combat_log_window, 0, 1, '#magenta-black Combat log')
         y = 0
         first = 0
         last = len(self.combat_log) - 1

@@ -166,8 +166,8 @@ class Room:
                 l = chunk.split('\n')
                 enemy_code = l[0][:-1]
                 enemy_data = l[1:]
-                y = -1
-                x = -1
+                y = None
+                x = None
                 enemy = Enemy()
                 for line in enemy_data:
                     d = line.split('=')
@@ -177,9 +177,9 @@ class Room:
                         y = int(d[1])
                     if d[0] == 'x':
                         x = int(d[1])
-                if y == -1:
+                if y == None:
                     raise Exception(f'ERR: y not defined when defining enemy')
-                if x == -1:
+                if x == None:
                     raise Exception(f'ERR: x not defined when defining enemy')
                 enemy.y = y
                 enemy.x = x
@@ -196,7 +196,6 @@ class Room:
                     enemy.x = env_vars[var]
                 env_vars[var] = enemy.x
 
-                enemy.max_health = enemy.health
                 # health
                 var = f'{var_start}health'
                 if var in env_vars:

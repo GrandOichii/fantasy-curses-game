@@ -11,6 +11,53 @@
         "max_mana": 0,
         "armor": 0,
         "description": "A stinky sewer rat.",
+        "attack_format": "The rat lunges and deals {} damage to {}",
+        "statuses": [],
+        "reward_items": {
+            
+        },
+        "reward_countable_items": {
+            "Rat Meat": 1
+        },
+        "min_reward_gold": 3,
+        "max_reward_gold": 5
+    },
+    "Sewer Stranger(Fists)": {
+        "name": "Sewer stranger",
+        "char": "?",
+        "damage": 2,
+        "damage_mod": 2,
+        "range": 1,
+        "health": 7,
+        "max_health": 15,
+        "mana": 0,
+        "max_mana": 0,
+        "armor": 0,
+        "description": "The stranger you met in the sewer.",
+        "attack_format": "The stranger attacks with his fists and deals {} damage to {}",
+        "statuses": [],
+        "reward_items": {
+            
+        },
+        "reward_countable_items": {
+            
+        },
+        "min_reward_gold": 3,
+        "max_reward_gold": 5
+    },
+    "Sewer Stranger(Dagger)": {
+        "name": "Sewer stranger",
+        "char": "?",
+        "damage": 2,
+        "damage_mod": 3,
+        "range": 1,
+        "health": 7,
+        "max_health": 15,
+        "mana": 0,
+        "max_mana": 0,
+        "armor": 0,
+        "description": "A stranger you met in the sewer.",
+        "attack_format": "The stranger attacks with his dagger and deals {} damage to {}",
         "statuses": [],
         "reward_items": {
             

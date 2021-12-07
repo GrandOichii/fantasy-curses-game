@@ -19,7 +19,7 @@ if set bat then unset bat
 npc_script:
 set _say_name npc_name
 if set is_friends then run already_talked_to
-say Yes_No "Do you like pizza?"
+say Yes|No "Do you like pizza?"
 if _reply == "Yes" then run become_friends
 if _reply == "No" then run become_enemy
 
@@ -31,7 +31,7 @@ stop
 friend_talk:
 say Hi! "Hello, friend!"
 if not chests_test_friend_chest.length == 0 then say Ok "Don't be shy, I don't need the stuff in the chest anyway"
-say Yes_No "Do you want to trade?"
+say Yes|No "Do you want to trade?"
 set _vendor_name npc_name
 if _reply == "Yes" then run trade_with_player
 

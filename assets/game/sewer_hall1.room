@@ -1,0 +1,49 @@
+######################I#######################
+###################       ####################
+##################o       o###################
+###################       ####################
+##################o       o###################
+###################       ####################
+##                                          ##
+##                                          ##
+##     ###############################      ##
+##     ###############################      ##
+#I                                          I#
+#1                                          2#
+#I                                          I#
+##     ###############################      ##
+##     ###############################      ##
+##                                          ##
+##                                          ##
+###################       ####################
+##################o       o###################
+###################       ####################
+##################o       O###################
+###################       ####################
+######################I#######################
+---
+visible_range=4
+---
+1 D door index sewer_hall1_index_connector
+o o script_tile pipe pipe_interact
+O o script_tile pipe item_pipe_interact
+I I torch 7
+---
+pipe_interact:
+mb Ok "This is a pipe. There is nothing inside."
+stop
+
+item_pipe_interact:
+if set found_secret_pipe_in_sewer then run pipe_interact
+set found_secret_pipe_in_sewer true
+mb ok "This is a pipe. You look inside, and find a pouch with #yellow-black 10 #normal gold coins inside of it!"
+add player.gold 10
+set log_message "Hello"
+log log_message
+---
+
+---
+rat1:
+y=6
+x=9
+e_type=rat

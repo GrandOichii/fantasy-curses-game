@@ -126,7 +126,7 @@ def str_smart_split(message, max_width):
     split = re.findall(color_regex, message)
     words = []
     for s in split:
-        sw = s[3].split()
+        sw = s[3].split(' ')
         for ssw in sw:
             words += [[ssw, s[0]]]
     result = []
@@ -140,7 +140,7 @@ def str_smart_split(message, max_width):
             line = f'#{words[i][1]} {word}'
         else:
             if words[i][1] != words[i - 1][1]:
-                line += f'#{words[i][1]} '
+                line += f'#{words[i][1]}'
             line += ' ' + word
             word_line += ' ' + word
     result += [line]
@@ -240,7 +240,7 @@ def drop_down_box(options, max_display_amount, y, x, choice_type):
                     choice -= 1
     return list(results)
 
-def message_box(parent, message, choices, ypos=-1, xpos=-1, height=-1, width=-1, additional_lines=[]):
+def message_box(parent, message, choices, ypos=-1, xpos=-1, height=-1, width=-1, additional_lines=[], border_color='normal'):
     window = parent.window
     HEIGHT, WIDTH = window.getmaxyx()
     # restrict the min and max width of message box
@@ -283,7 +283,7 @@ def message_box(parent, message, choices, ypos=-1, xpos=-1, height=-1, width=-1,
     
     # print the message box itself
     win = curses.newwin(height + 1, width + 2, ypos - 1, xpos)
-    draw_borders(win)
+    draw_borders(win, border_color)
 
     put(win, 2, 3, message)
     win.keypad(1)

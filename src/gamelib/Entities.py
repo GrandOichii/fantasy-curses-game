@@ -71,6 +71,8 @@ class Enemy(Entity):
         self.damage = 0
         self.damage_mod = 0
         self.armor = 0
+        self.description = ''
+        self.attack_format = ''
         self.statuses = []
         self.y = 0
         self.x = 0
@@ -115,7 +117,9 @@ class Enemy(Entity):
         # add countable items
         reward_countable_items = dict(self.reward_countable_items)
         for item_name in reward_countable_items:
-            reward_countable_items[item_name] = random.randint(1, reward_countable_items[item_name])
+            amount = random.randint(0, reward_countable_items[item_name])
+            if amount > 0:
+                reward_countable_items[item_name] = amount
         result['countable_items'] = Items.CountableItem.get_base_items(reward_countable_items, config_file.get('Items path'))
 
         return result
@@ -252,7 +256,8 @@ class Player(Entity):
             return False
         return True
 
-    def get_range(self, visible_range=0):
+    def get_range(self):
+        additional_range = 4
         highest_range = 2 # fist fighting range
         if self.equipment['ARM1'] != None:
             highest_range = max(self.items[self.equipment['ARM1']].range, highest_range)
@@ -261,7 +266,7 @@ class Player(Entity):
         for spell in self.spells:
             if issubclass(type(spell), Spells.CombatSpell) and spell.range > highest_range:
                 highest_range = spell.range
-        return highest_range + visible_range // 3
+        return highest_range + additional_range
     
     def get_combat_range(self):
         result = 1

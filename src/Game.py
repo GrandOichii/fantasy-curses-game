@@ -138,7 +138,7 @@ class Game:
 
             # get player input
             key = self.window.getch()
-            if key == 81 and message_box(self.parent, 'Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes'],width=self.tile_window_width - 4, ypos=2, xpos=2) == 'Yes':
+            if key == 81 and self.tile_message_box('Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes']) == 'Yes':
                 self.save_enemy_env_vars()
                 SaveFile.save(self.player, self.game_room.name, self.config_file.get('Saves path'), player_y=self.player_y, player_x=self.player_x, env_vars=self.env_vars)
                 break
@@ -194,28 +194,27 @@ class Game:
             # interact
             if key == 101: # e
                 interactable_tiles = self.get_interactable_tiles(self.player_y, self.player_x)
-                if len(interactable_tiles) == 0:
-                    message_box(self.parent, 'No tiles to interact with nearby!', ['Ok'],width=self.tile_window_width - 4, ypos=2, xpos=2)
+                # if len(interactable_tiles) == 0:
+                #     message_box(self.parent, 'No tiles to interact with nearby!', ['Ok'],width=self.tile_window_width - 4, ypos=2, xpos=2)
+                # else:
+                interact_key = self.get_prompt('Interact where?')
+                flag = False
+                i_tile = None
+                for o in interactable_tiles:
+                    if interact_key in o[1]:
+                        flag = True
+                        i_tile = o[0]
+                if flag:
+                    if isinstance(i_tile, Room.ChestTile):
+                        self.interact_with_chest(i_tile)
+                    if isinstance(i_tile, Room.HiddenTile) and isinstance(i_tile.actual_tile, Room.ChestTile):
+                        self.interact_with_chest(i_tile.actual_tile)
+                    if isinstance(i_tile, Room.ScriptTile):
+                        self.exec_script(i_tile.script_name, self.game_room.scripts)
+                    if isinstance(i_tile, Room.HiddenTile) and isinstance(i_tile.actual_tile, Room.ScriptTile):
+                        self.exec_script(i_tile.actual_tile.script_name, self.game_room.scripts)
                 else:
-                    interact_key = self.get_prompt('Interact where?')
-                    flag = False
-                    i_tile = None
-                    for o in interactable_tiles:
-                        if interact_key in o[1]:
-                            flag = True
-                            i_tile = o[0]
-                    if flag:
-                        if isinstance(i_tile, Room.ChestTile):
-                            self.interact_with_chest(i_tile)
-                        if isinstance(i_tile, Room.HiddenTile) and isinstance(i_tile.actual_tile, Room.ChestTile):
-                            self.interact_with_chest(i_tile.actual_tile)
-                        if isinstance(i_tile, Room.ScriptTile):
-                            self.exec_script(i_tile.script_name, self.game_room.scripts)
-                        if isinstance(i_tile, Room.HiddenTile) and isinstance(i_tile.actual_tile, Room.ScriptTile):
-                            self.exec_script(i_tile.actual_tile.script_name, self.game_room.scripts)
-                    else:
-                        # add to log history
-                        a=1
+                    self.game_log.add(['Can\'t interact with that'])
             # open inventory
             if key == 105: # i
                 self.draw_inventory()
@@ -225,7 +224,7 @@ class Game:
                 if encounter_ready:
                     self.initiate_encounter_with(encounter_enemy_code)
                 else:
-                    message_box(self.parent, 'You are not within range to attack anybody!', ['Ok'], width=self.tile_window_width - 4, ypos=2, xpos=2)
+                    self.tile_message_box('You are not within range to attack anybody!', ['Ok'])
             # enter tile description mode
             if key == 120: # x
                 update_entities = False
@@ -261,6 +260,12 @@ class Game:
                 if key == 120: # x
                     self.tile_description_mode()    
 
+    def tile_message_box(self, message, choices, additional_lines=[]):
+        return message_box(self.parent, message, choices, additional_lines=additional_lines, width=self.tile_window_width - 4, ypos=2, xpos=2)
+
+    def display_error(self, error_message):
+        return message_box(self.parent, error_message, ['Ok'], width=self.tile_window_width - 4, ypos=2, xpos=2, border_color='red-black')
+
     def check_for_encounters(self):
         encounter_ready = False
         enemy_code = None
@@ -268,9 +273,11 @@ class Game:
         min_enemy_code = None
         for enemy_code in self.game_room.enemies_data:
             enemy = self.game_room.enemies_data[enemy_code]
-            if enemy.health > 0:
+            if self.can_see_enemy(enemy):
+            # if enemy.health > 0:
                 d = distance(enemy.y, enemy.x, self.player_y, self.player_x)
-                if d <= self.player.get_range(self.game_room.visible_range):
+                player_range = self.player.get_range()
+                if d <= player_range:
                     if min_d == -1 or d < min_d:
                         min_d = d
                         min_enemy_code = enemy_code
@@ -301,6 +308,7 @@ class Game:
             self.set_env_var(f'{f}x', enemy.x)
 
     def display_dialog(self, message, replies):
+        borders_color_pair = 'cyan-black'
         width = self.tile_window_width - 2
         height = self.tile_window_height // 2
 
@@ -310,16 +318,13 @@ class Game:
             name = self.get_env_var('_say_name')
 
         w = curses.newwin(height - 1, width, height + 1, 2)
-        draw_borders(w)
+        draw_borders(w, borders_color_pair)
         w.keypad(1)
-        w.addstr(0, 1, name)
+        put(w, 0, 1, f'#green-black {name}')
 
         for i in range(len(lines)):
             put(w, 1 + i, 1, lines[i])
-        w.addch(height - len(replies) - 3, 0, curses.ACS_LTEE)
-        w.addch(height - len(replies) - 3, width - 1, curses.ACS_RTEE)
-        for i in range(width - 2):
-            w.addch(height - len(replies) - 3, 1 + i, curses.ACS_HLINE)
+        draw_separator(w, height - len(replies) - 3, borders_color_pair)
         for i in range(len(replies)):
             put(w, height - len(replies) - 2 + i, 3, replies[i])
         choice_i = 0
@@ -796,7 +801,7 @@ class Game:
                                 result_slot = options[option_choice_id]
                                 item = items[choice_id]
                                 if not self.player.meets_requirements(item.requires):
-                                    message_box(self.parent, 'You do not meet the requirements to equip this item', ['Ok'], width=self.tile_window_width - 4, ypos=2, xpos=2)
+                                    self.tile_message_box('You do not meet the requirements to equip this item', ['Ok'])
                                     inventory_window.addstr(1, 1, 'Inventory')
                                     # redraw missing textures
                                     for i in range(win_width - 2):
@@ -1062,16 +1067,40 @@ class Game:
         self.window.clear()
         self.window.refresh()
         self.draw()
+    
+    def enemy_is_lit(self, enemy):
+        for i in range(self.game_room.height):
+            for j in range(self.game_room.width):
+                r = 0
+                if isinstance(self.game_room.tiles[i][j], Room.TorchTile):
+                    r = self.game_room.tiles[i][j].visible_range
+                if isinstance(self.game_room.tiles[i][j], Room.HiddenTile) and self.get_env_var(self.game_room.tiles[i][j].signal) == True and isinstance(self.game_room.tiles[i][j].actual_tile, Room.TorchTile):
+                    # !!! BIG ISSUE !!! either rework hidden tiles, or make a work-around
+                    r = self.game_room.tiles[i][j].actual_tile.visible_range
+                if distance(i, j, enemy.y, enemy.x) < r:
+                    return True
+        return distance(self.player_y, self.player_x, enemy.y, enemy.x) < self.game_room.visible_range
+
+    def can_see_enemy(self, enemy):
+        # enemy.health > 0 and sqrt((self.player_y - enemy.y) * (self.player_y - enemy.y) + (self.player_x - enemy.x) * (self.player_x - enemy.x)) < self.game_room.visible_range:
+        return enemy.health > 0 and not (enemy.y == -1 and enemy.x == -1) and self.enemy_is_lit(enemy)
+
     # combat
 
-    def initiate_encounter_with(self, encounter_enemy_code):
+    def initiate_encounter_with(self, encounter_enemy_code, player_is_attacking=True):
         enemy = self.game_room.enemies_data[encounter_enemy_code]
         d = distance(self.player_y, self.player_x, enemy.y, enemy.x)
-        encounter = CombatEncounter(self.player, enemy, d, self.parent.HEIGHT, self.parent.WIDTH, self.config_file)
+        encounter = None
+        if player_is_attacking:
+            encounter = CombatEncounter(self.player, enemy, d, self.parent.HEIGHT, self.parent.WIDTH, self.config_file)
+            self.game_log.add([f'#green-black {self.player.name} #normal attacks #red-black {enemy.name}!'])
+        else:
+            encounter = CombatEncounter(enemy, self.player, d, self.parent.HEIGHT, self.parent.WIDTH, self.config_file)
+            self.game_log.add([f'#red-black {enemy.name} #normal attacks #green-black {self.player.name}!'])
         encounter.start()
 
         if self.player.health == 0:
-            answer = message_box(self.parent, 'PLAYER DEAD', ['Back to menu'], width=self.tile_window_width - 4, ypos=2, xpos=2)
+            answer = self.tile_message_box('PLAYER DEAD', ['Back to menu'])
             self.game_running = False
             return
         if enemy.health == 0:
@@ -1105,10 +1134,11 @@ class Game:
         self.log_window.refresh()
 
     def draw_log_window(self):
+        self.log_window.clear()
         draw_borders(self.log_window)
         put(self.log_window, 0, 1, '#magenta-black Log')
         max_amount = self.log_window_height - 2
-        messages = self.game_log.get_last(self.log_window_width, max_amount)
+        messages = self.game_log.get_last(self.log_window_width - 2, max_amount)
         for i in range(len(messages)):
             put(self.log_window, 1 + i, 1, messages[i])
 
@@ -1227,7 +1257,7 @@ class Game:
 
     def draw_enemies(self):
         for enemy in list(self.game_room.enemies_data.values()):
-            if enemy.health > 0 and sqrt((self.player_y - enemy.y) * (self.player_y - enemy.y) + (self.player_x - enemy.x) * (self.player_x - enemy.x)) < self.game_room.visible_range:
+            if self.can_see_enemy(enemy):
                 y = enemy.y + self.mid_y - self.player_y
                 x = enemy.x + self.mid_x - self.player_x
                 self.tile_window.addch(y, x, enemy.char)
@@ -1244,6 +1274,8 @@ class Game:
         return var
 
     def exec_line(self, line, scripts):
+        if line[0] == '#':
+            return False
         words = line.split()
         command = words[0]
         if command == 'run':
@@ -1347,21 +1379,38 @@ class Game:
             real_var = self.get_true_value(var)
             if real_var == None:
                 raise Exception(f'ERR: {var} not recognized')  
-            answer = message_box(self.parent, str(real_var), choices, width=self.tile_window_width - 4, ypos=2, xpos=2)
+            answer = self.tile_message_box(str(real_var), choices)
             self.set_env_var('_mb_result', answer)
             self.draw_tile_window()
             self.tile_window.refresh()
             return False
         if command == 'say':
-            replies = words[1].split('_')
+            raw_replies = words[1].split('|')
+            replies = []
+            for r in raw_replies:
+                replies += [' '.join(r.split('_'))]
             var = ' '.join(words[2:])
             real_var = self.get_true_value(var)
             if real_var == None:
                 raise Exception(f'ERR: {var} not recognized')
+            interlocutor_name = self.get_env_var('_say_name')
+            self.game_log.add(['#green-black {}#normal : #cyan-black \"{}\"'.format('???' if interlocutor_name == None else interlocutor_name, real_var)])
+            self.draw_log_window()
+            self.log_window.refresh()
             reply = self.display_dialog(str(real_var), replies)
             self.set_env_var('_reply', reply)
+            self.game_log.add([f'#green-black {self.player.name}#normal : #cyan-black \"{reply}\"'])
             self.draw_tile_window()
             self.tile_window.refresh()
+            self.draw_log_window()
+            self.log_window.refresh()
+            return False
+        if command == 'log':
+            s = ' '.join(words[1:])
+            message = self.get_true_value(s)
+            self.game_log.add([message])
+            self.draw_log_window()
+            self.log_window.refresh()
             return False
         if command == 'move':
             entity_name = words[1]
@@ -1436,9 +1485,26 @@ class Game:
                     do_if = real_var1 >= real_var2
                 if words[1] == '<=':
                     do_if = real_var1 >= real_var2
+            if words[1] == 'in':
+                item_name = self.get_env_var(words[0])
+                container_code = words[2]
+                items = self.game_room.container_info[container_code]
+                do_if = False
+                for item in items:
+                    if item.name == item_name:
+                        code = items[item]
+                        code_value = self.get_env_var(code)
+                        if code_value == None: 
+                            do_if = True
+                        elif code_value != True and code_value != 0:
+                            do_if = True
             if reverse != do_if:
                 return self.exec_line(' '.join(words[words.index('then') + 1:]), scripts)
             return False
+        if command == 'fight':
+            enemy_code = words[1]
+            self.initiate_encounter_with(enemy_code, False)
+            return self.player.health == 0
         if command == 'trade':
             gold_var = words[1]
             container_code = words[2]
@@ -1446,6 +1512,9 @@ class Game:
             if '_vendor_name' in self.env_vars:
                 vendor_name = self.get_env_var('_vendor_name')
             self.initiate_trade(vendor_name, gold_var, container_code)
+            return False
+        if command == 'draw':
+            self.draw()
             return False
         if command == 'stop':
             return True
@@ -1497,7 +1566,6 @@ class Game:
 
     def exec_script(self, name, scripts):
         script = scripts[name]
-        # if self.debug: message_box(self.stdscr, script[0], ['Ok'], width=self.tile_window_width - 3, ypos=2, xpos=2, additional_lines=script[1:])
         for script_line in script:
             if script_line == '':
                 continue
