@@ -14,10 +14,10 @@
         "attack_format": "The rat lunges and deals #red-black {} #normal damage to #green-black {}",
         "statuses": [],
         "reward_items": {
-            
+            "Rat Meat": 50
         },
         "reward_countable_items": {
-            "Rat Meat": 1
+            
         },
         "min_reward_gold": 3,
         "max_reward_gold": 5
@@ -60,10 +60,35 @@
         "attack_format": "The stranger attacks with his dagger and deals #red-black {} #normal damage to #green-black {}",
         "statuses": [],
         "reward_items": {
-            
+
         },
         "reward_countable_items": {
             
+        },
+        "min_reward_gold": 3,
+        "max_reward_gold": 5
+    },
+    "Sewer Goblin": {
+        "name": "Goblin",
+        "char": "g",
+        "damage": 2,
+        "damage_mod": 3,
+        "range": 1,
+        "health": 12,
+        "max_health": 12,
+        "mana": 0,
+        "max_mana": 0,
+        "armor": 1,
+        "description": "A goblin. They may be sentient creatures, but what do you care",
+        "attack_format": "The goblin attacks and deals #red-black {} #normal damage to #green-black {}",
+        "statuses": [],
+        "reward_items": {
+            "Hood": 10,
+            "Spellbook of Slow": 4,
+            "Rat Meat": 20
+        },
+        "reward_countable_items": {
+            "Small Health Potion": 1
         },
         "min_reward_gold": 3,
         "max_reward_gold": 5

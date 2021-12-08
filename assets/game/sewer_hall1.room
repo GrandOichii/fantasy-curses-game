@@ -25,6 +25,7 @@
 visible_range=4
 ---
 1 D door index sewer_hall1_index_connector
+2 D door sewer_hall2 sewer_halls12_connector
 o o script_tile pipe pipe_interact
 O o script_tile pipe item_pipe_interact
 I I torch 7

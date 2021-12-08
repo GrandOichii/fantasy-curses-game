@@ -107,7 +107,7 @@ class AttackPlayerAction(Action):
         damage += random.randint(0, self.user.damage_mod)
         dealt_damage = self.other.take_damage(damage)
         curses.flash()
-        result = self.user.attack_format.format(damage, self.other.name)
+        result = self.user.attack_format.format(dealt_damage, self.other.name)
         return [result]
 
 class UseItemAction(Action):

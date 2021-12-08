@@ -2,7 +2,7 @@ import json
 from os import listdir, remove
 from os.path import isfile, join, splitext
 
-def save(player, room_name, saves_path, player_y=-1, player_x=-1, env_vars=dict(), game_log_messages=None):
+def save(player, room_name, saves_path, player_y=-1, player_x=-1, env_vars=dict(), game_log_messages=[]):
     data = dict()
     data['player'] = player.json()
     data['room_name'] = room_name

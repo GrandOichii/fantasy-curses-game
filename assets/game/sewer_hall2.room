@@ -1,0 +1,20 @@
+######o####o##I##o####o######
+#1                         2#
+######o####o##I##o####o######
+---
+visible_range=4
+---
+1 D door sewer_hall1 sewer_halls12_connector
+I I torch 5
+o o script_tile pipe pipe_interact
+---
+pipe_interact:
+mb Ok "This is a pipe. There is nothing inside."
+stop
+---
+
+---
+goblin1:
+e_type=Sewer Goblin
+y=1
+x=14
