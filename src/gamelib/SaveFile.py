@@ -2,11 +2,12 @@ import json
 from os import listdir, remove
 from os.path import isfile, join, splitext
 
-def save(player, room_name, saves_path, player_y=-1, player_x=-1, env_vars=dict()):
+def save(player, room_name, saves_path, player_y=-1, player_x=-1, env_vars=dict(), game_log_messages=None):
     data = dict()
     data['player'] = player.json()
     data['room_name'] = room_name
     data['env_vars'] = env_vars
+    data['game_log'] = game_log_messages
     if player_y != -1:
         data['player_y'] = player_y
     if player_x != -1:

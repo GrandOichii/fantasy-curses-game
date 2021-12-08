@@ -61,6 +61,7 @@ class Game:
         self.player = Player.from_json(data['player'], self.config_file)
         self.env_vars = data['env_vars']
         self.game_room = Room.Room.by_name(data['room_name'], self.config_file, self.env_vars)
+        
 
         self.player_y, self.player_x = self.game_room.player_spawn_y, self.game_room.player_spawn_x
         if 'player_y' in data:
@@ -87,6 +88,7 @@ class Game:
         self.log_window_height = self.parent.HEIGHT - self.tile_window_height
         self.log_window_width = self.tile_window_width
         self.game_log = GameLog()
+        self.game_log.messages = data['game_log']
 
         self.mid_y = self.tile_window_height // 2 
         self.mid_x = self.tile_window_width // 2
@@ -140,7 +142,7 @@ class Game:
             key = self.window.getch()
             if key == 81 and self.tile_message_box('Are you sure you want to quit? (Progress will be saved)', ['No', 'Yes']) == 'Yes':
                 self.save_enemy_env_vars()
-                SaveFile.save(self.player, self.game_room.name, self.config_file.get('Saves path'), player_y=self.player_y, player_x=self.player_x, env_vars=self.env_vars)
+                SaveFile.save(self.player, self.game_room.name, self.config_file.get('Saves path'), player_y=self.player_y, player_x=self.player_x, env_vars=self.env_vars, game_log_messages=self.game_log.messages)
                 break
             # if self.debug and key == 126:
             if key == 126:
@@ -1094,7 +1096,7 @@ class Game:
         encounter = None
         if player_is_attacking:
             encounter = CombatEncounter(self.player, enemy, d, self.parent.HEIGHT, self.parent.WIDTH, self.config_file)
-            self.game_log.add([f'#green-black {self.player.name} #normal attacks #red-black {enemy.name}!'])
+            self.game_log.add([f'#green-black {self.player.name} #normal attacks #red-black {enemy.name}#normal !'])
         else:
             encounter = CombatEncounter(enemy, self.player, d, self.parent.HEIGHT, self.parent.WIDTH, self.config_file)
             self.game_log.add([f'#red-black {enemy.name} #normal attacks #green-black {self.player.name}!'])
@@ -1110,6 +1112,8 @@ class Game:
 
         # clear temporary statuses
         self.player.temporary_statuses = []
+
+        self.game_log.add([f'#green-black {self.player.name} #normal defeats #red-black {enemy.name}#normal !'])
 
         # clean-up
         self.window.clear()
