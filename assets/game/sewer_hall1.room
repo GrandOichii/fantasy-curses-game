@@ -38,7 +38,9 @@ if set found_secret_pipe_in_sewer then run pipe_interact
 set found_secret_pipe_in_sewer true
 mb ok "This is a pipe. You look inside, and find a pouch with #yellow-black 10 #normal gold coins inside of it!"
 add player.gold 10
-set log_message "Hello"
+set log_message "#green-black "
+add log_message player.name
+add log_message " #normal took the gold pouch."
 log log_message
 ---
 

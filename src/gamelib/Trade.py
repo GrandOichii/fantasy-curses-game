@@ -85,7 +85,7 @@ class Trade:
                     put(self.vendor_window, self.vendor_window_height - 3, 1, f'#black-red Not enough gold')
                     self.vendor_window.refresh()
                     continue
-                answer = message_box(self.parent, 'Finish trading?', ['Yes', 'No'])
+                answer = message_box(self.parent, 'Finish trading?', ['No', 'Yes'])
                 if answer == 'Yes':
                     # end trading
                     return True

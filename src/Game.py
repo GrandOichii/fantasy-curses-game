@@ -1047,9 +1047,10 @@ class Game:
         # add bought countable items
         for key in trade.bought_countable_item_amounts:
             amount = trade.bought_countable_item_amounts[key]
-            item = trade.vendor_countable_items[key].copy()
-            item.amount = amount
-            self.player.add_item(item)
+            if amount > 0:
+                item = trade.vendor_countable_items[key].copy()
+                item.amount = amount
+                self.player.add_item(item)
 
         # manage bought item codes
         for i in trade.bought_item_ids:

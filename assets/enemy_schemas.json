@@ -11,7 +11,7 @@
         "max_mana": 0,
         "armor": 0,
         "description": "A stinky sewer rat.",
-        "attack_format": "The rat lunges and deals {} damage to {}",
+        "attack_format": "The rat lunges and deals #red-black {} #normal damage to #green-black {}",
         "statuses": [],
         "reward_items": {
             
@@ -34,7 +34,7 @@
         "max_mana": 0,
         "armor": 0,
         "description": "The stranger you met in the sewer.",
-        "attack_format": "The stranger attacks with his fists and deals {} damage to {}",
+        "attack_format": "The stranger attacks with his fists and deals #red-black {} #normal damage to #green-black {}",
         "statuses": [],
         "reward_items": {
             
@@ -57,7 +57,7 @@
         "max_mana": 0,
         "armor": 0,
         "description": "A stranger you met in the sewer.",
-        "attack_format": "The stranger attacks with his dagger and deals {} damage to {}",
+        "attack_format": "The stranger attacks with his dagger and deals #red-black {} #normal damage to #green-black {}",
         "statuses": [],
         "reward_items": {
             

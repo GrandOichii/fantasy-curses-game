@@ -398,6 +398,9 @@ class CombatEncounter:
                     for r in responses:
                         self.add_to_combat_log(r)
                     self.action_id = 0
+                    if self.get_enemy().health == 0:
+                        self.player_won()
+                        break
                     # execute enemy action
                     action = self.get_enemy_action()
                     self.last_enemy_picture = action.picture
@@ -409,11 +412,11 @@ class CombatEncounter:
             index = self.index_by_key(key)
             if index != -1:
                 self.action_id = index
-            if self.get_player().health == 0:
-                self.player_lost()
-                break
             if self.get_enemy().health == 0:
                 self.player_won()
+                break
+            if self.get_player().health == 0:
+                self.player_lost()
                 break
             
             self.draw()
