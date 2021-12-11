@@ -331,8 +331,8 @@
         "description": "A protective garment made of steel plates and leather. Better than Steel Armor.",
         "is_ingredient": false
     },
-    "Iron sword": {
-        "name": "Iron sword",
+    "Iron arming sword": {
+        "name": "Iron arming sword",
         "itype": "melee",
         "base_damage": 5,
         "max_mod": 3,
@@ -345,6 +345,74 @@
         },
         "price": 10,
         "description": "A trusty iron sword. Deals moderate damage.",
+        "is_ingredient": false
+    },
+    "Iron longsword": {
+        "name": "Iron arming sword",
+        "itype": "melee",
+        "base_damage": 5,
+        "max_mod": 3,
+        "range": 2,
+        "slot": "ARMS",
+        "gives_statuses": [],
+        "mods": {},
+        "requires": {
+            "STR": 14
+        },
+        "price": 12,
+        "description": "A two-handed iron sword.",
+        "is_ingredient": false
+    },
+    "Iron greatsword": {
+        "name": "Iron greatsword",
+        "itype": "melee",
+        "base_damage": 7,
+        "max_mod": 5,
+        "range": 3,
+        "slot": "ARMS",
+        "gives_statuses": [
+            "Clumsy"
+        ],
+        "mods": {},
+        "requires": {
+            "STR": 18
+        },
+        "price": 20,
+        "description": "A long and heavy two-handed sword. Due to it's weight, it's easier to fall when running while wielding it.",
+        "is_ingredient": false
+    },
+    "Katana": {
+        "name": "Katana",
+        "itype": "melee",
+        "base_damage": 7,
+        "max_mod": 2,
+        "range": 2,
+        "slot": "ARM",
+        "gives_statuses": [],
+        "mods": {},
+        "requires": {
+            "STR": 14,
+            "DEX": 14
+        },
+        "price": 100,
+        "description": "A traditional weapon of samurai.",
+        "is_ingredient": false
+    },
+    "Iron spear": {
+        "name": "Iron spear",
+        "itype": "melee",
+        "base_damage": 5,
+        "max_mod": 3,
+        "range": 3,
+        "slot": "ARMS",
+        "gives_statuses": [],
+        "mods": {},
+        "requires": {
+            "STR": 14,
+            "DEX": 12
+        },
+        "price": 15,
+        "description": "An iron spear. Has good range.",
         "is_ingredient": false
     },
     "Iron dagger": {
@@ -362,6 +430,25 @@
         "price": 6,
         "description": "A regular iron dagger. Used for stealthfully slitting throats.",
         "is_ingredient": false
+    },
+    "Dagger of Slowness": {
+        "name": "Dagger of Slowness",
+        "itype": "enchanted melee",
+        "base_damage": 2,
+        "max_mod": 3,
+        "range": 1,
+        "slot": "ARM",
+        "gives_statuses": [],
+        "mods": {},
+        "requires": {
+            "STR": 10
+        },
+        "price": 30,
+        "description": "An enchanted dagger. Upon striking an enemy, slows it down.",
+        "is_ingredient": false,
+        "strike_statuses": [
+            "Slow"
+        ]
     },
     "Iron shield": {
         "name": "Iron shield",
@@ -391,7 +478,8 @@
         "gives_statuses": [],
         "ammo_type": "arrow",
         "requires": {
-            "STR": 12
+            "STR": 12,
+            "DEX": 12
         },
         "mods": {},
         "price": 10,

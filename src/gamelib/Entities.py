@@ -13,6 +13,7 @@ class Entity:
         self.max_mana = 0
         self.description = ''
         self.statuses = []
+        self.fell = False
 
     def get_cct_name_color(self):
         return '#normal'
@@ -98,6 +99,7 @@ class Enemy(Entity):
         result = Enemy()
         data = json.loads(open(enemy_schemas_path, 'r').read())[name]
         result.__dict__ = data
+        result.fell = False
         return result
 
     def get_rewards(self, config_file: ConfigFile):

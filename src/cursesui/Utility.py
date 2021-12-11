@@ -129,22 +129,26 @@ def str_smart_split(message: str, max_width: int):
     words = []
     for s in split:
         sw = s[3].split(' ')
-        for ssw in sw:
-            words += [[ssw, s[0]]]
+        add_words = [[sw[0], s[0]]]
+        for i in range(1, len(sw)):
+            ssw = sw[i]
+            add_words += [[' ', s[0]]]
+            add_words += [[ssw, s[0]]]
+        words += add_words
     result = []
     line = f'#{words[0][1]} {words[0][0]}'
     word_line = words[0][0]
     for i in range(1, len(words)):
         word = words[i][0]
-        if len(word_line + ' ' + word) > max_width:
+        if len(word_line + word) > max_width:
             result += [line]
             word_line = word
             line = f'#{words[i][1]} {word}'
         else:
             if words[i][1] != words[i - 1][1]:
-                line += f'#{words[i][1]}'
-            line += ' ' + word
-            word_line += ' ' + word
+                line += f'#{words[i][1]} '
+            line += word
+            word_line += word
     result += [line]
     return result
 

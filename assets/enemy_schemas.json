@@ -92,5 +92,28 @@
         },
         "min_reward_gold": 3,
         "max_reward_gold": 5
+    },
+    "Chunky boi": {
+        "name": "Chunky boi",
+        "char": "B",
+        "damage": 1,
+        "damage_mod": 0,
+        "range": 1,
+        "health": 100,
+        "max_health": 100,
+        "mana": 0,
+        "max_mana": 0,
+        "armor": 0,
+        "description": "A very chunky boi. Absolute unit.",
+        "attack_format": "The chunky boi claps his cheecks and deals #red-black {} #normal damage to #green-black {}",
+        "statuses": ["Clumsy"],
+        "reward_items": {
+            
+        },
+        "reward_countable_items": {
+            
+        },
+        "min_reward_gold": 0,
+        "max_reward_gold": 0
     }
 }

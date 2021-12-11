@@ -33,7 +33,30 @@ class WaitAction(Action):
     def run(self):
         return [f'{self.user.get_cct_name_color()} {self.user.name} #normal waits.']      
 
+class StandUpAction(Action):
+    def __init__(self, parent: 'CombatEncounter', char: str, user: Entity):
+        super().__init__(parent, char, 'Stand up', '!!', user, None)
+
+    def run(self):
+        self.user.fell = False
+        return [f'{self.user.get_cct_name_color()} {self.user.name} #normal stands up.']      
+
 class MoveAction(Action):
+    def calculate_fall_chance(user: Entity, move_val: int):
+        move_val = abs(move_val)
+        result = 0
+        if move_val == 1:
+            result = 5
+        if move_val == 2:
+            result = 30
+        if move_val == 3:
+            result = 50
+        if user.has_status('Clumsy'):
+            result *= 2
+        if user.has_status('Sturdy'):
+            result //= 2
+        return result if result < 100 else 99
+
     def __init__(self, parent: 'CombatEncounter', char: str, caption: str, user: Entity, other: Entity, move_val: int):
         a = abs(move_val)
         lines = '-' if a == 1 else '='
@@ -62,7 +85,12 @@ class MoveAction(Action):
             action = 'runs toward to'
         if self.move_val == 3:
             action = 'sprints toward to'
-        result = [f'{self.user.get_cct_name_color()} {self.user.name} #normal {action} {self.other.get_cct_name_color()} {self.other.name}.']
+        result = [f'{self.user.get_cct_name_color()} {self.user.name} #normal {action} {self.other.get_cct_name_color()} {self.other.name}']
+        # calculate chance of falling
+        if random.randint(0, 100) < MoveAction.calculate_fall_chance(self.user, self.move_val):
+            # user tripped
+            self.user.fell = True
+            result += [f'{self.user.get_cct_name_color()} {self.user.name} #red-black trips#normal !']
         return result
 
 class AttackWithoutWeaponEnemyAction(Action):
@@ -194,6 +222,9 @@ class CombatEncounter:
         player = self.get_player()
         enemy = self.get_enemy()
         char_i = 0
+        if player.fell:
+            self.player_actions += [StandUpAction(self, 'w', player)]
+            return
         if player.get_combat_range() >= self.distance:
             self.player_actions += [Action(self, 'a', 'Attack', 'XX', player, enemy)]
         if len(player.spells) > 0:
@@ -602,12 +633,14 @@ class CombatEncounter:
 
     def get_enemy_action(self):
         enemy = self.get_enemy()
+        if enemy.fell:
+            return StandUpAction(self, '!!', enemy)
         if enemy.range >= self.distance:
             return AttackPlayerAction(self, enemy, self.get_player())
         # can't attack, then move towards the player
-        if enemy.has_status('fast') and self.distance > 3:
+        if enemy.has_status('Fast') and self.distance > 3:
             return MoveAction(self, 'a', '-', enemy, self.get_player(), 3)
-        if not enemy.has_status('slow') and self.distance > 2:
+        if not enemy.has_status('Slow') and self.distance > 2:
             return MoveAction(self, 'a', '-', enemy, self.get_player(), 2)
         if self.distance > 1:
             return MoveAction(self, 'a', '-', enemy, self.get_player(), 1)
