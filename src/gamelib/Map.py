@@ -1,7 +1,9 @@
 import curses
 
+from gamelib.Room import Room
+
 class Map:
-    def __init__(self, path):
+    def __init__(self, path: str):
         text = open(path, 'r').read()
         pretty_tiles = {
             '-': curses.ACS_HLINE,
@@ -40,7 +42,7 @@ class Map:
 
                 self._map_coords[room] = [i, j]
 
-    def get_mini_tiles(self, room_name, env_vars, h, w, hh, hw):
+    def get_mini_tiles(self, room_name: str, env_vars: dict, h: int, w: int, hh: int, hw: int):
         if not room_name in self._map_coords.keys():
             raise Exception(f'ERR: room {room_name} not in map coords')
         y, x = self._map_coords[room_name]
@@ -57,8 +59,9 @@ class Map:
                         char = tile.char
                 result[i] += [char]
         return result
+
 class Tile:
-    def __init__(self, char, room, var):
+    def __init__(self, char: str, room: Room, var: str):
         self.char = char
         self.room = room
         self.var = var

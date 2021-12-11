@@ -1,5 +1,5 @@
 import curses
-from Game import GameWindow
+import Game
 from Configuraion import ConfigFile
 import sys
 import os
@@ -11,7 +11,7 @@ config_path = 'settings.config'
 
 def main(stdscr):
     curses.curs_set(0)
-    gw = GameWindow(stdscr, ConfigFile(config_path))
+    gw = Game.GameWindow(stdscr, ConfigFile(config_path))
     if '-d' in sys.argv: gw.debug = True
     gw.start()
 

@@ -27,7 +27,7 @@ color_pair_nums = {}
 pair_i = 0
 color_regex = ''
 
-def _add_color_combination(f_color, b_color):
+def _add_color_combination(f_color: str, b_color: str):
     global pair_i
     pair_i += 1
     curses.init_pair(pair_i, cc[f_color], cc[b_color])
@@ -35,7 +35,7 @@ def _add_color_combination(f_color, b_color):
     f_colors.add(f_color)
     b_colors.add(b_color)
 
-def _check_and_add(colors):
+def _check_and_add(colors: str):
     if colors == 'normal': return
     if not colors in color_pair_nums:
         f_color, b_color = colors.split('-')
@@ -63,7 +63,7 @@ def init_colors():
     # generate regex
     _update_color_regex()
 
-def cct_real_str(message):
+def cct_real_str(message: str):
     result = ''
     message = '#normal ' + message
     split = re.findall(color_regex, message)
@@ -71,21 +71,21 @@ def cct_real_str(message):
         result += t[3]
     return result
 
-def cct_len(message):
+def cct_len(message: str):
     return len(cct_real_str(message))
 
-def pos_neg_int(n):
+def pos_neg_int(n: int):
     if n > 0:
         return f'+{n}'
     return str(n)
 
-def calc_pretty_bars(amount, max_amount, bar_length):
+def calc_pretty_bars(amount: int, max_amount: int, bar_length: int):
     if max_amount == 0:
         return ''
     times = ceil(amount * bar_length / max_amount)
     return times * '|' + (bar_length - times) * ' '
 
-def put(window, y, x, message, attr=0):
+def put(window, y: int, x: int, message: str, attr: int=0):
     # format name: cct (curses color text) 
     # example method: def get_cct(self): ...
     # if message.startswith(':raw '):
@@ -106,7 +106,7 @@ def put(window, y, x, message, attr=0):
             window.attroff(attr)
         x += len(t[3])
 
-def draw_separator(window, y, color_pair='normal'):
+def draw_separator(window, y: int, color_pair: str='normal'):
     _check_and_add(color_pair)
     _, width = window.getmaxyx()
     flag = color_pair != 'normal'
@@ -121,7 +121,7 @@ def draw_separator(window, y, color_pair='normal'):
         window.attroff(curses.color_pair(color_pair_nums[color_pair]))
 
 # TO-DO: fix spaces
-def str_smart_split(message, max_width):
+def str_smart_split(message: str, max_width: int):
     message = '#normal ' + message
     split = re.findall(color_regex, message)
     words = []
@@ -146,7 +146,7 @@ def str_smart_split(message, max_width):
     result += [line]
     return result
 
-def draw_borders(window, color_pair='normal'):
+def draw_borders(window, color_pair: str='normal'):
     if color_pair == 'normal':
         window.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE, curses.ACS_ULCORNER, curses.ACS_URCORNER, curses.ACS_LLCORNER, curses.ACS_LRCORNER)
     else:
@@ -155,7 +155,7 @@ def draw_borders(window, color_pair='normal'):
         window.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE, curses.ACS_ULCORNER, curses.ACS_URCORNER, curses.ACS_LLCORNER, curses.ACS_LRCORNER)
         window.attroff(curses.color_pair(color_pair_nums[color_pair]))
 
-def drop_down_box(options, max_display_amount, y, x, choice_type):
+def drop_down_box(options: list, max_display_amount: int, y: int, x: int, choice_type: int):
     HEIGHT = min(len(options), max_display_amount) + 2
     WIDTH = max([cct_len(o) for o in options]) + 3
 
@@ -240,7 +240,7 @@ def drop_down_box(options, max_display_amount, y, x, choice_type):
                     choice -= 1
     return list(results)
 
-def message_box(parent, message, choices, ypos=-1, xpos=-1, height=-1, width=-1, additional_lines=[], border_color='normal'):
+def message_box(parent, message: str, choices: list, ypos: int=-1, xpos: int=-1, height: int=-1, width: int=-1, additional_lines: list=[], border_color: str='normal'):
     window = parent.window
     HEIGHT, WIDTH = window.getmaxyx()
     # restrict the min and max width of message box
@@ -323,7 +323,7 @@ def message_box(parent, message, choices, ypos=-1, xpos=-1, height=-1, width=-1,
     win.refresh()
     return choices[choice_id]
 
-def choose_file(parent, title, starting_directory='.'):
+def choose_file(parent, title: str, starting_directory: str='.'):
     w_height = parent.HEIGHT // 8 * 5
     w_width = parent.WIDTH // 8 * 5
     w_y = (parent.HEIGHT - w_height) // 2
@@ -419,3 +419,39 @@ def choose_file(parent, title, starting_directory='.'):
 
         # clear screen
         window.clear()
+
+def show_controls_window(parent, controls: dict):
+    # TO-DO: Add scrolling
+    window = parent.window
+    HEIGHT, WIDTH = window.getmaxyx()
+    controls_window_height = HEIGHT * 1 // 3
+    controls_window_width = WIDTH * 1 // 3
+    controls_window_y = (HEIGHT - controls_window_height) // 2
+    controls_window_x = (WIDTH - controls_window_width) // 2
+    controls_window = curses.newwin(controls_window_height, controls_window_width, controls_window_y, controls_window_x)
+    controls_window.keypad(1)
+
+    # initial draw
+    draw_borders(controls_window)
+    put(controls_window, 0, 1, '#green-black Controls')
+
+    keys = list(controls.keys())
+    descriptions = list(controls.values())
+    description_offset = 1
+
+    while True:
+        # clear screen
+        for i in range(1, controls_window_height - 1):
+            controls_window.addstr(i, 1, ' ' * (controls_window_width - 2))
+        # display controls
+        for i in range(len(keys)):
+            put(controls_window, 1 + i, 2, f'{descriptions[i]}:')
+            k_len = len(keys[i])
+            put(controls_window, 1 + i, controls_window_width - k_len - description_offset - 1, f'#green-black {keys[i]}')
+            # draw placeholder
+            # put(controls_window, 1 + i, len(keys[i]) + 1, '_' * (controls_window_width - len(keys[i]) - len(descriptions[i]) - 2))
+
+        # key handling
+        key = controls_window.getch()
+        if key == 27 or key == 10 or key == 63: # ESC/ENTER/?
+            break

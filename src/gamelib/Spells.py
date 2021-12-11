@@ -2,7 +2,7 @@ import json
 
 from cursesui.Utility import str_smart_split
 
-from gamelib.Entities import Player
+import gamelib.Entities as Entities
 
 class Spell:
     def __init__(self):
@@ -10,13 +10,13 @@ class Spell:
         self.type = ''
         self.description = ''
 
-    def cast(self, user):
+    def cast(self, user: 'Entities.Entity'):
         return [f'{user.get_cct_name_color()} {user.name} #normal casts #cyan-black {self.name}#normal , but it doesn\'t seem to do anything']
 
     def json(self):
         return self.__dict__
 
-    def get_description(self, max_width):
+    def get_description(self, max_width: int):
         result = []
         result += [self.name]
         result += ['']
@@ -45,13 +45,13 @@ class Spell:
         result.__dict__ = js
         return result
 
-    def arr_to_json(spells):
+    def arr_to_json(spells: list['Spell']):
         result = []
         for spell in spells:
             result += [spell.json()]
         return result
 
-    def get_base_spells(names, path):
+    def get_base_spells(names: list[str], path: str):
         data = json.loads(open(path, 'r').read())
         result = []
         for item_name in names:
@@ -67,11 +67,11 @@ class ManaSpell(NormalSpell):
         super().__init__()
         self.manacost = 0
 
-    def cast(self, user):
+    def cast(self, user: 'Entities.Entity'):
         user.add_mana(-self.manacost)
         return super().cast(user)
 
-    def get_description(self, max_width):
+    def get_description(self, max_width: int):
         result = super().get_description(max_width)
         result.insert(2, f'Mana cost: {self.manacost}')
         result.insert(3, '')
@@ -85,11 +85,11 @@ class BloodSpell(NormalSpell):
         super().__init__()
         self.bloodcost = 0
 
-    def cast(self, user):
+    def cast(self, user: 'Entities.Entity'):
         user.add_health(-self.bloodcost)
         return super().cast(user)
 
-    def get_description(self, max_width):
+    def get_description(self, max_width: int):
         result = super().get_description(max_width)
         result.insert(2, f'Blood cost: {self.bloodcost}')
         result.insert(3, '')
@@ -103,12 +103,12 @@ class HealSpell(ManaSpell):
         super().__init__()
         self.restores = 0
 
-    def cast(self, user):
+    def cast(self, user: 'Entities.Entity'):
         super().cast(user)
         user.add_health(self.restores)
         return [f'{user.get_cct_name_color()} {user.name} #normal casts #cyan-black {self.name} #normal and heals #red-black {self.restores} #normal hp']
 
-    def get_description(self, max_width):
+    def get_description(self, max_width: int):
         result = super().get_description(max_width)
         result.insert(3, f'Heals: {self.restores}')
         return result
@@ -118,12 +118,12 @@ class BloodManaSpell(BloodSpell):
         super().__init__()
         self.restores = 0
 
-    def cast(self, user):
+    def cast(self, user: 'Entities.Entity'):
         super().cast(user)
         user.add_mana(self.restores)
         return [f'{user.get_cct_name_color()} {user.name} #normal casts #red-black {self.name} #normal and restores #cyan-black {self.restores} #normal mana']
 
-    def get_description(self, max_width):
+    def get_description(self, max_width: int):
         result = super().get_description(max_width)
         result.insert(3, f'Restores mana: {self.restores}')
         return result
@@ -136,7 +136,7 @@ class CombatSpell(Spell):
         self.manacost = 0
         self.range = 0
 
-    def cast(self, user, enemy):
+    def cast(self, user: 'Entities.Entity', enemy: 'Entities.Entity'):
         user.add_mana(-self.manacost)
         user.add_statuses(self.user_statuses)
         enemy.add_statuses(self.enemy_statuses)
@@ -147,7 +147,7 @@ class CombatSpell(Spell):
             result += [f'{enemy.name} has gained status #yellow-black {status}']
         return result
 
-    def get_description(self, max_width):
+    def get_description(self, max_width: int):
         result = super().get_description(max_width)
         pos = 2
         result.insert(pos, f'Mana cost: {self.manacost}')
@@ -182,13 +182,13 @@ class DamageSpell(CombatSpell):
         super().__init__()
         self.damage = 0
     
-    def cast(self, user, enemy):
+    def cast(self, user: 'Entities.Entity', enemy: 'Entities.Entity'):
         result = super().cast(user, enemy)
         enemy.add_health(-self.damage)
         result += [f'{user.get_cct_name_color()} {self.name} #normal deals #red-black {self.damage} #normal to {enemy.get_cct_name_color()} {enemy.name}']
         return result
 
-    def get_description(self, max_width):
+    def get_description(self, max_width: int):
         result = super().get_description(max_width)
         result.insert(4, f'Damage: {self.damage}')
         return result

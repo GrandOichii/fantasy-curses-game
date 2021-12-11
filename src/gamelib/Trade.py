@@ -1,10 +1,12 @@
 import curses
+from cursesui.Elements import Window
 
 from cursesui.Utility import cct_len, cct_real_str, draw_borders, draw_separator, message_box, put
-from gamelib.Items import CountableItem
+from gamelib.Entities import Player
+from gamelib.Items import CountableItem, Item
 
 class Trade:
-    def __init__(self, parent, player, vendor_name, vendor_gold, vendor_items, vendor_countable_items):
+    def __init__(self, parent: Window, player: Player, vendor_name: str, vendor_gold: int, vendor_items: list[Item], vendor_countable_items: list[CountableItem]):
         self.parent = parent
         self.HEIGHT, self.WIDTH = parent.window.getmaxyx()
 
@@ -113,7 +115,7 @@ class Trade:
         self.info_window_selected = False
         self.choice = 0
 
-    def request_amount(self, item, buying):
+    def request_amount(self, item: Item, buying: bool):
         result = 0
         price = item.get_buy_price() if buying else item.get_sell_price()
         top = '#yellow-black {}#normal : {} (#yellow-black {} #normal gold per piece)'.format('Buying' if buying else 'Selling', item.name, price)
@@ -234,7 +236,7 @@ class Trade:
                     self.bought_item_ids.remove(self.bought_item_ids[self.choice])
                 self.choice = 0
 
-    def get_offset(self, d, to):
+    def get_offset(self, d: dict, to: int):
         result = 0
         values = list(d.values())
         for i in range(to + 1):
@@ -245,7 +247,7 @@ class Trade:
         #         result += 1
         return result
 
-    def get_player_item(self, id):
+    def get_player_item(self, id: int):
         l = len(self.player_items)
         if id >= l:
             # select countable item
@@ -254,7 +256,7 @@ class Trade:
         # select normal item
         return self.player_items[id]
 
-    def get_vendor_item(self, id):
+    def get_vendor_item(self, id: int):
         l = len(self.vendor_items)
         if id >= l:
             # select countable item
@@ -263,13 +265,13 @@ class Trade:
         # select normal item
         return self.vendor_items[id]
 
-    def get_sold_item(self, choice):
+    def get_sold_item(self, choice: int):
         l = len(self.sold_item_ids)
         if choice >= l:
             return self.get_player_item(choice + len(self.player_items) - l)
         return self.get_player_item(self.sold_item_ids[choice])
 
-    def get_bought_item(self, choice):
+    def get_bought_item(self, choice: int):
         l = len(self.bought_item_ids)
         if choice >= l:
             return self.get_vendor_item(choice + len(self.vendor_items) - l)
@@ -317,7 +319,7 @@ class Trade:
             if key == 27 or key == 32: # ESC/SPACE
                 break
 
-    def get_item_display_names(self, items, buying):
+    def get_item_display_names(self, items: list[Item], buying: bool):
         result = []
         for item in items:
             cost = item.get_buy_price() if buying else item.get_sell_price()

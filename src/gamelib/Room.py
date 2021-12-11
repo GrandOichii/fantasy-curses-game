@@ -1,19 +1,20 @@
 import json
 from os import initgroups, listdir
 from os.path import isfile, join, splitext
+from Configuraion import ConfigFile
 from gamelib.Entities import Enemy
 
 import gamelib.Items as Items
 
 
 class Tile:
-    def __init__(self, name, char, solid, interactable):
+    def __init__(self, name: str, char: str, solid: bool, interactable: bool):
         self.name = name
         self.char = char
         self.solid = solid
         self.interactable = interactable
 
-    def from_info(tile_char, tiles_data, scripts, containers_info, config_file):
+    def from_info(tile_char: str, tiles_data: dict, scripts: dict, containers_info: dict, config_file: ConfigFile):
         if tile_char == ' ' or tile_char == '@':
             return Tile('floor', ' ', False, False)
         if tile_char == '#':
@@ -54,43 +55,43 @@ class Tile:
         return Tile('ERR', '!', True, False)
 
 class DoorTile(Tile):
-    def __init__(self, name, char, solid, info):
+    def __init__(self, name: str, char: str, solid: bool, info: str):
         super().__init__(name, char, solid, False)
         self.to = info.split()[0]
         self.door_code = info.split()[1]
 
 class TorchTile(Tile):
-    def __init__(self, name, char, solid, interactable, visible_range):
+    def __init__(self, name: str, char: str, solid: bool, interactable: bool, visible_range: str):
         super().__init__(name, char, solid, interactable)
         self.visible_range = int(visible_range)
 
 class ChestTile(Tile):
-    def __init__(self, name, char, solid, container_code):
+    def __init__(self, name: str, char: str, solid: bool, container_code: str):
         super().__init__(name, char, solid, True)
         self.container_code = container_code
 
 class PressurePlateTile(Tile):
-    def __init__(self, name, char, script_name):
+    def __init__(self, name: str, char: str, script_name: str):
         super().__init__(name, char, False, False)
         self.script_name = script_name
 
 class HiddenTile(Tile):
-    def __init__(self, name, char, solid, interactable, actual_tile, signal):
+    def __init__(self, name: str, char: str, solid: bool, interactable: bool, actual_tile: Tile, signal: str):
         super().__init__(name, char, solid, interactable)
         self.actual_tile = actual_tile
         self.signal = signal
 
 class ScriptTile(Tile):
-    def __init__(self, name, char, script_name):
+    def __init__(self, name: str, char: str, script_name: str):
         super().__init__(name, char, True, True)
         self.script_name = script_name
 
 class CookingPotTile(Tile):
-    def __init__(self, char):
+    def __init__(self, char: str):
         super().__init__('Cooking pot', char, True, True)
 
 class Room:
-    def __init__(self, name, height, width, player_spawn_char='@'):
+    def __init__(self, name: str, height: int, width: int, player_spawn_char: str='@'):
         self.name = name
         self.display_name = ''
         self.height = height
@@ -102,7 +103,7 @@ class Room:
         self.container_info = {}
         self.player_spawn_char = player_spawn_char
 
-    def by_name(name, config_file, env_vars, door_code=None):
+    def by_name(name: str, config_file: ConfigFile, env_vars: dict, door_code: str=None):
         r_p = config_file.get('Rooms path')
         room_names = [f for f in listdir(r_p) if isfile(join(r_p, f)) and splitext(f)[1] == '.room']
         if not f'{name}.room' in room_names:
@@ -121,7 +122,7 @@ class Room:
         result = Room.from_str(name, layout_data, tiles_data, room_data, scripts_data, containers_data, enemies_data, '@', config_file, door_code, env_vars)
         return result
 
-    def from_str(name, layout_data, raw_tiles_data, room_data, scripts_data, containers_data, enemies_data, player_spawn_char, config_file, door_code, env_vars):
+    def from_str(name: str, layout_data: dict, raw_tiles_data: dict, room_data: dict, scripts_data: dict, containers_data: dict, enemies_data: dict, player_spawn_char: str, config_file: ConfigFile, door_code: str, env_vars: dict):
         lines = layout_data.split('\n')
         height = len(lines)
         width = len(lines[0])

@@ -1,6 +1,6 @@
 import curses
 
-from cursesui.Utility import draw_borders, draw_separator, put, init_colors, cct_len, str_smart_split
+from cursesui.Utility import draw_borders, draw_separator, message_box, put, init_colors, cct_len, show_controls_window, str_smart_split
 
 class Window:
     def __init__(self, window):
@@ -11,6 +11,9 @@ class Window:
         self.running = True
         self.window.keypad(1)
         self.initUI()
+
+    def get_window(self):
+        return self.window
 
     def start(self):
         while self.running:
@@ -36,6 +39,10 @@ class Menu:
         self.elements = []
         self.border_color_pair = 'normal'
         self.bottom_description = ''
+        self.controls = {}
+
+    def get_window(self):
+        return self.parent.window
 
     def unfocus_all(self):
         for e in self.elements:
@@ -50,6 +57,8 @@ class Menu:
                 return i
 
     def handle_key(self, key):
+        if key == 63: # ?
+            self.show_controls()
         element = self.elements[self.get_focused_element_id()]
         element.handle_key(key)
 
@@ -57,7 +66,7 @@ class Menu:
         self.elements += [element]
 
     def draw(self):
-        parent_window = self.parent.window
+        parent_window = self.get_window()
         parent_window.clear()
         draw_borders(parent_window, self.border_color_pair)
         put(parent_window, 1, 1, self.title)
@@ -69,10 +78,17 @@ class Menu:
         parent_window.refresh()
 
     def draw_bottom_description(self):
+        parent_window = self.get_window()
         lines = str_smart_split(self.bottom_description, self.parent.WIDTH - 2)
         y = self.parent.HEIGHT - len(lines) - 1
         for i in range(len(lines)):
-            put(self.parent.window, y + i, 1, lines[i])
+            put(parent_window, y + i, 1, lines[i])
+
+    def show_controls(self):
+        if self.controls == {}:
+            message_box(self.parent, '#red-black No controls set!', ['Ok'])
+        else:
+            show_controls_window(self.parent, self.controls)
 
 class UIElement:
     def __init__(self, parent, text):
@@ -124,7 +140,7 @@ class Separator(UIElement):
         self.y = y
 
     def draw(self):
-        draw_separator(self.parent.window, self.y + 2, self.color_pair)
+        draw_separator(self.parent.get_window(), self.y + 2, self.color_pair)
 
 class Button(UIElement):
     def __init__(self, parent, text, click=None):

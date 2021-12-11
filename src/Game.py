@@ -4,22 +4,24 @@ import json
 from math import sqrt
 import os
 from Settings import SettingsMenu
-from gamelib.Spells import BloodSpell, NormalSpell
+from Configuraion import ConfigFile
 
 from cursesui.Elements import Menu, Window, Button, UIElement, Widget, TextField, WordChoice, Separator
-from cursesui.Utility import draw_separator, message_box, cct_len, draw_borders, drop_down_box, put, MULTIPLE_ELEMENTS, str_smart_split
+from cursesui.Utility import calc_pretty_bars, draw_separator, message_box, cct_len, draw_borders, drop_down_box, put, MULTIPLE_ELEMENTS, str_smart_split
 
-import cursesui.Utility as Utility
+# import gamelib.Entities as Entities
+from gamelib.Entities import *
+import gamelib.Spells as Spells
 import gamelib.Room as Room
 import gamelib.Items as Items
 import gamelib.Map as Map
 import gamelib.SaveFile as SaveFile
 
-from gamelib.Entities import Player
+# from gamelib.Entities import Player, Enemy
 from gamelib.Combat import CombatEncounter
 from gamelib.Trade import Trade
 
-def distance(ay, ax, by, bx):
+def distance(ay: int, ax: int, by: int, bx: int):
     return sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by))
 
 class GameLog:
@@ -27,28 +29,28 @@ class GameLog:
     def __init__(self):
         self.messages = []
 
-    def add(self, messages):
+    def add(self, messages: list):
         messages[0] = '- ' + messages[0]
         self.messages += messages
 
     def length(self):
         return len(self.messages)
 
-    def get_splits(self, max_width):
+    def get_splits(self, max_width: int):
         splits = []
         for message in self.messages:
             splits += str_smart_split(message, max_width)
         return splits
 
-    def get_last(self, max_width, amount):
+    def get_last(self, max_width: int, amount: int):
         # optimize
         return self.get_splits(max_width)[-amount:]
 
 class Game:
-    def __init__(self, parent, character_name, config_file):
+    def __init__(self, parent : Window, character_name: str, config_file: ConfigFile):
         self.parent = parent
         
-        self.window = parent.window
+        self.window = parent.get_window()
         self.character_name = character_name
         self.config_file = config_file
 
@@ -266,13 +268,13 @@ class Game:
                 if key == 120: # x
                     self.tile_description_mode()    
 
-    def tile_message_box(self, message, choices, additional_lines=[]):
+    def tile_message_box(self, message: str, choices: list, additional_lines: list=[]):
         return message_box(self.parent, message, choices, additional_lines=additional_lines, width=self.tile_window_width - 4, ypos=2, xpos=2)
 
-    def display_error(self, error_message):
+    def display_error(self, error_message: str):
         return message_box(self.parent, error_message, ['Ok'], width=self.tile_window_width - 4, ypos=2, xpos=2, border_color='red-black')
 
-    def notify(self, message, author):
+    def notify(self, message: str, author: str):
         min_height = 5
         window_width = self.tile_window_width - 2
         messages = str_smart_split(message, window_width - 2)
@@ -335,12 +337,12 @@ class Game:
             self.set_env_var(f'{f}y', enemy.y)
             self.set_env_var(f'{f}x', enemy.x)
 
-    def display_dialog(self, message, replies):
+    def display_dialog(self, message: str, replies: list):
         borders_color_pair = 'cyan-black'
         width = self.tile_window_width - 2
         height = self.tile_window_height // 2
 
-        lines = Utility.str_smart_split(message, width - 2)
+        lines = str_smart_split(message, width - 2)
         name = '???'
         if '_say_name' in self.env_vars:
             name = self.get_env_var('_say_name')
@@ -446,7 +448,7 @@ class Game:
         # clean-up
         self.draw()
 
-    def get_interactable_tiles(self, y, x):
+    def get_interactable_tiles(self, y: int, x: int):
         y_lim = self.game_room.height
         x_lim = self.game_room.width
         result = []
@@ -476,7 +478,7 @@ class Game:
             result += [[self.game_room.tiles[y + 1][x + 1], [110, 51]]]
         return result
 
-    def interact_with_chest(self, chest_tile):
+    def interact_with_chest(self, chest_tile: Room.ChestTile):
         items_dict = self.game_room.container_info[chest_tile.container_code]
 
         item_names = []
@@ -517,7 +519,7 @@ class Game:
     def initiate_cooking(self):
         self.tile_message_box('#red-black Cooking is not implemented', ['Ok'])
 
-    def get_display_names(self, items):
+    def get_display_names(self, items: list):
         result = []
         for i in range(len(items)):
             item = items[i]
@@ -919,9 +921,9 @@ class Game:
                     display_names = self.get_display_names(items)
                 if selected_tab == 2: # SPELLS
                     spell = self.player.spells[spell_choice_id]
-                    if issubclass(type(spell), NormalSpell):
+                    if issubclass(type(spell), Spells.NormalSpell):
                         s = 'Cast (cost: {})'
-                        if issubclass(type(spell), BloodSpell):
+                        if issubclass(type(spell), Spells.BloodSpell):
                             s = s.format(f'{spell.bloodcost} hp')
                         else:
                             s = s.format(f'{spell.manacost} mana')
@@ -968,7 +970,7 @@ class Game:
         self.window.refresh()
         self.draw()
 
-    def get_prompt(self, message):
+    def get_prompt(self, message: str):
         message = '[#green-black {}#normal ]'.format(message)
         put(self.tile_window, 1, self.mid_x - cct_len(message) // 2, message)
         self.tile_window.refresh()
@@ -1029,7 +1031,7 @@ class Game:
         self.window.refresh()
         self.draw()
     
-    def initiate_trade(self, vendor_name, gold_var, container_code):
+    def initiate_trade(self, vendor_name: str, gold_var: str, container_code: str):
         items_dict = self.game_room.container_info[container_code]
         items = [key for key in items_dict]
         normal_items, countable_items = Items.Item.separate_items(items)
@@ -1100,7 +1102,7 @@ class Game:
         self.window.refresh()
         self.draw()
     
-    def enemy_is_lit(self, enemy):
+    def enemy_is_lit(self, enemy: Enemy):
         for i in range(self.game_room.height):
             for j in range(self.game_room.width):
                 r = 0
@@ -1113,13 +1115,13 @@ class Game:
                     return True
         return distance(self.player_y, self.player_x, enemy.y, enemy.x) < self.game_room.visible_range
 
-    def can_see_enemy(self, enemy):
+    def can_see_enemy(self, enemy: Enemy):
         # enemy.health > 0 and sqrt((self.player_y - enemy.y) * (self.player_y - enemy.y) + (self.player_x - enemy.x) * (self.player_x - enemy.x)) < self.game_room.visible_range:
         return enemy.health > 0 and not (enemy.y == -1 and enemy.x == -1) and self.enemy_is_lit(enemy)
 
     # combat
 
-    def initiate_encounter_with(self, encounter_enemy_code, player_is_attacking=True):
+    def initiate_encounter_with(self, encounter_enemy_code: str, player_is_attacking: bool=True):
         enemy = self.game_room.enemies_data[encounter_enemy_code]
         d = distance(self.player_y, self.player_x, enemy.y, enemy.x)
         encounter = None
@@ -1201,10 +1203,10 @@ class Game:
         # display armor rating
         put(self.player_info_window, y + 3, x, f'Armor: #white-blue {self.player.get_armor()}')
         # display health
-        health_str = 'Health: #red-black {}#normal (#red-black {}#normal /#red-black {}#normal )'.format(Utility.calc_pretty_bars(self.player.health, self.player.get_max_health(), 10), fill(self.player.health, 3), fill(self.player.get_max_health(), 3))
+        health_str = 'Health: #red-black {}#normal (#red-black {}#normal /#red-black {}#normal )'.format(calc_pretty_bars(self.player.health, self.player.get_max_health(), 10), fill(self.player.health, 3), fill(self.player.get_max_health(), 3))
         put(self.player_info_window, y + 4, x, health_str)
         # display mana
-        mana_str = '  Mana: #cyan-black {}#normal (#cyan-black {}#normal /#cyan-black {}#normal )'.format(Utility.calc_pretty_bars(self.player.mana, self.player.get_max_mana(), 10), fill(self.player.mana, 3), fill(self.player.get_max_mana(), 3))
+        mana_str = '  Mana: #cyan-black {}#normal (#cyan-black {}#normal /#cyan-black {}#normal )'.format(calc_pretty_bars(self.player.mana, self.player.get_max_mana(), 10), fill(self.player.mana, 3), fill(self.player.get_max_mana(), 3))
         put(self.player_info_window, y + 5, x, mana_str)
         # display strength
         put(self.player_info_window, y + 7, x, f'#black-red STR: #normal {fill(self.player.STR, 3)}')
@@ -1228,7 +1230,7 @@ class Game:
             self.draw_mini_map(self.game_room.name)
         self.draw_enemies()
 
-    def draw_mini_map(self, room_name):
+    def draw_mini_map(self, room_name: str):
         self.mini_map_window.clear()
         draw_borders(self.mini_map_window)
         put(self.mini_map_window, 0, 1, '#magenta-black Minimap')
@@ -1244,7 +1246,7 @@ class Game:
                 else:
                     self.mini_map_window.addch(1 + i, 1 + j, mini_map_tiles[i][j])
 
-    def draw_room_display_name(self, display_name):
+    def draw_room_display_name(self, display_name: str):
         h = 3
         w = len(display_name) + 2
         y = self.tile_window_height - 3 - 1
@@ -1253,7 +1255,7 @@ class Game:
         win.addstr(1, 1, display_name)
         draw_borders(win)
 
-    def draw_tiles(self, y, x, visible_range):
+    def draw_tiles(self, y: int, x: int, visible_range: int):
         mid_y = self.mid_y - self.player_y + y + self.camera_dy
         mid_x = self.mid_x - self.player_x + x - self.camera_dx
         for i in range(max(1, mid_y - visible_range), min(self.tile_window_height - 1, mid_y + visible_range + 1)):
@@ -1298,16 +1300,16 @@ class Game:
 
     # env vars
 
-    def set_env_var(self, var, value):
+    def set_env_var(self, var: str, value):
         self.env_vars[var] = value
 
-    def get_env_var(self, var):
+    def get_env_var(self, var: str):
         if not var in self.env_vars.keys():
             return None
         var = self.env_vars[var]
         return var
 
-    def exec_line(self, line, scripts):
+    def exec_line(self, line: str, scripts: dict):
         if line[0] == '#':
             return False
         words = line.split()
@@ -1577,7 +1579,7 @@ class Game:
             return False
         raise Exception(f'ERR: command {command} not recognized')
 
-    def get_true_value(self, s):
+    def get_true_value(self, s: str):
         if s.lstrip('-').isdigit():
             return int(s)
         if s[0] == '"' and s[len(s) - 1] == '"':
@@ -1616,7 +1618,7 @@ class Game:
                 return result
         return None
 
-    def exec_script(self, name, scripts):
+    def exec_script(self, name: str, scripts: dict):
         script = scripts[name]
         for script_line in script:
             if script_line == '':
@@ -1644,13 +1646,14 @@ class Game:
         self.window.refresh()
         return result
 
-    def _terminal_command_validator(self, ch):
+    def _terminal_command_validator(self, ch: str):
         if ch in [127, 8]:
             return 8
         return ch
 
 class GameWindow(Window):
-    def __init__(self, window, config_file):
+    def __init__(self, window, config_file: ConfigFile):
+        self.universal_menu_controls = {"ESC": "Close app", "ENTER": "Click button", "UP/DOWN": "Move between buttons"}
         super().__init__(window)
         if self.WIDTH < 135:
             message_box(self, f'Termainal window too small, you may encounter bugs', ['Ok'])
@@ -1667,9 +1670,12 @@ class GameWindow(Window):
         # menu init
         self.main_menu = Menu(self, '#red-black Fantasy #cyan-black Curses #magenta-black Game')
         self.main_menu.bottom_description = ''
+        self.main_menu.controls = self.universal_menu_controls
+        self.main_menu.bottom_description = '#black-cyan Click #black-yellow ?#black-cyan  for controls'
 
         self.credits_menu = Menu(self, '#yellow-black Credits')
         self.credits_menu.bottom_description = 'https://github.com/GrandOichii/fantasy-curses-game'
+        self.credits_menu.controls = self.universal_menu_controls
 
         self.character_creation_menu = Menu(self, '#cyan-black Character creation')
         self.character_creation_menu.bottom_description = 'Create your character!'
@@ -1764,7 +1770,7 @@ class GameWindow(Window):
 
         self.current_menu = self.main_menu
 
-    def handle_key(self, key):
+    def handle_key(self, key: int):
         if key == 27:
             self.exit()
 
@@ -1827,6 +1833,8 @@ class GameWindow(Window):
         # ch_names = SaveFile.character_names(self.config_file.get('Saves path'))
         load_menu = Menu(self, '#cyan-black Load character')
         load_menu.bottom_description = 'Load a previous character'
+        load_menu.controls = self.universal_menu_controls
+
 
         label = UIElement(self, 'Load character:')
         label.set_pos(1, 1)
@@ -1879,7 +1887,7 @@ class GameWindow(Window):
 
     # utility methods
 
-    def load_character(self, character_name):
+    def load_character(self, character_name: str):
         game = Game(self, character_name, self.config_file)
         game.start()
 

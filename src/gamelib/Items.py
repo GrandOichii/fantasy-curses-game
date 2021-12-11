@@ -1,6 +1,7 @@
 import json
+from Configuraion import ConfigFile
 from cursesui.Utility import str_smart_split, pos_neg_int
-# from gamelib.Spells import Spell
+import gamelib.Entities as Entities
 
 class Item:
     def get_template_from_type(t):
@@ -22,20 +23,20 @@ class Item:
             return Food()
         return Item()
 
-    def get_base_items(names, path):
+    def get_base_items(names: list[str], path: str):
         data = json.loads(open(path).read())
         result = []
         for item_name in names:
             result += [Item.from_json(data[item_name])]
         return result
 
-    def arr_to_json(items):
+    def arr_to_json(items: list['Item']):
         result = []
         for item in items:
             result += [item.json()]
         return result
     
-    def separate_items(items):
+    def separate_items(items: list['Item']):
         normal_items = []
         countable_items = []
         for item in items:
@@ -45,7 +46,7 @@ class Item:
                 normal_items += [item]
         return normal_items, countable_items
 
-    def from_json(js):
+    def from_json(js: dict):
         t = js['itype']
         result = Item.get_template_from_type(t)
         result.__dict__ = js
@@ -74,7 +75,7 @@ class Item:
     def json(self):
         return self.__dict__
 
-    def get_description(self, max_width):
+    def get_description(self, max_width: int):
         result = []
         result += [self.name]
         result += ['']
@@ -107,7 +108,7 @@ class EquipableItem(Item):
         self.gives_statuses = []
         self.mods = {}
 
-    def get_description(self, max_width):
+    def get_description(self, max_width: int):
         result = super().get_description(max_width)
         result.insert(3, f'Slot: {self.slot}')
         result.insert(4, '')
@@ -134,7 +135,7 @@ class Armor(EquipableItem):
                 result += f'\n  {key}: {self.requires[key]}'
         return result
 
-    def get_description(self, max_width):
+    def get_description(self, max_width: int):
         result = super().get_description(max_width)
         app = 6
         if len(self.requires) != 0:
@@ -158,7 +159,7 @@ class CountableItem(Item):
         super().__init__()
         self.amount = 0
 
-    def get_base_items(d, config_file):
+    def get_base_items(d: dict, config_file: ConfigFile):
         items = Item.get_base_items(d.keys(), config_file) 
         for i in range(len(items)):
             items[i].amount = list(d.values())[i]
@@ -179,7 +180,7 @@ class Ammo(CountableItem):
         result += f'\nAmount: {self.amount}'
         return result
 
-    def get_description(self, max_width):
+    def get_description(self, max_width: int):
         result = super().get_description(max_width)
         result.insert(3, '')
         result.insert(4, f'Amount: {self.amount}')
@@ -209,7 +210,7 @@ class MeleeWeapon(EquipableItem):
                 result += f'\n  {key}: {self.requires[key]}'
         return result
 
-    def get_description(self, max_width):
+    def get_description(self, max_width: int):
         result = super().get_description(max_width)
         app = 6
         result.insert(app - 1, f'Damage: {self.base_damage} - {self.base_damage + self.max_mod}')
@@ -246,7 +247,7 @@ class UsableItem(CountableItem):
     def __init__(self):
         super().__init__()
 
-    def use(self, entity):
+    def use(self, entity: 'Entities.Entity'):
         self.amount -= 1
 
 class Food(UsableItem):
@@ -254,7 +255,7 @@ class Food(UsableItem):
         super().__init__()
         self.restores = 0
 
-    def use(self, entity):
+    def use(self, entity: 'Entities.Entity'):
         super().use(entity)
         entity.add_health(self.restores)
         return [f'{entity.get_cct_name_color()} {entity.name} #normal eats the {self.name} and restores #red-black {self.restores} #normal health.']
@@ -264,7 +265,7 @@ class HealthPotion(UsableItem):
         super().__init__()
         self.restores = 0
 
-    def use(self, entity):
+    def use(self, entity: 'Entities.Entity'):
         super().use(entity)
         entity.add_health(self.restores)
         return [f'{entity.get_cct_name_color()} {entity.name} #normal drinks {self.name} and restores #red-black {self.restores} #normal health.']
@@ -274,7 +275,7 @@ class ManaPotion(UsableItem):
         super().__init__()
         self.restores = 0
 
-    def use(self, entity):
+    def use(self, entity: 'Entities.Entity'):
         super().use(entity)
         entity.add_mana(self.restores)
         return [f'{entity.get_cct_name_color()} {entity.name} #normal drinks {self.name} and restores #cyan-black {self.restores} #normal mana']

@@ -1,17 +1,17 @@
 import curses
 import random
-from curses import textpad
 from curses.textpad import rectangle
+from Configuraion import ConfigFile
 
 import gamelib.Items as Items
 
-from gamelib.Entities import Player, Enemy
-from gamelib.Items import MeleeWeapon, RangedWeapon
-from gamelib.Spells import BloodSpell, CombatSpell, NormalSpell
+from gamelib.Entities import Entity, Player, Enemy
+from gamelib.Items import Ammo, MeleeWeapon, RangedWeapon, UsableItem
+from gamelib.Spells import BloodSpell, CombatSpell, NormalSpell, Spell
 from cursesui.Utility import cct_len, put, draw_borders, drop_down_box, calc_pretty_bars, str_smart_split, SINGLE_ELEMENT, MULTIPLE_ELEMENTS
 
 class Action:
-    def __init__(self, parent, char, caption, picture, user, other):
+    def __init__(self, parent: 'CombatEncounter', char: str, caption: str, picture: str, user: Entity, other: Entity):
         self.parent = parent
         self.char = char
         self.caption = caption
@@ -26,14 +26,14 @@ class Action:
         return f'({self.char}) {self.caption}'
 
 class WaitAction(Action):
-    def __init__(self, parent, char, user):
+    def __init__(self, parent: 'CombatEncounter', char: str, user: Entity):
         super().__init__(parent, char, 'Wait', '..', user, None)
 
     def run(self):
         return [f'{self.user.get_cct_name_color()} {self.user.name} #normal waits.']      
 
 class MoveAction(Action):
-    def __init__(self, parent, char, caption, user, other, move_val):
+    def __init__(self, parent: 'CombatEncounter', char: str, caption: str, user: Entity, other: Entity, move_val: int):
         a = abs(move_val)
         lines = '-' if a == 1 else '='
         picture = f'{lines}>' if move_val > 0 else f'<{lines}'
@@ -65,7 +65,7 @@ class MoveAction(Action):
         return result
 
 class AttackWithoutWeaponEnemyAction(Action):
-    def __init__(self, parent, char, caption, user, other):
+    def __init__(self, parent: 'CombatEncounter', char: str, caption: str, user: Player, other: Enemy):
         super().__init__(parent, char, caption, 'XX', user, other)
 
     def run(self):
@@ -74,7 +74,7 @@ class AttackWithoutWeaponEnemyAction(Action):
         return [f'{self.user.get_cct_name_color()} {self.user.name} #normal punches {self.other.get_cct_name_color()} {self.other.name} #normal and deals #red-black {dealt_damage} #normal damage.']
 
 class AttackMeleeEnemyAction(Action):
-    def __init__(self, parent, char, caption, user, other, weapon):
+    def __init__(self, parent: 'CombatEncounter', char: str, caption: str, user: Player, other: Enemy, weapon: MeleeWeapon):
         super().__init__(parent, char, caption, 'XX', user, other)
         self.weapon = weapon
 
@@ -85,7 +85,7 @@ class AttackMeleeEnemyAction(Action):
         return [f'{self.user.get_cct_name_color()} {self.user.name} #normal attacks with {self.weapon.name} and hits {self.other.get_cct_name_color()} {self.other.name} #normal for #red-black {dealt_damage} #normal damage.']
 
 class AttackRangedEnemyAction(Action):
-    def __init__(self, parent, char, caption, user, other, weapon, ammo):
+    def __init__(self, parent: 'CombatEncounter', char: str, caption: str, user: Player, other: Enemy, weapon: RangedWeapon, ammo: Ammo):
         super().__init__(parent, char, caption, 'XX', user, other)
         self.weapon = weapon
         self.ammo = ammo
@@ -99,7 +99,7 @@ class AttackRangedEnemyAction(Action):
         return [f'{self.user.get_cct_name_color()} {self.user.name} #normal attacks with {self.weapon.name} and hits {self.other.get_cct_name_color()} {self.other.name} #normal for #red-black {dealt_damage} #normal damage.']
 
 class AttackPlayerAction(Action):
-    def __init__(self, parent, user, other):
+    def __init__(self, parent: 'CombatEncounter', user: Enemy, other: Player):
         super().__init__(parent, '?', '-', 'XX', user, other)
 
     def run(self):
@@ -111,7 +111,7 @@ class AttackPlayerAction(Action):
         return [result]
 
 class UseItemAction(Action):
-    def __init__(self, parent, char, caption, user, item):
+    def __init__(self, parent: 'CombatEncounter', char: str, caption: str, user: Entity, item: UsableItem):
         super().__init__(parent, char, caption, '-I', user, None)
         self.item = item
 
@@ -119,7 +119,7 @@ class UseItemAction(Action):
         return self.item.use(self.user)
 
 class CastSpellAction(Action):
-    def __init__(self, parent, char, caption, user, other, spell):
+    def __init__(self, parent: 'CombatEncounter', char: str, caption: str, user: Entity, other: Entity, spell: Spell):
         super().__init__(parent, char, caption, 'AV', user, other)
         self.spell = spell
 
@@ -131,7 +131,7 @@ class CastSpellAction(Action):
         raise Exception(f'ERR: can\'t cast spell {self.spell.name}')
 
 class CombatEncounter:
-    def __init__(self, attacker, defender, distance, height, width, config_file):
+    def __init__(self, attacker: Entity, defender: Entity, distance: int, height: int, width: int, config_file: ConfigFile):
         self.config_file = config_file
         
         self.chars = ['s', 'd', 'f', 'g', 'h', 'j', 'k', 'l']
@@ -421,7 +421,7 @@ class CombatEncounter:
             
             self.draw()
 
-    def add_to_combat_log(self, message):
+    def add_to_combat_log(self, message: str):
         message = '- ' + message
         self.combat_log += str_smart_split(message, self.combat_log_message_width)
         if len(self.combat_log) > self.cl_limit:
@@ -563,7 +563,7 @@ class CombatEncounter:
             result += [spell]
         return result
 
-    def get_usable_spell_display_names(self, spells):
+    def get_usable_spell_display_names(self, spells: list[Spell]):
         result = []
         for spell in spells:
             # cost = 0
@@ -680,7 +680,7 @@ class CombatEncounter:
     def player_lost(self):
         pass
 
-    def index_by_key(self, key):
+    def index_by_key(self, key: int):
         c = chr(key)
         for i in range(len(self.player_actions)):
             if self.player_actions[i].char == c:
