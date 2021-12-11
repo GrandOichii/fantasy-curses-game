@@ -1,7 +1,5 @@
 import json
-
 from cursesui.Utility import str_smart_split
-
 import gamelib.Entities as Entities
 
 class Spell:

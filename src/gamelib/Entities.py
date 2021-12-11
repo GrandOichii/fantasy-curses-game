@@ -2,10 +2,7 @@ import json
 import random
 from Configuraion import ConfigFile
 from gamelib.Items import *
-# from gamelib.Spells import *
-# import gamelib.Items as Items
 import gamelib.Spells as Spells
-# from gamelib.Spells import BloodSpell, CombatSpell, Spell
 
 class Entity:
     def __init__(self):

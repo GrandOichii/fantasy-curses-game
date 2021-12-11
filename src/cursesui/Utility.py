@@ -5,6 +5,8 @@ from math import ceil
 from os import listdir
 from os.path import isfile, join, splitext
 
+import cursesui.Elements as UIElements
+
 SINGLE_ELEMENT = 1
 MULTIPLE_ELEMENTS = 2
 
@@ -420,11 +422,12 @@ def choose_file(parent, title: str, starting_directory: str='.'):
         # clear screen
         window.clear()
 
-def show_controls_window(parent, controls: dict):
+def show_controls_window(parent: 'UIElements.Window', controls: dict):
     # TO-DO: Add scrolling
-    window = parent.window
+    window = parent.get_window()
     HEIGHT, WIDTH = window.getmaxyx()
-    controls_window_height = HEIGHT * 1 // 3
+    min_height = HEIGHT // 2
+    controls_window_height = max(min_height, len(controls) + 2)
     controls_window_width = WIDTH * 1 // 3
     controls_window_y = (HEIGHT - controls_window_height) // 2
     controls_window_x = (WIDTH - controls_window_width) // 2
@@ -435,8 +438,8 @@ def show_controls_window(parent, controls: dict):
     draw_borders(controls_window)
     put(controls_window, 0, 1, '#green-black Controls')
 
-    keys = list(controls.keys())
-    descriptions = list(controls.values())
+    descriptions = list(controls.keys())
+    keys = list(controls.values())
     description_offset = 1
 
     while True:

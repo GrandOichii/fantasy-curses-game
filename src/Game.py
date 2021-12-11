@@ -3,11 +3,10 @@ import curses.textpad as textpad
 import json
 from math import sqrt
 import os
-from Settings import SettingsMenu
 from Configuraion import ConfigFile
 
 from cursesui.Elements import Menu, Window, Button, UIElement, Widget, TextField, WordChoice, Separator
-from cursesui.Utility import calc_pretty_bars, draw_separator, message_box, cct_len, draw_borders, drop_down_box, put, MULTIPLE_ELEMENTS, str_smart_split
+from cursesui.Utility import calc_pretty_bars, draw_separator, message_box, cct_len, draw_borders, drop_down_box, put, MULTIPLE_ELEMENTS, show_controls_window, str_smart_split
 
 # import gamelib.Entities as Entities
 from gamelib.Entities import *
@@ -47,6 +46,18 @@ class GameLog:
         return self.get_splits(max_width)[-amount:]
 
 class Game:
+    controls = {
+        "Move": "ARROW KEYS",
+        "Move diagonally": "y, u, b, n",
+        "Open inventory": "i",
+        "Open command line": "~",
+        "Open tile description mode": "x",
+        "Start combat": "c",
+        "Open full log": "L",
+        "Exit and save": "Q",
+        "Interact": "E"
+    }
+
     def __init__(self, parent : Window, character_name: str, config_file: ConfigFile):
         self.parent = parent
         
@@ -146,12 +157,14 @@ class Game:
                 self.save_enemy_env_vars()
                 SaveFile.save(self.player, self.game_room.name, self.config_file.get('Saves path'), player_y=self.player_y, player_x=self.player_x, env_vars=self.env_vars, game_log_messages=self.game_log.messages)
                 break
-            # if self.debug and key == 126:
-            if key == 126:
+            if key == 126: # ~
                 update_entities = False
                 command = self.get_terminal_command()
                 self.exec_line(command, self.game_room.scripts)
-
+            if key == 63:
+                show_controls_window(self.parent, Game.controls)
+                self.draw()
+                continue
             # movement management
             y_lim = self.game_room.height
             x_lim = self.game_room.width
@@ -1126,10 +1139,10 @@ class Game:
         d = distance(self.player_y, self.player_x, enemy.y, enemy.x)
         encounter = None
         if player_is_attacking:
-            encounter = CombatEncounter(self.player, enemy, d, self.parent.HEIGHT, self.parent.WIDTH, self.config_file)
+            encounter = CombatEncounter(self.parent, self.player, enemy, d, self.config_file)
             self.game_log.add([f'#green-black {self.player.name} #normal attacks #red-black {enemy.name}#normal !'])
         else:
-            encounter = CombatEncounter(enemy, self.player, d, self.parent.HEIGHT, self.parent.WIDTH, self.config_file)
+            encounter = CombatEncounter(self.parent, enemy, self.player, d, self.config_file)
             self.game_log.add([f'#red-black {enemy.name} #normal attacks #green-black {self.player.name}!'])
         encounter.start()
 
@@ -1653,7 +1666,11 @@ class Game:
 
 class GameWindow(Window):
     def __init__(self, window, config_file: ConfigFile):
-        self.universal_menu_controls = {"ESC": "Close app", "ENTER": "Click button", "UP/DOWN": "Move between buttons"}
+        self.universal_menu_controls = {
+            "Close app": "ESC", 
+            "Click button": "ENTER", 
+            "Move between buttons": "UP/DOWN"
+        }
         super().__init__(window)
         if self.WIDTH < 135:
             message_box(self, f'Termainal window too small, you may encounter bugs', ['Ok'])
@@ -1786,9 +1803,6 @@ class GameWindow(Window):
         message_box(self, '#red-black Not implemented yet!', ['Ok'])
         return
         # TO-DO: change to settings window
-        self.window.clear()
-        SettingsMenu(self.window, self.config_file)
-        self.window.clear()
 
     def to_character_creation_action(self):
         self.character_creation_menu.unfocus_all()

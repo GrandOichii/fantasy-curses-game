@@ -1,11 +1,21 @@
 import curses
 from cursesui.Elements import Window
 
-from cursesui.Utility import cct_len, cct_real_str, draw_borders, draw_separator, message_box, put
+from cursesui.Utility import cct_len, cct_real_str, draw_borders, draw_separator, message_box, put, show_controls_window
 from gamelib.Entities import Player
 from gamelib.Items import CountableItem, Item
 
 class Trade:
+    controls = {
+        "Move selected cursor": "UP/DOWN",
+        "Switch windows": "LEFT/RIGHT",
+        "Sell/Buy item": "SPACE",
+        "Finish trading": "ENTER",
+        "Cancel trading": "ESC",
+        "Switch modes": "TAB",
+        "Open item description": "D",
+    }
+
     def __init__(self, parent: Window, player: Player, vendor_name: str, vendor_gold: int, vendor_items: list[Item], vendor_countable_items: list[CountableItem]):
         self.parent = parent
         self.HEIGHT, self.WIDTH = parent.window.getmaxyx()
@@ -65,7 +75,7 @@ class Trade:
             key = self.get_key()
             if key == 27: # ESC
                 return False
-            if key == 63: # ?
+            if key == 68: # D
                 self.display_current_item_description()
             if key == 32: # SPACE
                 self.move_selected_item()
@@ -77,6 +87,8 @@ class Trade:
                 self.move_up()
             if key == 258: # DOWN
                 self.move_down()
+            if key == 63: # ?
+                show_controls_window(self.parent, Trade.controls)
             if key == 10: # ENTER
                 # finish trading
                 if self.get_player_final_gold() < 0:

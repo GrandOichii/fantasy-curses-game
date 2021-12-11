@@ -2,13 +2,14 @@ import curses
 import random
 from curses.textpad import rectangle
 from Configuraion import ConfigFile
+from cursesui.Elements import Window
 
 import gamelib.Items as Items
 
 from gamelib.Entities import Entity, Player, Enemy
 from gamelib.Items import Ammo, MeleeWeapon, RangedWeapon, UsableItem
 from gamelib.Spells import BloodSpell, CombatSpell, NormalSpell, Spell
-from cursesui.Utility import cct_len, put, draw_borders, drop_down_box, calc_pretty_bars, str_smart_split, SINGLE_ELEMENT, MULTIPLE_ELEMENTS
+from cursesui.Utility import cct_len, put, draw_borders, drop_down_box, calc_pretty_bars, str_smart_split, SINGLE_ELEMENT, show_controls_window
 
 class Action:
     def __init__(self, parent: 'CombatEncounter', char: str, caption: str, picture: str, user: Entity, other: Entity):
@@ -131,12 +132,17 @@ class CastSpellAction(Action):
         raise Exception(f'ERR: can\'t cast spell {self.spell.name}')
 
 class CombatEncounter:
-    def __init__(self, attacker: Entity, defender: Entity, distance: int, height: int, width: int, config_file: ConfigFile):
+    controls = {
+        "Move selected action": "UP/DOWN",
+        "Pick action": "ENTER"
+    }
+    
+    def __init__(self, parent: Window, attacker: Entity, defender: Entity, distance: int, config_file: ConfigFile):
+        self.parent = parent
         self.config_file = config_file
         
         self.chars = ['s', 'd', 'f', 'g', 'h', 'j', 'k', 'l']
-        self.HEIGHT = height
-        self.WIDTH = width
+        self.HEIGHT, self.WIDTH = parent.get_window().getmaxyx()
 
         self.calc_height_width()
 
@@ -409,6 +415,8 @@ class CombatEncounter:
                         self.add_to_combat_log(r)
                     # last
                     self.update_player_options()
+            if key == 63: # ?
+                show_controls_window(self.parent, CombatEncounter.controls)
             index = self.index_by_key(key)
             if index != -1:
                 self.action_id = index
