@@ -60,8 +60,8 @@ class Game:
             raise Exception(f'ERR: save file of character with name {character_name} not found in {sp}')
         self.player = Player.from_json(data['player'], self.config_file)
         self.env_vars = data['env_vars']
+        self.last_command = ''
         self.game_room = Room.Room.by_name(data['room_name'], self.config_file, self.env_vars)
-        
 
         self.player_y, self.player_x = self.game_room.player_spawn_y, self.game_room.player_spawn_x
         if 'player_y' in data:
@@ -211,6 +211,10 @@ class Game:
                         self.interact_with_chest(i_tile)
                     if isinstance(i_tile, Room.HiddenTile) and isinstance(i_tile.actual_tile, Room.ChestTile):
                         self.interact_with_chest(i_tile.actual_tile)
+                    if isinstance(i_tile, Room.CookingPotTile):
+                        self.initiate_cooking()
+                    if isinstance(i_tile, Room.HiddenTile) and isinstance(i_tile.actual_tile, Room.CookingPotTile):
+                        self.initiate_cooking()
                     if isinstance(i_tile, Room.ScriptTile):
                         self.exec_script(i_tile.script_name, self.game_room.scripts)
                     if isinstance(i_tile, Room.HiddenTile) and isinstance(i_tile.actual_tile, Room.ScriptTile):
@@ -267,6 +271,28 @@ class Game:
 
     def display_error(self, error_message):
         return message_box(self.parent, error_message, ['Ok'], width=self.tile_window_width - 4, ypos=2, xpos=2, border_color='red-black')
+
+    def notify(self, message, author):
+        min_height = 5
+        window_width = self.tile_window_width - 2
+        messages = str_smart_split(message, window_width - 2)
+        window_height = max(len(messages) + 2, min_height)
+        window_y = self.tile_window_height - window_height - 1
+        window_x = 2
+        window = curses.newwin(window_height, window_width, window_y, window_x)
+        draw_borders(window)
+        if author:
+            put(window, 0, 1, author)
+        for i in range(len(messages)):
+            put(window, 1 + i, 1, messages[i])
+        continue_str = '<   #black-white V#normal    >'
+        cs_x = window_width // 2 - cct_len(continue_str) // 2
+        put(window, window_height - 1, cs_x, continue_str)
+        while True:
+            key = window.getch()
+            if key == 10:
+                break
+        self.draw()
 
     def check_for_encounters(self):
         encounter_ready = False
@@ -487,6 +513,9 @@ class Game:
         # clear the leftovers from the drop down box borders
         for i in range(self.parent.HEIGHT):
             self.window.addstr(i, self.tile_window_width + 1, ' ')
+
+    def initiate_cooking(self):
+        self.tile_message_box('#red-black Cooking is not implemented', ['Ok'])
 
     def get_display_names(self, items):
         result = []
@@ -1166,7 +1195,7 @@ class Game:
         # display name
         put(self.player_info_window, y + 0, x, f'Name: #green-black {self.player.name}')
         # display class
-        put(self.player_info_window, y + 1, x, f'Name: #green-black {self.player.class_name}')
+        put(self.player_info_window, y + 1, x, f'Class: #green-black {self.player.class_name}')
         # display gold
         put(self.player_info_window, y + 2, x, f'Gold: #yellow-black {self.player.gold}')
         # display armor rating
@@ -1283,6 +1312,7 @@ class Game:
             return False
         words = line.split()
         command = words[0]
+        self.last_command = command
         if command == 'run':
             script_name = words[1]
             return self.exec_script(script_name, scripts)
@@ -1389,6 +1419,12 @@ class Game:
             self.draw_tile_window()
             self.tile_window.refresh()
             return False
+        if command == 'notify':
+            var = ' '.join(words[1:])
+            message = self.get_true_value(var)
+            author = self.get_env_var('_notify_name')
+            self.notify(message, author)
+            return False
         if command == 'say':
             raw_replies = words[1].split('|')
             replies = []
@@ -1493,16 +1529,27 @@ class Game:
             if words[1] == 'in':
                 item_name = self.get_env_var(words[0])
                 container_code = words[2]
-                items = self.game_room.container_info[container_code]
-                do_if = False
-                for item in items:
-                    if item.name == item_name:
-                        code = items[item]
-                        code_value = self.get_env_var(code)
-                        if code_value == None: 
+                if container_code == 'player.inventory':
+                    do_if = False
+                    for item in self.player.items:
+                        if item.name == item_name:
                             do_if = True
-                        elif code_value != True and code_value != 0:
+                            break
+                    for item in self.player.countable_items:
+                        if item.name == item_name:
                             do_if = True
+                            break
+                else:
+                    items = self.game_room.container_info[container_code]
+                    do_if = False
+                    for item in items:
+                        if item.name == item_name:
+                            code = items[item]
+                            code_value = self.get_env_var(code)
+                            if code_value == None: 
+                                do_if = True
+                            elif code_value != True and code_value != 0:
+                                do_if = True
             if reverse != do_if:
                 return self.exec_line(' '.join(words[words.index('then') + 1:]), scripts)
             return False
@@ -1575,6 +1622,9 @@ class Game:
             if script_line == '':
                 continue
             quit = self.exec_line(script_line, scripts)
+            if self.last_command == 'return':
+                self.last_command = ''
+                return False
             if quit:
                 return True
             

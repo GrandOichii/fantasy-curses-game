@@ -68,17 +68,17 @@ sleep 500
 move camera 0 3
 ---
 chests_test_friend_chest:
-Iron Helmet
-Iron Armor
-Iron Leggins
-10 Wooden Arrow
+Iron helmet
+Iron armor
+Iron leggins
+10 Wooden arrow
 
 oskar_trade_items:
-Iron Helmet
-Iron Armor
-Iron Helmet
-Iron Dagger
+Iron helmet
+Iron armor
+Iron helmet
+Iron dagger
 Spellbook of Fireball
-10 Wooden Arrow
-2 Small Health Potion
+10 Wooden arrow
+2 Small health potion
 ---

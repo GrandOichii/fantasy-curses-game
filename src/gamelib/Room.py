@@ -1,5 +1,5 @@
 import json
-from os import listdir
+from os import initgroups, listdir
 from os.path import isfile, join, splitext
 from gamelib.Entities import Enemy
 
@@ -32,6 +32,8 @@ class Tile:
                 return PressurePlateTile(tile_name, tile_actual_char, tile_data)
             if tile_name == 'torch':
                 return TorchTile(tile_name, tile_actual_char, True, False, tile_data)
+            if tile_name == 'cooking pot':
+                return CookingPotTile(tile_actual_char)
             if tile_name == 'script tile':
                 tile_data = tile_data.split()
                 return ScriptTile(tile_data[0], tile_actual_char, tile_data[1])
@@ -82,6 +84,10 @@ class ScriptTile(Tile):
     def __init__(self, name, char, script_name):
         super().__init__(name, char, True, True)
         self.script_name = script_name
+
+class CookingPotTile(Tile):
+    def __init__(self, char):
+        super().__init__('Cooking pot', char, True, True)
 
 class Room:
     def __init__(self, name, height, width, player_spawn_char='@'):

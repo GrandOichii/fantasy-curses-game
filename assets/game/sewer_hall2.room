@@ -5,6 +5,7 @@
 visible_range=4
 ---
 1 D door sewer_hall1 sewer_halls12_connector
+2 D door sewer_exit_room sewer_hall2_to_exit_room_connector
 I I torch 5
 o o script_tile pipe pipe_interact
 ---

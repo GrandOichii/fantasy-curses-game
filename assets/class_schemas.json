@@ -8,11 +8,11 @@
         "DEX": 10,
         "INT": 10,
         "items": [
-            "Iron Helmet",
-            "Iron Armor",
-            "Iron Leggins",
-            "Iron Sword",
-            "Iron Shield"
+            "Iron helmet",
+            "Iron armor",
+            "Iron leggins",
+            "Iron sword",
+            "Iron shield"
         ],
         "countable_items": {}
     },
@@ -25,8 +25,8 @@
         "DEX": 12,
         "INT": 15,
         "items": [
-            "Mage's Hat",
-            "Mage's Robe",
+            "Mage's hat",
+            "Mage's robe",
             "Spellbook of Fireball"
         ],
         "countable_items": {}
@@ -41,12 +41,12 @@
         "INT": 12,
         "items": [
             "Hood",
-            "Leather Armor",
-            "Long Bow",
-            "Iron Dagger"
+            "Leather armor",
+            "Long bow",
+            "Iron dagger"
         ],
         "countable_items": {
-            "Wooden Arrow": 20
+            "Wooden arrow": 20
         }
     }
 }

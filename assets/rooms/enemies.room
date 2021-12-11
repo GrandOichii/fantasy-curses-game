@@ -23,8 +23,8 @@ set yes_result "Yes"
 if _mb_result == yes_result then revive r1
 ---
 potion_chest:
-10 Small Health Potion
-10 Small Mana Potion
+10 Small health potion
+10 Small mana potion
 ---
 r1:
 e_type=rat

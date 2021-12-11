@@ -14,7 +14,7 @@
         "attack_format": "The rat lunges and deals #red-black {} #normal damage to #green-black {}",
         "statuses": [],
         "reward_items": {
-            "Rat Meat": 50
+            "Rat meat": 50
         },
         "reward_countable_items": {
             
@@ -60,7 +60,7 @@
         "attack_format": "The stranger attacks with his dagger and deals #red-black {} #normal damage to #green-black {}",
         "statuses": [],
         "reward_items": {
-
+            "Iron dagger": 40
         },
         "reward_countable_items": {
             
@@ -85,10 +85,10 @@
         "reward_items": {
             "Hood": 10,
             "Spellbook of Slow": 4,
-            "Rat Meat": 20
+            "Rat meat": 20
         },
         "reward_countable_items": {
-            "Small Health Potion": 1
+            "Small health potion": 1
         },
         "min_reward_gold": 3,
         "max_reward_gold": 5

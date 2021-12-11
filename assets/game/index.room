@@ -83,26 +83,29 @@ mb ok "Not implemented yet!"
 stop
 
 fight_with_stranger:
-set iron_dagger_str "Iron Dagger"
+set iron_dagger_str "Iron dagger"
 if iron_dagger_str in stranger_trade_items then fight stranger_enemy_dagger
 if not iron_dagger_str in stranger_trade_items then fight stranger_enemy_fists
+set log_message "#green-black "
+add log_message player.name
+add log_message " #normal defeats #red-black Sewer Stranger#normal !"
 say <agree> "ALRIGHT, ALRIGHT. You beat me to a pulp, the treasure is yours, leave me alone."
 set sewer_stranger_beat_up true
 stop
 
 ---
 stranger_trade_items:
-Iron Dagger
+Iron dagger
 Spellbook of Slow
-2 Small Health Potion
-2 Small Mana Potion
+3 Jerky
+2 Cheese
 
 hidden_chest_1_contents:
 30 Gold
 
 hidden_chest_2_contents:
-5 Small Health Potion
-5 Small Mana Potion
+3 Small health potion
+5 Small mana potion
 ---
 stranger_enemy_dagger:
 e_type=Sewer Stranger(Dagger)

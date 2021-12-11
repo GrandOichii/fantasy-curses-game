@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QAction, QApplication, QFileDialog, QHBoxLayout, QIn
 
 import sys
 
-from PyQt5.sip import delete
+# from PyQt5.sip import delete
 
 def window():
     app = QApplication([])
@@ -577,8 +577,5 @@ class MainAppWindow(QMainWindow):
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec_()
 
-
 if __name__ == '__main__':
     window()
-
-#self.card_image_label.setStyleSheet('border: 1px solid black')

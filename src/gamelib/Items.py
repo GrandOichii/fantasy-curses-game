@@ -18,6 +18,8 @@ class Item:
             return ManaPotion()
         if t == 'spell book':
             return SpellBook()
+        if t == 'food':
+            return Food()
         return Item()
 
     def get_base_items(names, path):
@@ -53,6 +55,7 @@ class Item:
         self.name = ''
         self.itype = 'item'
         self.price = 0
+        self.is_ingredient = False
         self.description = ''
 
     def __str__(self):
@@ -246,6 +249,16 @@ class UsableItem(CountableItem):
     def use(self, entity):
         self.amount -= 1
 
+class Food(UsableItem):
+    def __init__(self):
+        super().__init__()
+        self.restores = 0
+
+    def use(self, entity):
+        super().use(entity)
+        entity.add_health(self.restores)
+        return [f'{entity.get_cct_name_color()} {entity.name} #normal eats the {self.name} and restores #red-black {self.restores} #normal health.']
+
 class HealthPotion(UsableItem):
     def __init__(self):
         super().__init__()
@@ -254,7 +267,7 @@ class HealthPotion(UsableItem):
     def use(self, entity):
         super().use(entity)
         entity.add_health(self.restores)
-        return [f'{entity.get_cct_name_color()} {entity.name} #normal drinks {self.name} and restores #red-black {self.restores} #normal health']
+        return [f'{entity.get_cct_name_color()} {entity.name} #normal drinks {self.name} and restores #red-black {self.restores} #normal health.']
 
 class ManaPotion(UsableItem):
     def __init__(self):

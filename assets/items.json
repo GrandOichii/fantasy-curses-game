@@ -1,12 +1,203 @@
 {
-    "Rat Meat": {
-        "name": "Rat Meat",
-        "itype": "dubious food",
+    "Crab apple": {
+        "name": "Crab apple",
+        "itype": "food",
         "price": 2,
-        "description": "Meat from a stinky sewer rat. Can't do anything interesting with it."
+        "description": "A regular apple.",
+        "is_ingredient": true,
+        "restores": 2
     },
-    "Iron Helmet": {
-        "name": "Iron Helmet",
+    "A bunch of grapes": {
+        "name": "A bunch of grapes",
+        "itype": "food",
+        "price": 2,
+        "description": "A cluster of grapes.",
+        "is_ingredient": true,
+        "restores": 2
+    },
+    "Pomegranate": {
+        "name": "Pomegranate",
+        "itype": "food",
+        "price": 3,
+        "description": "A pomegranate.",
+        "is_ingredient": true,
+        "restores": 3
+    },
+    "Peach": {
+        "name": "Peach",
+        "itype": "food",
+        "price": 3,
+        "description": "A delicious peach.",
+        "is_ingredient": true,
+        "restores": 3
+    },
+    "Plum": {
+        "name": "Plum",
+        "itype": "food",
+        "price": 2,
+        "description": "A plum.",
+        "is_ingredient": true,
+        "restores": 2
+    },
+    "Pear": {
+        "name": "Pear",
+        "itype": "food",
+        "price": 2,
+        "description": "A pear.",
+        "is_ingredient": true,
+        "restores": 2
+    },
+    "Figue": {
+        "name": "Figue",
+        "itype": "food",
+        "price": 1,
+        "description": "Wtf are figues.",
+        "is_ingredient": true,
+        "restores": 1
+    },
+    "Cabbage": {
+        "name": "Cabbage",
+        "itype": "food",
+        "price": 2,
+        "description": "A cabbage.",
+        "is_ingredient": true,
+        "restores": 2
+    },
+    "Turnip": {
+        "name": "Turnip",
+        "itype": "food",
+        "price": 1,
+        "description": "A turnip.",
+        "is_ingredient": true,
+        "restores": 1
+    },
+    "Raw rabbit meat": {
+        "name": "Raw rabbit meat",
+        "itype": "food",
+        "price": 1,
+        "description": "Meat harvested from a freshly murdered rabbit. Don't worry about it going bad.",
+        "is_ingredient": true,
+        "restores": 1
+    },
+    "Raw boar meat": {
+        "name": "Raw boar meat",
+        "itype": "food",
+        "price": 2,
+        "description": "Meat from a boar. Boars are dangerous creatures, it was quite hard to get it.",
+        "is_ingredient": true,
+        "restores": 2
+    },
+    "Raw deer meat": {
+        "name": "Raw deer meat",
+        "itype": "food",
+        "price": 2,
+        "description": "Very precious meat.",
+        "is_ingredient": true,
+        "restores": 2
+    },
+    "Cheese": {
+        "name": "Cheese",
+        "itype": "food",
+        "price": 2,
+        "description": "I don't like cheese but people want it so here you go.",
+        "is_ingredient": true,
+        "restores": 2
+    },
+    "Dried apples": {
+        "name": "Dried apples",
+        "itype": "food",
+        "price": 3,
+        "description": "A sweet treat. Made by drying apples (duh).",
+        "is_ingredient": false,
+        "restores": 4
+    },
+    "Dried plums": {
+        "name": "Dried plums",
+        "itype": "food",
+        "price": 2,
+        "description": "A sweer treat. Made by drying plums (duh).",
+        "is_ingredient": false,
+        "restores": 0
+    },
+    "Salami": {
+        "name": "Salami",
+        "itype": "food",
+        "price": 10,
+        "description": "The meat for the truly priveleged.",
+        "is_ingredient": false,
+        "restores": 8
+    },
+    "Jerky": {
+        "name": "Jerky",
+        "itype": "food",
+        "price": 4,
+        "description": "Tasty, long lasting meat. (although every type of food here is long lasting)",
+        "is_ingredient": false,
+        "restores": 5
+    },
+    "Ham": {
+        "name": "Ham",
+        "itype": "food",
+        "price": 4,
+        "description": "It's just ham.",
+        "is_ingredient": false,
+        "restores": 5
+    },
+    "Lard": {
+        "name": "Dried apples",
+        "itype": "food",
+        "price": 2,
+        "description": "Very useful in cooking.",
+        "is_ingredient": true,
+        "restores": 1
+    },
+    "Butter": {
+        "name": "Butter",
+        "itype": "food",
+        "price": 2,
+        "description": "A stick of butter. Can eat it raw, but is rather useful for cooking.",
+        "is_ingredient": true,
+        "restores": 2
+    },
+    "Hardtack": {
+        "name": "Hardtack",
+        "itype": "food",
+        "price": 2,
+        "description": "Tasteless crackers.",
+        "is_ingredient": true,
+        "restores": 2
+    },
+    "Dubious food": {
+        "name": "Dubious food",
+        "itype": "food",
+        "price": 1,
+        "description": "Food of dubious origin. Safe to eat, but won't restore much health",
+        "is_ingredient": false,
+        "restores": 1
+    },
+    "Pouch of salt": {
+        "name": "Pouch of salt",
+        "itype": "item",
+        "price": 2,
+        "description": "A pouch of salt. Very useful in cooking.",
+        "is_ingredient": true
+    },
+    "Pouch of pepper": {
+        "name": "Pouch of pepper",
+        "itype": "item",
+        "price": 2,
+        "description": "A pouch of pepper. Very useful in cooking.",
+        "is_ingredient": true
+    },
+    "Rat meat": {
+        "name": "Rat meat",
+        "itype": "rat meat",
+        "price": 2,
+        "description": "Meat from a stinky sewer rat. Can't do anything interesting with it.",
+        "is_ingredient": false
+    },
+    "Iron helmet": {
+        "name": "Iron helmet",
         "itype": "armor",
         "mods": {
             "armor": 3
@@ -17,10 +208,11 @@
             "STR": 14
         },
         "price": 10,
-        "description": "An iron helmet."
+        "description": "An iron helmet.",
+        "is_ingredient": false
     },
-    "Iron Armor": {
-        "name": "Iron Armor",
+    "Iron armor": {
+        "name": "Iron armor",
         "itype": "armor",
         "mods": {
             "armor": 4
@@ -31,10 +223,11 @@
             "STR": 14
         },
         "price": 20,
-        "description": "An iron plated armor."
+        "description": "An iron plated armor.",
+        "is_ingredient": false
     },
-    "Iron Leggins": {
-        "name": "Iron Leggins",
+    "Iron leggins": {
+        "name": "Iron leggins",
         "itype": "armor",
         "mods": {
             "armor": 2
@@ -45,9 +238,10 @@
             "STR": 14
         },
         "price": 8,
-        "description": "A pair of iron leggins."
+        "description": "A pair of iron leggins.",
+        "is_ingredient": false
     },
-    "Mage's Hat": {
+    "Mage's hat": {
         "name": "Mage's Hat",
         "itype": "armor",
         "mods": {
@@ -59,9 +253,10 @@
         "gives_statuses": [],
         "requires": {},
         "price": 15,
-        "description": "A silly hat, pulsates with magical energy."
+        "description": "A silly hat, pulsates with magical energy.",
+        "is_ingredient": false
     },
-    "Mage's Robe": {
+    "Mage's robe": {
         "name": "Mage's Robe",
         "itype": "armor",
         "mods": {
@@ -73,7 +268,8 @@
         "gives_statuses": [],
         "requires": {},
         "price": 20,
-        "description": "A long, brown robe, pulsates with magical energy."
+        "description": "A long, brown robe, pulsates with magical energy.",
+        "is_ingredient": false
     },
     "Hood": {
         "name": "Hood",
@@ -87,10 +283,11 @@
             "fast"
         ],
         "price": 5,
-        "description": "A regular hood."
+        "description": "A regular hood.",
+        "is_ingredient": false
     },
-    "Leather Armor": {
-        "name": "Leather Armor",
+    "Leather armor": {
+        "name": "Leather armor",
         "itype": "armor",
         "mods": {
             "armor": 2
@@ -101,10 +298,41 @@
             "STR": 10
         },
         "price": 10,
-        "description": "A piece of lether. Protects the wearer's body somewhat."
+        "description": "A piece of lether. Protects the wearer's body somewhat.",
+        "is_ingredient": false
     },
-    "Iron Sword": {
-        "name": "Iron Sword",
+    "Steel armor": {
+        "name": "Steel armor",
+        "itype": "armor",
+        "mods": {
+            "armor": 4
+        },
+        "slot": "BODY",
+        "gives_statuses": [],
+        "requires": {
+            "STR": 18
+        },
+        "price": 20,
+        "description": "A protective gament made of steel plates",
+        "is_ingredient": false
+    },
+    "Brigandine": {
+        "name": "Brigandine",
+        "itype": "armor",
+        "mods": {
+            "armor": 5
+        },
+        "slot": "BODY",
+        "gives_statuses": [],
+        "requires": {
+            "STR": 18
+        },
+        "price": 25,
+        "description": "A protective garment made of steel plates and leather. Better than Steel Armor.",
+        "is_ingredient": false
+    },
+    "Iron sword": {
+        "name": "Iron sword",
         "itype": "melee",
         "base_damage": 5,
         "max_mod": 3,
@@ -116,10 +344,11 @@
             "STR": 14
         },
         "price": 10,
-        "description": "A trusty iron sword. Deals moderate damage."
+        "description": "A trusty iron sword. Deals moderate damage.",
+        "is_ingredient": false
     },
-    "Iron Dagger": {
-        "name": "Iron Dagger",
+    "Iron dagger": {
+        "name": "Iron dagger",
         "itype": "melee",
         "base_damage": 2,
         "max_mod": 3,
@@ -131,10 +360,11 @@
             "STR": 10
         },
         "price": 6,
-        "description": "A regular iron dagger. Used for stealthfully slitting throats."
+        "description": "A regular iron dagger. Used for stealthfully slitting throats.",
+        "is_ingredient": false
     },
-    "Iron Shield": {
-        "name": "Iron Shield",
+    "Iron shield": {
+        "name": "Iron shield",
         "itype": "melee",
         "base_damage": 1,
         "max_mod": 1,
@@ -148,10 +378,11 @@
             "STR": 14
         },
         "price": 10,
-        "description": "An iron shield. A bit unwieldy."
+        "description": "An iron shield. A bit unwieldy.",
+        "is_ingredient": false
     },
-    "Long Bow": {
-        "name": "Long Bow",
+    "Long bow": {
+        "name": "Long bow",
         "itype": "ranged",
         "slot": "ARMS",
         "base_damage": 6,
@@ -164,7 +395,8 @@
         },
         "mods": {},
         "price": 10,
-        "description": "Just a regular long bow. Can use any type of arrow."
+        "description": "Just a regular long bow. Can use any type of arrow.",
+        "is_ingredient": false
     },
     "temp": {
         "name": "temp",
@@ -178,42 +410,48 @@
         "requires": {},
         "mods": {},
         "price": 1,
-        "description": "temp weapon"
+        "description": "temp weapon",
+        "is_ingredient": false
     },
-    "Wooden Arrow": {
-        "name": "Wooden Arrow",
+    "Wooden arrow": {
+        "name": "Wooden arrow",
         "itype": "ammo",
         "damage": 1,
         "type": "arrow",
         "price": 2,
-        "description": "The simplest type of arrow there could be."
+        "description": "The simplest type of arrow there could be.",
+        "is_ingredient": false
     },
-    "Iron Arrow": {
-        "name": "Iron Arrow",
+    "Iron arrow": {
+        "name": "Iron arrow",
         "itype": "ammo",
         "damage": 3,
         "type": "arrow",
         "price": 5,
-        "description": "An arrow with a serrated iron tip. Deals moderate damage."
+        "description": "An arrow with a serrated iron tip. Deals moderate damage.",
+        "is_ingredient": false
     },
-    "Small Health Potion": {
-        "name": "Small Health Potion",
+    "Small health potion": {
+        "name": "Small health potion",
         "itype": "health potion",
         "restores": 10,
-        "price": 5,
-        "description": "A small bottle of eliksir, restores a little amount of health."
+        "price": 10,
+        "description": "A small bottle of eliksir, restores a little amount of health.",
+        "is_ingredient": false
     },
-    "Small Mana Potion": {
-        "name": "Small Mana Potion",
+    "Small mana potion": {
+        "name": "Small mana potion",
         "itype": "mana potion",
         "restores": 15,
         "price": 4,
-        "description": "A small bottle of eliksir, restores a little amount of mana."
+        "description": "A small bottle of eliksir, restores a little amount of mana.",
+        "is_ingredient": false
     },
     "Spellbook of Fireball": {
         "name": "Spellbook of Fireball",
         "itype": "spell book",
         "description": "Read this spell book to learn Fireball.",
+        "is_ingredient": false,
         "spell_names": ["Fireball"],
         "price": 50,
         "int_to_learn": 12
@@ -222,6 +460,7 @@
         "name": "Spellbook of Heal",
         "itype": "spell book",
         "description": "Read this spell book to learn Heal.",
+        "is_ingredient": false,
         "spell_names": ["Heal"],
         "price": 50,
         "int_to_learn": 12
@@ -230,6 +469,7 @@
         "name": "Spellbook of Boost",
         "itype": "spell book",
         "description": "Read this spell book to learn Boost.",
+        "is_ingredient": false,
         "spell_names": ["Boost"],
         "price": 40,
         "int_to_learn": 12
@@ -238,6 +478,7 @@
         "name": "Spellbook of Slow",
         "itype": "spell book",
         "descrition": "Read this spell book to learn how to slow down an enemy.",
+        "is_ingredient": false,
         "spell_names": ["Slow Down"],
         "price": 30,
         "int_to_learn": 12
