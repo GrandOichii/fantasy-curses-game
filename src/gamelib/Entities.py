@@ -13,7 +13,6 @@ class Entity:
         self.max_mana = 0
         self.description = ''
         self.statuses = []
-        self.fell = False
 
     def get_cct_name_color(self):
         return '#normal'
@@ -43,6 +42,9 @@ class Entity:
         return False
 
     def add_statuses(self, statuses: list[str]):
+        pass
+
+    def remove_status(self, status: str):
         pass
 
     def add_health(self, amount: int):
@@ -94,12 +96,14 @@ class Enemy(Entity):
     def has_status(self, status: str):
         return status in self.statuses
 
+    def remove_status(self, status: str):
+        self.statuses.remove(status)
+
     def from_enemy_name(name, config_file: ConfigFile):
         enemy_schemas_path = config_file.get('Enemy schemas path')
         result = Enemy()
         data = json.loads(open(enemy_schemas_path, 'r').read())[name]
         result.__dict__ = data
-        result.fell = False
         return result
 
     def get_rewards(self, config_file: ConfigFile):
@@ -207,6 +211,9 @@ class Player(Entity):
         if status in self.temporary_statuses:
             return True
         return False
+
+    def remove_status(self, status: str):
+        self.temporary_statuses.remove(status)
 
     def add_item(self, item: Item):
         if item == None:

@@ -38,7 +38,7 @@ class StandUpAction(Action):
         super().__init__(parent, char, 'Stand up', '!!', user, None)
 
     def run(self):
-        self.user.fell = False
+        self.user.remove_status('Fallen')
         return [f'{self.user.get_cct_name_color()} {self.user.name} #normal stands up.']      
 
 class MoveAction(Action):
@@ -89,7 +89,7 @@ class MoveAction(Action):
         # calculate chance of falling
         if random.randint(0, 100) < MoveAction.calculate_fall_chance(self.user, self.move_val):
             # user tripped
-            self.user.fell = True
+            self.user.add_statuses(['Fallen'])
             result += [f'{self.user.get_cct_name_color()} {self.user.name} #red-black trips#normal !']
         return result
 
@@ -222,7 +222,7 @@ class CombatEncounter:
         player = self.get_player()
         enemy = self.get_enemy()
         char_i = 0
-        if player.fell:
+        if player.has_status('Fallen'):
             self.player_actions += [StandUpAction(self, 'w', player)]
             return
         if player.get_combat_range() >= self.distance:
@@ -633,7 +633,7 @@ class CombatEncounter:
 
     def get_enemy_action(self):
         enemy = self.get_enemy()
-        if enemy.fell:
+        if enemy.has_status('Fallen'):
             return StandUpAction(self, '!!', enemy)
         if enemy.range >= self.distance:
             return AttackPlayerAction(self, enemy, self.get_player())
