@@ -242,7 +242,7 @@
         "is_ingredient": false
     },
     "Mage's hat": {
-        "name": "Mage's Hat",
+        "name": "Mage's hat",
         "itype": "armor",
         "mods": {
             "armor": 1,
@@ -257,7 +257,7 @@
         "is_ingredient": false
     },
     "Mage's robe": {
-        "name": "Mage's Robe",
+        "name": "Mage's robe",
         "itype": "armor",
         "mods": {
             "armor": 1,

@@ -56,7 +56,6 @@ def _update_color_regex():
     b_colors_regex = b_colors_regex[:-1]
     color_regex = f'#(({f_colors_regex})-({b_colors_regex})|normal) ([^#]+)'
 
-# init colors
 def init_colors():
     _add_color_combination('red', 'black')
     _add_color_combination('green', 'black')
@@ -80,6 +79,9 @@ def pos_neg_int(n: int):
     if n > 0:
         return f'+{n}'
     return str(n)
+
+def split_dict(d: dict):
+    return list(d.keys()), list(d.values())
 
 def calc_pretty_bars(amount: int, max_amount: int, bar_length: int):
     if max_amount == 0:
@@ -122,7 +124,6 @@ def draw_separator(window, y: int, color_pair: str='normal'):
     if flag:
         window.attroff(curses.color_pair(color_pair_nums[color_pair]))
 
-# TO-DO: fix spaces
 def str_smart_split(message: str, max_width: int):
     message = '#normal ' + message
     split = re.findall(color_regex, message)

@@ -1,8 +1,10 @@
 import json
 import random
 from Configuraion import ConfigFile
+# from gamelib.Combat import Status
 from gamelib.Items import *
 import gamelib.Spells as Spells
+import gamelib.Combat as Combat
 
 class Entity:
     def __init__(self):
@@ -12,7 +14,6 @@ class Entity:
         self.mana = 0
         self.max_mana = 0
         self.description = ''
-        self.statuses = []
 
     def get_cct_name_color(self):
         return '#normal'
@@ -41,10 +42,16 @@ class Entity:
     def has_status(self, status: str):
         return False
 
-    def add_statuses(self, statuses: list[str]):
+    def add_statuses(self, statuses: list['Combat.Status']):
         pass
 
     def remove_status(self, status: str):
+        pass
+
+    def update_statuses(self):
+        pass
+
+    def get_status_display_names(self):
         pass
 
     def add_health(self, amount: int):
@@ -90,14 +97,37 @@ class Enemy(Entity):
     def get_armor(self):
         return self.armor
 
-    def add_statuses(self, statuses: list[str]):
-        self.statuses += statuses
+    def add_statuses(self, statuses: list['Combat.Status']):
+        # self.statuses += statuses
+        s_names = [s.name for s in self.statuses]
+        for status in statuses:
+            if not status.name in s_names:
+                self.statuses += [status]
 
-    def has_status(self, status: str):
-        return status in self.statuses
+    def has_status(self, status_name: str):
+        return status_name in [status.name for status in self.statuses]
 
-    def remove_status(self, status: str):
-        self.statuses.remove(status)
+    def remove_status(self, status_name: str):
+        self.statuses = [status for status in self.statuses if not status.name == status_name]
+        # for status in self.statuses:
+        #     if status.name == status_name:
+        #         self.temporary_statuses.remove(status)
+        #         return
+
+    def update_statuses(self):
+        for status in self.statuses:
+            if status.duration != -1:
+                status.duration -= 1
+        self.statuses = [status for status in self.statuses if status.duration > 0]
+
+    def get_status_display_names(self):
+        result = []
+        for status in self.statuses:
+            line = status.name
+            if status.duration != -1:
+                line += f' ({status.duration})'
+            result += [line]
+        return result
 
     def from_enemy_name(name, config_file: ConfigFile):
         enemy_schemas_path = config_file.get('Enemy schemas path')
@@ -177,14 +207,6 @@ class Player(Entity):
         for item in rewards['countable_items']:
             self.add_item(item)
 
-    def get_statuses(self):
-        result = list(self.temporary_statuses)
-        for key in self.equipment:
-            item_i = self.equipment[key]
-            if item_i != None:
-                result += self.items[item_i].gives_statuses
-        return result 
-
     def learn_spells(self, spell_names: list[str], spells_path: str):
         spells = Spells.Spell.get_base_spells(spell_names, spells_path)
         spell_names = [spell.name for spell in self.spells]
@@ -192,9 +214,10 @@ class Player(Entity):
             if not spell.name in spell_names:
                 self.spells += [spell]
 
-    def add_statuses(self, statuses: list[str]):
+    def add_statuses(self, statuses: list['Combat.Status']):
+        s_names = [s.name for s in self.temporary_statuses]
         for status in statuses:
-            if not status in self.temporary_statuses:
+            if not status.name in s_names:
                 self.temporary_statuses += [status]
 
     def get_equipped_items(self):
@@ -204,16 +227,32 @@ class Player(Entity):
                 result += [self.items[self.equipment[key]]]
         return result
 
-    def has_status(self, status: str):
+    def has_status(self, status_name: str):
         for item in self.get_equipped_items():
-            if status in item.gives_statuses:
+            if status_name in item.gives_statuses:
                 return True
-        if status in self.temporary_statuses:
-            return True
-        return False
+        names = [status.name for status in self.temporary_statuses]
+        return status_name in names
 
-    def remove_status(self, status: str):
-        self.temporary_statuses.remove(status)
+    def remove_status(self, status_name: str):
+        self.temporary_statuses = [status for status in self.temporary_statuses if not status.name == status_name]
+
+    def update_statuses(self):
+        for status in self.temporary_statuses:
+            if status.duration != -1:
+                status.duration -= 1
+        self.temporary_statuses = [status for status in self.temporary_statuses if status.duration > 0]
+
+    def get_status_display_names(self):
+        result = []
+        for item in self.get_equipped_items():
+            result += item.gives_statuses
+        for status in self.temporary_statuses:
+            line = status.name
+            if status.duration != -1:
+                line += f' ({status.duration})'
+            result += [line]
+        return result
 
     def add_item(self, item: Item):
         if item == None:

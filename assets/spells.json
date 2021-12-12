@@ -17,8 +17,8 @@
         "name": "Fireball",
         "description": "A fireball spell.",
         "type": "damage_spell",
-        "user_statuses": [],
-        "enemy_statuses": [],
+        "user_statuses": {},
+        "enemy_statuses": {},
         "damage": 20,
         "manacost": 10,
         "range": 6
@@ -27,8 +27,10 @@
         "name": "Boost",
         "description": "Upon casting this spell, applies fast status to caster.",
         "type": "combat_spell",
-        "user_statuses": ["fast"],
-        "enemy_statuses": [],
+        "user_statuses": {
+            "Fast": 5
+        },
+        "enemy_statuses": {},
         "manacost": 8,
         "range": -1
     },
@@ -36,8 +38,10 @@
         "name": "Slow Down",
         "description": "Makes the enemy slower when cast.",
         "type": "combat_spell",
-        "user_statuses": [],
-        "enemy_statuses": ["slow"],
+        "user_statuses": {},
+        "enemy_statuses": {
+            "Slow": 5
+        },
         "manacost": 8,
         "range": 4
     }

@@ -1,6 +1,7 @@
 import json
-from cursesui.Utility import str_smart_split
+from cursesui.Utility import split_dict, str_smart_split
 import gamelib.Entities as Entities
+import gamelib.Combat as Combat
 
 class Spell:
     def __init__(self):
@@ -29,17 +30,20 @@ class Spell:
 
     # static methods
 
-    def from_json(js):
-        result = Spell()
-        t = js['type']
+    def get_template_from_type(t: str):
         if t == 'heal_spell':
-            result = HealSpell()
+            return HealSpell()
         if t == 'blood_spell_mana':
-            result = BloodManaSpell()
+            return BloodManaSpell()
         if t == 'damage_spell':
-            result = DamageSpell()
+            return DamageSpell()
         if t == 'combat_spell':
-            result = CombatSpell()
+            return CombatSpell()
+        return Spell()
+
+    def from_json(js):
+        t = js['type']
+        result = Spell.get_template_from_type(t)
         result.__dict__ = js
         return result
 
@@ -129,15 +133,23 @@ class BloodManaSpell(BloodSpell):
 class CombatSpell(Spell):
     def __init__(self):
         super().__init__()
-        self.user_statuses = []
-        self.enemy_statuses = []
+        self.user_statuses = dict()
+        self.enemy_statuses = dict()
         self.manacost = 0
         self.range = 0
 
     def cast(self, user: 'Entities.Entity', enemy: 'Entities.Entity'):
         user.add_mana(-self.manacost)
-        user.add_statuses(self.user_statuses)
-        enemy.add_statuses(self.enemy_statuses)
+        # add user statuses
+        user_statuses = []
+        for key in self.user_statuses:
+            user_statuses += [Combat.Status(key, self.user_statuses[key])]
+        user.add_statuses(user_statuses)
+        # add enemy statuses
+        enemy_statuses = []
+        for key in self.enemy_statuses:
+            enemy_statuses += [Combat.Status(key, self.enemy_statuses[key])]
+        enemy.add_statuses(enemy_statuses)
         result = [f'{user.get_cct_name_color()} {user.name} #normal casts #cyan-black {self.name}']
         for status in self.user_statuses:
             result += [f'{user.name} has gained status #yellow-black {status}']
@@ -153,25 +165,27 @@ class CombatSpell(Spell):
         if self.range != -1:
             result.insert(pos, f'Range: {self.range}')
             pos += 1
-        if len(self.user_statuses) != 0:
-            us = f'User statuses: {self.user_statuses[0]}'
-            for i in range(1, len(self.user_statuses)):
-                us += f', {self.user_statuses[i]}'
+        us_names, us_durations = split_dict(self.user_statuses)
+        if len(us_names) != 0:
+            us = f'User statuses: {us_names[0]} ({us_durations[0]})'
+            for i in range(1, len(us_names)):
+                us += f', {us_names[i]} ({us_durations[i]})'
             result.insert(pos, us)
             pos += 1
-        if len(self.enemy_statuses) != 0:
-            es = f'Enemy statuses: {self.enemy_statuses[0]}'
-            for i in range(1, len(self.enemy_statuses)):
-                es += f', {self.enemy_statuses[i]}'
+        es_names, es_durations = split_dict(self.enemy_statuses)
+        if len(es_names) != 0:
+            es = f'Enemy statuses: {es_names[0]} ({es_durations[0]})'
+            for i in range(1, len(es_names)):
+                es += f', {es_names[i]} ({es_durations[i]})'
             result.insert(pos, es)
             pos += 1
         result.insert(pos, '')
         return result
 
     def get_cct_display_text(self):
-        result = f'{self.name} {{}} (#cyan-black {self.manacost} #normal mana)'
+        result = f'{self.name}{{}} (#cyan-black {self.manacost}#normal  mana)'
         if self.range != -1:
-            result = result.format(f'(range: #yellow-black {self.range} #normal )')
+            result = result.format(f' (range: #yellow-black {self.range}#normal )')
             return result
         return result.format('')
 
