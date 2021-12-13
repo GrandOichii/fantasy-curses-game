@@ -133,6 +133,7 @@ class AttackRangedEnemyAction(Action):
         damage += random.randint(0, self.weapon.max_mod)
         self.ammo.amount -= 1
         dealt_damage = self.other.take_damage(damage)
+        self.user.check_items()
         return [f'{self.user.get_cct_name_color()} {self.user.name} #normal attacks with {self.weapon.name} and hits {self.other.get_cct_name_color()} {self.other.name} #normal for #red-black {dealt_damage} #normal damage.']
 
 class AttackPlayerAction(Action):
@@ -235,7 +236,8 @@ class CombatEncounter:
             return
         if player.get_combat_range() >= self.distance:
             self.player_actions += [Action(self, 'a', 'Attack', 'XX', player, enemy)]
-        if len(player.spells) > 0:
+        # if len(player.spells) > 0:
+        if self.player_has_castable_spells():
             self.player_actions += [Action(self, 'c', 'Cast Spell', 'VA', player, enemy)]
         char_i = 2
         self.player_actions += [MoveAction(self, self.chars[char_i], 'Flee', player, enemy, -2)]
@@ -278,13 +280,13 @@ class CombatEncounter:
             self.enemy_window.addstr(i, 1, ' ' * (self.box_width - 3))
         
         # display health
-        put(self.enemy_window, y_first, 1, f'Health: #red-black {calc_pretty_bars(enemy.health, enemy.get_max_health(), self.box_width - 16)}')
-        self.enemy_window.addstr(y_first, self.box_width - 6, f'(  )')
-        put(self.enemy_window, y_first, self.box_width - 5, f'#red-black {enemy.health}')
+        put(self.enemy_window, y_first, 1, f'Health: #red-black {calc_pretty_bars(enemy.health, enemy.get_max_health(), self.box_width - 17)}')
+        self.enemy_window.addstr(y_first, self.box_width - 7, f'(   )')
+        put(self.enemy_window, y_first, self.box_width - 6, f'#red-black {enemy.health}')
         # display mana
-        put(self.enemy_window, y_first + 1, 1, f'  Mana: #cyan-black {calc_pretty_bars(enemy.mana, enemy.get_max_mana(), self.box_width - 16)}')
-        self.enemy_window.addstr(y_first + 1, self.box_width - 6, f'(  )')
-        put(self.enemy_window, y_first + 1, self.box_width - 5, f'#cyan-black {enemy.mana}')
+        put(self.enemy_window, y_first + 1, 1, f'  Mana: #cyan-black {calc_pretty_bars(enemy.mana, enemy.get_max_mana(), self.box_width - 17)}')
+        self.enemy_window.addstr(y_first + 1, self.box_width - 7, f'(   )')
+        put(self.enemy_window, y_first + 1, self.box_width - 6, f'#cyan-black {enemy.mana}')
 
         # display statuses
         self.enemy_window.addstr(y_first + 2, 1, 'Statuses:')
@@ -307,13 +309,13 @@ class CombatEncounter:
             self.player_window.addstr(i, 1, ' ' * (self.box_width - 3))
 
         # display health
-        put(self.player_window, y_first, 1, f'Health: #red-black {calc_pretty_bars(player.health, player.get_max_health(), self.box_width - 15)}')
-        self.player_window.addstr(y_first, self.box_width - 5, f'(  )')
-        put(self.player_window, y_first, self.box_width - 4, f'#red-black {player.health}')
+        put(self.player_window, y_first, 1, f'Health: #red-black {calc_pretty_bars(player.health, player.get_max_health(), self.box_width - 16)}')
+        self.player_window.addstr(y_first, self.box_width - 6, f'(   )')
+        put(self.player_window, y_first, self.box_width - 5, f'#red-black {player.health}')
         # display mana
-        put(self.player_window, y_first + 1, 1, f'  Mana: #cyan-black {calc_pretty_bars(player.mana, player.get_max_mana(), self.box_width - 15)}')
-        self.player_window.addstr(y_first + 1, self.box_width - 5, f'(  )')
-        put(self.player_window, y_first + 1, self.box_width - 4, f'#cyan-black {player.mana}')
+        put(self.player_window, y_first + 1, 1, f'  Mana: #cyan-black {calc_pretty_bars(player.mana, player.get_max_mana(), self.box_width - 16)}')
+        self.player_window.addstr(y_first + 1, self.box_width - 6, f'(   )')
+        put(self.player_window, y_first + 1, self.box_width - 5, f'#cyan-black {player.mana}')
 
         # display statuses
         statuses = player.get_status_display_names()
@@ -385,7 +387,7 @@ class CombatEncounter:
         self.enemy_window = curses.newwin(self.box_height, self.box_width - 1, 1, self.WIDTH - self.box_width)
         self.update_player_options()
         self.draw()
-        self.main_loop()
+        return self.main_loop()
        
     def main_loop(self):
         self.player_cast_spell = False
@@ -447,8 +449,7 @@ class CombatEncounter:
                         self.add_to_combat_log(r)
                     self.action_id = 0
                     if self.get_enemy().health == 0:
-                        self.player_won()
-                        break
+                        return self.player_won()
                     # execute enemy action
                     action = self.get_enemy_action()
                     self.last_enemy_picture = action.picture
@@ -602,6 +603,15 @@ class CombatEncounter:
         result_id = results[0]
         return UseItemAction(self, 'u', '-', self.get_player(), self.get_usable_items()[result_id])
     
+    def player_has_castable_spells(self):
+        player = self.get_player()
+        for spell in player.spells:
+            if spell.range == -1:
+                return True
+            if spell.range >= self.distance:
+                return True
+        return False
+
     def get_usable_spells(self):
         player = self.get_player()
         result = []
@@ -717,6 +727,7 @@ class CombatEncounter:
 
         # at the end
         self.get_player().add_rewards(rewards)
+        return rewards
 
     def player_lost(self):
         pass

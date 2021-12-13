@@ -20,7 +20,7 @@
         "user_statuses": {},
         "enemy_statuses": {},
         "damage": 20,
-        "manacost": 10,
+        "manacost": 30,
         "range": 6
     },
     "Boost": {
@@ -42,6 +42,18 @@
         "enemy_statuses": {
             "Slow": 5
         },
+        "manacost": 8,
+        "range": 4
+    },
+    "Lesser Sparks": {
+        "name": "Lesser Sparks",
+        "description": "Upon casting this spell, conjure a lot of electrical sparks that damage and slow down the opponent for a little while.",
+        "type": "damage_spell",
+        "user_statuses": {},
+        "enemy_statuses": {
+            "Slow": 1
+        },
+        "damage": 4,
         "manacost": 8,
         "range": 4
     }

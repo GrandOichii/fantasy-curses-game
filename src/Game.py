@@ -29,7 +29,8 @@ class GameLog:
         self.messages = []
 
     def add(self, messages: list):
-        messages[0] = '- ' + messages[0]
+        for i in range(len(messages)):
+            messages[i] = '- ' + messages[i]
         self.messages += messages
 
     def length(self):
@@ -1144,8 +1145,8 @@ class Game:
         else:
             encounter = CombatEncounter(self.parent, enemy, self.player, d, self.config_file)
             self.game_log.add([f'#red-black {enemy.name} #normal attacks #green-black {self.player.name}!'])
-        encounter.start()
-
+        rewards = encounter.start()
+        
         if self.player.health == 0:
             answer = self.tile_message_box('PLAYER DEAD', ['Back to menu'])
             self.game_running = False
@@ -1157,7 +1158,16 @@ class Game:
         # clear temporary statuses
         self.player.temporary_statuses = []
 
+        # add stuff to game log
         self.game_log.add([f'#green-black {self.player.name} #normal defeats #red-black {enemy.name}#normal !'])
+        game_log_messages = []
+        if 'gold' in rewards:
+            gold = rewards['gold']
+            game_log_messages += [f'#green-black {self.player.name} #normal looted #yellow-black {gold} #normal gold from #red-black {enemy.name}#normal .']
+        message = '#green-black {} #normal looted {} #normal from {}#normal .'
+        for reward in rewards['items'] + rewards['countable_items']:
+            game_log_messages += [message.format(self.player.name, reward.get_cct_display_text(), enemy.name)]
+        self.game_log.add(game_log_messages)
 
         # clean-up
         self.window.clear()

@@ -1,5 +1,5 @@
 {
-    "rat": {
+    "Rat": {
         "name": "Rat",
         "char": "r",
         "damage": 1,
@@ -78,7 +78,7 @@
         "max_health": 12,
         "mana": 0,
         "max_mana": 0,
-        "armor": 1,
+        "armor": 3,
         "description": "A goblin. They may be sentient creatures, but what do you care",
         "attack_format": "The goblin attacks and deals #red-black {} #normal damage to #green-black {}",
         "statuses": [],
@@ -88,13 +88,39 @@
             "Rat meat": 20
         },
         "reward_countable_items": {
-            "Small health potion": 1
+            "Cabbage": 1,
+            "Turnip": 2
         },
         "min_reward_gold": 3,
         "max_reward_gold": 5
     },
-    "Chunky boi": {
-        "name": "Chunky boi",
+    "Sewer Goblin Archer": {
+        "name": "Goblin archer",
+        "char": "g",
+        "damage": 4,
+        "damage_mod": 3,
+        "range": 5,
+        "health": 12,
+        "max_health": 12,
+        "mana": 0,
+        "max_mana": 0,
+        "armor": 1,
+        "description": "A goblin with a wooden bow. They may be sentient creatures, but what do you care",
+        "attack_format": "The goblin fires an arrow and deals #red-black {} #normal damage to #green-black {}",
+        "statuses": [],
+        "reward_items": {
+            "Hood": 10,
+            "Wooden bow": 10
+        },
+        "reward_countable_items": {
+            "Turnip": 1,
+            "Wooden arrow": 4
+        },
+        "min_reward_gold": 3,
+        "max_reward_gold": 5
+    },
+    "Chunky Boi": {
+        "name": "Chunky Boi",
         "char": "B",
         "damage": 1,
         "damage_mod": 0,

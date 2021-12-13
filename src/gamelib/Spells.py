@@ -197,7 +197,7 @@ class DamageSpell(CombatSpell):
     def cast(self, user: 'Entities.Entity', enemy: 'Entities.Entity'):
         result = super().cast(user, enemy)
         enemy.add_health(-self.damage)
-        result += [f'{user.get_cct_name_color()} {self.name} #normal deals #red-black {self.damage} #normal to {enemy.get_cct_name_color()} {enemy.name}']
+        result += [f'{user.get_cct_name_color()} {self.name} #normal deals #red-black {self.damage} #normal damage to {enemy.get_cct_name_color()} {enemy.name}']
         return result
 
     def get_description(self, max_width: int):

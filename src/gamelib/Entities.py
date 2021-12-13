@@ -118,7 +118,7 @@ class Enemy(Entity):
         for status in self.statuses:
             if status.duration != -1:
                 status.duration -= 1
-        self.statuses = [status for status in self.statuses if status.duration > 0]
+        self.statuses = [status for status in self.statuses if status.max_duration == -1 or status.duration > 0]
 
     def get_status_display_names(self):
         result = []
@@ -134,6 +134,10 @@ class Enemy(Entity):
         result = Enemy()
         data = json.loads(open(enemy_schemas_path, 'r').read())[name]
         result.__dict__ = data
+        snames = data['statuses']
+        result.statuses = []
+        for name in snames:
+            result.statuses += [Combat.Status(name, -1)]
         return result
 
     def get_rewards(self, config_file: ConfigFile):
@@ -179,7 +183,7 @@ class Player(Entity):
 
     def check_items(self):
         for item in self.countable_items:
-            if isinstance(item, UsableItem) and item.amount < 1:
+            if isinstance(item, CountableItem) and item.amount < 1:
                 self.countable_items.remove(item)
 
     def get_armor(self):

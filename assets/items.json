@@ -331,6 +331,22 @@
         "description": "A protective garment made of steel plates and leather. Better than Steel Armor.",
         "is_ingredient": false
     },
+    "Mage's staff": {
+        "name": "Mage's staff",
+        "itype": "melee",
+        "base_damage": 2,
+        "max_mod": 1,
+        "range": 3,
+        "slot": "ARMS",
+        "gives_statuses": [],
+        "mods": {
+            "mana": 5
+        },
+        "requires": {},
+        "price": 10,
+        "description": "A trusty iron sword. Deals moderate damage.",
+        "is_ingredient": false
+    },
     "Iron arming sword": {
         "name": "Iron arming sword",
         "itype": "melee",
@@ -468,11 +484,11 @@
         "description": "An iron shield. A bit unwieldy.",
         "is_ingredient": false
     },
-    "Long bow": {
-        "name": "Long bow",
+    "Wooden bow": {
+        "name": "Wooden bow",
         "itype": "ranged",
         "slot": "ARMS",
-        "base_damage": 6,
+        "base_damage": 3,
         "max_mod": 1,
         "range": 5,
         "gives_statuses": [],
@@ -483,22 +499,25 @@
         },
         "mods": {},
         "price": 10,
-        "description": "Just a regular long bow. Can use any type of arrow.",
+        "description": "A wooden bow. Pretty akward to use. Can use any type of arrow.",
         "is_ingredient": false
     },
-    "temp": {
-        "name": "temp",
+    "Long bow": {
+        "name": "Long bow",
         "itype": "ranged",
-        "slot": "ARM",
-        "base_damage": 0,
-        "max_mod": 0,
-        "range": 10,
+        "slot": "ARMS",
+        "base_damage": 6,
+        "max_mod": 1,
+        "range": 8,
         "gives_statuses": [],
         "ammo_type": "arrow",
-        "requires": {},
+        "requires": {
+            "STR": 12,
+            "DEX": 14
+        },
         "mods": {},
-        "price": 1,
-        "description": "temp weapon",
+        "price": 10,
+        "description": "Just a regular long bow. Can use any type of arrow.",
         "is_ingredient": false
     },
     "Wooden arrow": {
@@ -542,7 +561,16 @@
         "is_ingredient": false,
         "spell_names": ["Fireball"],
         "price": 50,
-        "int_to_learn": 12
+        "int_to_learn": 20
+    },
+    "Spellbook of Lesser Sparks": {
+        "name": "Spellbook of Lesser Sparks",
+        "itype": "spell book",
+        "description": "Read this spell book to learn Lesser Sparks.",
+        "is_ingredient": false,
+        "spell_names": ["Lesser Sparks"],
+        "price": 15,
+        "int_to_learn": 14
     },
     "Spellbook of Heal": {
         "name": "Spellbook of Heal",

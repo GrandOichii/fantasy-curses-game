@@ -27,7 +27,8 @@
         "items": [
             "Mage's hat",
             "Mage's robe",
-            "Spellbook of Fireball"
+            "Mage's staff",
+            "Spellbook of Lesser Sparks"
         ],
         "countable_items": {}
     },
@@ -42,7 +43,7 @@
         "items": [
             "Hood",
             "Leather armor",
-            "Long bow",
+            "Wooden bow",
             "Iron dagger"
         ],
         "countable_items": {

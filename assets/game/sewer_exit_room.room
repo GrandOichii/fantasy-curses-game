@@ -26,11 +26,11 @@ set sewer_npc1_name "#green-black Stranger 1"
 set sewer_npc2_name "#green-black Stranger 2"
 if set sewer_npc_talked then stop
 set sewer_npc_talked true
-sleep 500
+sleep 300
 move player 0 1
-sleep 500
+sleep 300
 move player 0 1
-sleep 500
+sleep 300
 draw
 set notify_message "So, how's your life?"
 set _notify_name sewer_npc1_name
@@ -88,4 +88,4 @@ stop
 chunky_boi:
 y=5
 x=20
-e_type=Chunky boi
+e_type=Chunky Boi
