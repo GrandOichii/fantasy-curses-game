@@ -1,0 +1,28 @@
+[
+    {
+        "ingredients": [
+            "Raw rabbit meat",
+            "Pouch of salt"
+        ],
+        "result": "Jerky"
+    },
+    {
+        "ingredients": [
+            "Crab apple"
+        ],
+        "result": "Dried apple"
+    },
+    {
+        "ingredients": [
+            "Plum"
+        ],
+        "result": "Dried plum"
+    },
+    {
+        "ingredients": [
+            "Crab apple",
+            "Butter"
+        ],
+        "result": "Buttered apple"
+    }
+]

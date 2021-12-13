@@ -279,6 +279,13 @@ class Player(Entity):
                 self.equipment[key] = None
         self.items.remove(self.items[i_id])
 
+    def get_ingredients(self):
+        result = []
+        for item in self.countable_items:
+            if item.is_ingredient:
+                result += [item]
+        return result
+
     def load_class(self, class_data: dict, config_file: ConfigFile):
         self.max_health = class_data['max_health']
         self.health = self.max_health

@@ -247,7 +247,7 @@ def drop_down_box(options: list, max_display_amount: int, y: int, x: int, choice
                     choice -= 1
     return list(results)
 
-def message_box(parent, message: str, choices: list, ypos: int=-1, xpos: int=-1, height: int=-1, width: int=-1, additional_lines: list=[], border_color: str='normal'):
+def message_box(parent: 'UIElements.Window', message: str, choices: list, ypos: int=-1, xpos: int=-1, height: int=-1, width: int=-1, additional_lines: list=[], border_color: str='normal'):
     window = parent.window
     HEIGHT, WIDTH = window.getmaxyx()
     # restrict the min and max width of message box

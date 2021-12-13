@@ -7,6 +7,7 @@ from Configuraion import ConfigFile
 
 from cursesui.Elements import Menu, Window, Button, UIElement, Widget, TextField, WordChoice, Separator
 from cursesui.Utility import calc_pretty_bars, draw_separator, message_box, cct_len, draw_borders, drop_down_box, put, MULTIPLE_ELEMENTS, show_controls_window, str_smart_split
+from gamelib.Cooking import CursesCooking
 
 # import gamelib.Entities as Entities
 from gamelib.Entities import *
@@ -112,7 +113,7 @@ class Game:
         self.window.refresh()
 
         # room tile window
-        self.tile_window = curses.newwin(self.tile_window_height, self.tile_window_width, 0, 1)
+        self.tile_window = curses.newwin(self.tile_window_height, self.tile_window_width, 0, 0)
         self.tile_window.keypad(1)
         draw_borders(self.tile_window)
         # self.tile_window.nodelay(True)
@@ -125,7 +126,7 @@ class Game:
         self.mini_map_window = curses.newwin(self.MINI_MAP_HEIGHT + 2, self.MINI_MAP_WIDTH + 2, 13, self.parent.WIDTH - self.MINI_MAP_WIDTH - 2)
 
         # log window
-        self.log_window = curses.newwin(self.log_window_height, self.log_window_width, self.tile_window_height, 1)
+        self.log_window = curses.newwin(self.log_window_height, self.log_window_width, self.tile_window_height, 0)
 
         self.full_map = None
         if self.config_file.has('Map path'):
@@ -531,7 +532,11 @@ class Game:
             self.window.addstr(i, self.tile_window_width + 1, ' ')
 
     def initiate_cooking(self):
-        self.tile_message_box('#red-black Cooking is not implemented', ['Ok'])
+        # self.tile_message_box('#red-black Cooking is not implemented', ['Ok'])
+        cooking = CursesCooking(self.parent, self.player, self.config_file)
+        cooking.start()
+        self.player.check_items()
+        self.game_log.add(cooking.get_log_messages())
 
     def get_display_names(self, items: list):
         result = []
@@ -557,7 +562,7 @@ class Game:
 
         win_height = self.tile_window_height
         win_width = self.tile_window_width
-        inventory_window = curses.newwin(win_height, win_width, 0, 1)
+        inventory_window = curses.newwin(win_height, win_width, 0, 0)
         inventory_window.keypad(1)
 
         selected_tab = 0
@@ -1598,7 +1603,7 @@ class Game:
         if command == 'return':
             var = ' '.join(words[1:])
             real_var = self.get_true_value(var)
-            self.set_env_var('return_value', real_var)
+            self.set_env_var('_return_value', real_var)
             return False
         raise Exception(f'ERR: command {command} not recognized')
 
@@ -1674,7 +1679,7 @@ class Game:
             return 8
         return ch
 
-class GameWindow(Window):
+class GameWindow(Window):   
     def __init__(self, window, config_file: ConfigFile):
         self.universal_menu_controls = {
             "Close app": "ESC", 

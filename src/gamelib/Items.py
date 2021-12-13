@@ -7,6 +7,8 @@ class Item:
     def get_template_from_type(t):
         if t == 'melee':
             return MeleeWeapon()
+        if t == 'countable item':
+            return CountableItem()
         if t == 'ranged':
             return RangedWeapon()
         if t == 'armor':
@@ -49,7 +51,9 @@ class Item:
     def from_json(js: dict):
         t = js['itype']
         result = Item.get_template_from_type(t)
-        result.__dict__ = js
+        for key in js:
+            result.__dict__[key] = js[key]
+        # result.__dict__ = js
         return result
 
     def __init__(self):

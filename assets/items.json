@@ -103,21 +103,29 @@
         "is_ingredient": true,
         "restores": 2
     },
-    "Dried apples": {
-        "name": "Dried apples",
+    "Buttered apple": {
+        "name": "Buttered apple",
+        "itype": "food",
+        "price": 4,
+        "description": "An apple covered in butter.",
+        "is_ingredient": false,
+        "restores": 5
+    },
+    "Dried apple": {
+        "name": "Dried apple",
         "itype": "food",
         "price": 3,
         "description": "A sweet treat. Made by drying apples (duh).",
         "is_ingredient": false,
         "restores": 4
     },
-    "Dried plums": {
-        "name": "Dried plums",
+    "Dried plum": {
+        "name": "Dried plum",
         "itype": "food",
         "price": 2,
         "description": "A sweer treat. Made by drying plums (duh).",
         "is_ingredient": false,
-        "restores": 0
+        "restores": 3
     },
     "Salami": {
         "name": "Salami",
@@ -177,14 +185,14 @@
     },
     "Pouch of salt": {
         "name": "Pouch of salt",
-        "itype": "item",
+        "itype": "countable item",
         "price": 2,
         "description": "A pouch of salt. Very useful in cooking.",
         "is_ingredient": true
     },
     "Pouch of pepper": {
         "name": "Pouch of pepper",
-        "itype": "item",
+        "itype": "countable item",
         "price": 2,
         "description": "A pouch of pepper. Very useful in cooking.",
         "is_ingredient": true
