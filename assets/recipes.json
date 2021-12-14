@@ -24,5 +24,13 @@
             "Butter"
         ],
         "result": "Buttered apple"
+    },
+    {
+        "ingredients": [
+            "Water",
+            "Raw rabbit meat",
+            "Cabbage"
+        ],
+        "result": "Rabbit stew"
     }
 ]

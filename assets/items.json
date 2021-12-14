@@ -1,4 +1,12 @@
 {
+    "Water": {
+        "name": "Water",
+        "itype": "food",
+        "price": 1,
+        "description": "The essence of life.",
+        "is_ingredient": true,
+        "restores": 1
+    },
     "Crab apple": {
         "name": "Crab apple",
         "itype": "food",
@@ -174,6 +182,14 @@
         "description": "Tasteless crackers.",
         "is_ingredient": true,
         "restores": 2
+    },
+    "Rabbit stew": {
+        "name": "Rabbit stew",
+        "itype": "food",
+        "price": 5,
+        "description": "Stew made out of rabbit meat and cabbage.",
+        "is_ingredient": false,
+        "restores": 6
     },
     "Dubious food": {
         "name": "Dubious food",

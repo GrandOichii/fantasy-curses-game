@@ -795,10 +795,10 @@ class Game:
                     if issubclass(type(item), Items.UsableItem):
                         height = 3
                         width = len('Use') + 2
-                        y = 4 + cursor
+                        y = 3 + cursor
                         if y + height > self.tile_window_height:
                             y -= height
-                        x = 4 + cct_len(display_names[choice_id])
+                        x = 3 + cct_len(display_names[choice_id])
                         options_window = curses.newwin(height, width, y, x)
                         options_window.keypad(1)
                         draw_borders(options_window)
@@ -1391,7 +1391,7 @@ class Game:
             if var == 'player.gold':
                 self.player.gold += real_value
                 return False
-            if var == 'player.inventory':
+            if var == 'player.inventory' or var == 'player.items':
                 sp = value.split(' ')
                 item = None
                 if sp[0].isdigit():
@@ -1515,7 +1515,7 @@ class Game:
             return False
         if command == 'clear':
             var = words[1]
-            if words[1] == 'player.inventory':
+            if words[1] == 'player.inventory' or words[1] == 'player.items':
                 self.player.items = []
                 self.player.countable_items = []
                 self.player.equipment['HEAD'] = None
@@ -1559,7 +1559,7 @@ class Game:
             if words[1] == 'in':
                 item_name = self.get_env_var(words[0])
                 container_code = words[2]
-                if container_code == 'player.inventory':
+                if container_code == 'player.inventory' or container_code == 'player.items':
                     do_if = False
                     for item in self.player.items:
                         if item.name == item_name:

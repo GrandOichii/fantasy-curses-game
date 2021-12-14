@@ -89,7 +89,7 @@ class Cooking:
             return
         cooked_item_name = Recipe.get_result(pot, self.recipes)
         self.cooked_item_names += [cooked_item_name]
-        self.log_messages += [f'#green-black {self.player.name} #normal cooks some #cyan-black {cooked_item_name}#normal .']
+        self.log_messages += [f'#green-black {self.player.name} #normal cooked #cyan-black {cooked_item_name}#normal !']
         self.reduce_amounts()
         self.reset_amounts()
         return cooked_item_name
@@ -196,7 +196,7 @@ class CursesCooking:
         items = self.cooking.get_ingredients()
         for i in range(len(items)):
             attr = curses.A_REVERSE if i == self.cooking.item_choice else 0
-            put(self.player_ingredients_window, 1 + i, 1, f'{items[i].name} #magenta-black x{items[i].amount}', attr)
+            put(self.player_ingredients_window, 1 + i, 2, f'{items[i].name} #magenta-black x{items[i].amount}', attr)
 
     def draw_pot_window(self):
         self.pot_window.clear()
@@ -204,5 +204,5 @@ class CursesCooking:
         put(self.pot_window, 0, 1, '#magenta-black Pot')
         pot = self.cooking.get_pot()
         for i in range(len(pot)):
-            put(self.pot_window, 1 + i, 1, f'{pot[i][0]} #magenta-black x{pot[i][1]}')
+            put(self.pot_window, 1 + i, 2, f'{pot[i][0]} #magenta-black x{pot[i][1]}')
         

@@ -50,8 +50,9 @@ stop
 
 add_to_log_notify:
 set log_message _notify_name
-add log_message ": #normal "
+add log_message ": #cyan-black %qm"
 add log_message notify_message
+add log_message "%qm"
 log log_message
 
 pipe_interact:

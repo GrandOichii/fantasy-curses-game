@@ -97,6 +97,7 @@ def put(window, y: int, x: int, message: str, attr: int=0):
     #     return
     h, w = window.getmaxyx()
     message = '#normal ' + message
+    message = message.replace('%qm', '"')
     split = re.findall(color_regex, message)
     for t in split:
         if t[0] == 'normal':
