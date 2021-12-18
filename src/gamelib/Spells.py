@@ -1,5 +1,5 @@
 import json
-from ncursesui.Utility import split_dict, str_smart_split
+from ncursesui.Utility import str_smart_split
 import gamelib.Entities as Entities
 import gamelib.Combat as Combat
 
@@ -165,14 +165,14 @@ class CombatSpell(Spell):
         if self.range != -1:
             result.insert(pos, f'Range: {self.range}')
             pos += 1
-        us_names, us_durations = split_dict(self.user_statuses)
+        us_names, us_durations = self.user_statuses.items()
         if len(us_names) != 0:
             us = f'User statuses: {us_names[0]} ({us_durations[0]})'
             for i in range(1, len(us_names)):
                 us += f', {us_names[i]} ({us_durations[i]})'
             result.insert(pos, us)
             pos += 1
-        es_names, es_durations = split_dict(self.enemy_statuses)
+        es_names, es_durations = self.enemy_statuses.items()
         if len(es_names) != 0:
             es = f'Enemy statuses: {es_names[0]} ({es_durations[0]})'
             for i in range(1, len(es_names)):

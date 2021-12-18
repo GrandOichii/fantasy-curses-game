@@ -1,5 +1,5 @@
 import json
-from os import initgroups, listdir
+from os import listdir
 from os.path import isfile, join, splitext
 from Configuraion import ConfigFile
 from gamelib.Entities import Enemy
