@@ -1,7 +1,7 @@
 import curses
-from cursesui.Elements import Window
+from ncursesui.Elements import Window
 
-from cursesui.Utility import cct_len, cct_real_str, draw_borders, draw_separator, message_box, put, show_controls_window
+from ncursesui.Utility import cct_len, cct_real_str, draw_borders, draw_separator, message_box, put, show_controls_window
 from gamelib.Entities import Player
 from gamelib.Items import CountableItem, Item
 

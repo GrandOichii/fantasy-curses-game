@@ -1,6 +1,6 @@
 import json
 from Configuraion import ConfigFile
-from cursesui.Utility import str_smart_split, pos_neg_int
+from ncursesui.Utility import str_smart_split, pos_neg_int
 import gamelib.Entities as Entities
 
 class Item:
@@ -190,6 +190,26 @@ class Ammo(CountableItem):
         result.insert(4, f'Amount: {self.amount}')
         result.insert(5, '')
         return result
+
+class Strike:
+    def __init__(self):
+        self.name = ''
+        self.min_range = 0
+        self.max_range = 0
+        self.base_damage = 0
+        self.damage_mod = 0
+
+    def get_cct_display_text(self):
+        result = f'{self.name} | range: #magenta-black {self.min_range}#normal -#magenta-black{self.max_range}'
+        return result
+
+class RangedStrike(Strike):
+    def __init__(self):
+        super().__init__()
+        self.ammo_type = ''
+
+    def get_cct_display_text(self):
+        return f'{super().get_cct_display_text()} | ammo: {self.ammo_type}'
 
 class MeleeWeapon(EquipableItem):
     def __init__(self):

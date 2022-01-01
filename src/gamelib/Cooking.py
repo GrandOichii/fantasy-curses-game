@@ -5,8 +5,8 @@ import collections
 import gamelib.Entities as Entities
 
 from Configuraion import ConfigFile
-from cursesui.Elements import Window
-from cursesui.Utility import draw_borders, message_box, put
+from ncursesui.Elements import Window
+from ncursesui.Utility import draw_borders, message_box, put
 from gamelib.Items import CountableItem, Item
 
 compare_lists = lambda x, y: collections.Counter(x) == collections.Counter(y)

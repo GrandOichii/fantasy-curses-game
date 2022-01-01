@@ -2,16 +2,14 @@ import curses
 import random
 from curses.textpad import rectangle
 from Configuraion import ConfigFile
-from cursesui.Elements import Window
 
 import gamelib.Items as Items
 import gamelib.Entities as Entities
 import gamelib.Spells as Spells
-# from gamelib.Entities import Entity, Player, Enemy
 
 from gamelib.Items import Ammo, MeleeWeapon, RangedWeapon, UsableItem
-# from gamelib.Spells import CombatSpell, NormalSpell, Spell
-from cursesui.Utility import cct_len, put, draw_borders, drop_down_box, calc_pretty_bars, str_smart_split, SINGLE_ELEMENT, show_controls_window
+from ncursesui.Elements import Window
+from ncursesui.Utility import cct_len, put, draw_borders, drop_down_box, calc_pretty_bars, str_smart_split, SINGLE_ELEMENT, show_controls_window
 
 class Status:
     def __init__(self, name, duration):

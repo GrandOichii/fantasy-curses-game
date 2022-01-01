@@ -5,8 +5,8 @@ from math import sqrt
 import os
 from Configuraion import ConfigFile
 
-from cursesui.Elements import Menu, Window, Button, UIElement, Widget, TextField, WordChoice, Separator
-from cursesui.Utility import calc_pretty_bars, draw_separator, message_box, cct_len, draw_borders, drop_down_box, put, MULTIPLE_ELEMENTS, show_controls_window, str_smart_split
+from ncursesui.Elements import Menu, Window, Button, UIElement, Widget, TextField, WordChoice, Separator
+from ncursesui.Utility import calc_pretty_bars, draw_separator, message_box, cct_len, draw_borders, drop_down_box, put, MULTIPLE_ELEMENTS, show_controls_window, str_smart_split
 from gamelib.Cooking import CursesCooking
 
 # import gamelib.Entities as Entities
@@ -1820,8 +1820,8 @@ class GameWindow(Window):
         # TO-DO: change to settings window
 
     def to_character_creation_action(self):
-        self.character_creation_menu.unfocus_all()
-        self.character_creation_menu.focus(0)
+        self.character_creation_menu.get_current_tab().unfocus_all()
+        self.character_creation_menu.get_current_tab().focus(0)
 
         self.name_text_field.text = ''
         self.name_text_field.cursor = 0
@@ -1904,7 +1904,7 @@ class GameWindow(Window):
 
     def load_character_pick_action(self):
         names = SaveFile.character_names(self.config_file.get('Saves path'))
-        name = names[self.current_menu.get_focused_element_id() - 1]
+        name = names[self.current_menu.get_current_tab().get_focused_element_id() - 1]
         response = message_box(self, f'Load character {name}?', ['Load', 'Delete', 'Cancel'])
         if response == 'Cancel':
             return

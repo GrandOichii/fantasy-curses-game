@@ -1,5 +1,5 @@
 import json
-from cursesui.Utility import split_dict, str_smart_split
+from ncursesui.Utility import split_dict, str_smart_split
 import gamelib.Entities as Entities
 import gamelib.Combat as Combat
 

@@ -1,7 +1,6 @@
 import json
 import random
 from Configuraion import ConfigFile
-# from gamelib.Combat import Status
 from gamelib.Items import *
 import gamelib.Spells as Spells
 import gamelib.Combat as Combat
