@@ -165,8 +165,8 @@ class CombatSpell(Spell):
         if self.range != -1:
             result.insert(pos, f'Range: {self.range}')
             pos += 1
-        us_names, us_durations = self.user_statuses.items()
-        if len(us_names) != 0:
+        if len(self.user_statuses):
+            us_names, us_durations = self.user_statuses.items()
             us = f'User statuses: {us_names[0]} ({us_durations[0]})'
             for i in range(1, len(us_names)):
                 us += f', {us_names[i]} ({us_durations[i]})'
