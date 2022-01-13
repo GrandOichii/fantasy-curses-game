@@ -358,7 +358,7 @@ class CombatEncounter:
         self.combat_log_window.refresh()
 
     def draw_combat_log(self):
-        self.combat_log_window.clear()
+        self.combat_log_window.erase()
         draw_borders(self.combat_log_window)
         put(self.combat_log_window, 0, 1, '#magenta-black Combat log')
         y = 0

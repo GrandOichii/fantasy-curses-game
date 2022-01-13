@@ -159,8 +159,8 @@ class CursesCooking:
         # add cooked items
         self.cooking.add_cooked_items()
 
-        self.player_ingredients_window.clear()
-        self.pot_window.clear()
+        self.player_ingredients_window.erase()
+        self.pot_window.erase()
         self.player_ingredients_window.refresh()
         self.pot_window.refresh()
 
@@ -190,7 +190,7 @@ class CursesCooking:
         self.pot_window.refresh()
 
     def draw_player_ingredients_window(self):
-        self.player_ingredients_window.clear()
+        self.player_ingredients_window.erase()
         draw_borders(self.player_ingredients_window)
         put(self.player_ingredients_window, 0, 1, '#magenta-black Ingredients')
         items = self.cooking.get_ingredients()
@@ -199,7 +199,7 @@ class CursesCooking:
             put(self.player_ingredients_window, 1 + i, 2, f'{items[i].name} #magenta-black x{items[i].amount}', attr)
 
     def draw_pot_window(self):
-        self.pot_window.clear()
+        self.pot_window.erase()
         draw_borders(self.pot_window)
         put(self.pot_window, 0, 1, '#magenta-black Pot')
         pot = self.cooking.get_pot()

@@ -268,5 +268,5 @@ class SettingsMenu:
             self.selected_tab.proc_key(key)
             
             # clear screen
-            self.w.clear()
+            self.w.erase()
         

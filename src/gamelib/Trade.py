@@ -141,7 +141,7 @@ class Trade:
         window.keypad(1)
         while True:
             # draw
-            window.clear()
+            window.erase()
             draw_borders(window)
             put(window, 0, 1, '#magenta-black Select amount')
             put(window, 1, 1, top)
@@ -320,7 +320,7 @@ class Trade:
         desc = item.get_description(window_width - 2)
         while True:
             # display
-            window.clear()
+            window.erase()
             draw_borders(window)
             put(window, 0, 1, f'#yellow-black Item description')
             for i in range(len(desc)):
@@ -377,7 +377,7 @@ class Trade:
         self.vendor_info_window.refresh()
 
     def draw_player_window(self):
-        self.player_window.clear()
+        self.player_window.erase()
         draw_borders(self.player_window, 'black-white' if self.selling else 'normal')
         put(self.player_window, 0, 1, f'#green-black {self.player.name} #normal items')
 
@@ -413,7 +413,7 @@ class Trade:
         put(self.player_window, self.player_window_height - 2, 1, gold_str)
 
     def draw_vendor_window(self):
-        self.vendor_window.clear()
+        self.vendor_window.erase()
         draw_borders(self.vendor_window, 'black-white' if not self.selling else 'normal')
         put(self.vendor_window, 0, 1, f'#cyan-black {self.vendor_name} #normal items')
 
@@ -448,7 +448,7 @@ class Trade:
         put(self.vendor_window, self.vendor_window_height - 2, 1, gold_str)
 
     def draw_player_info_window(self):
-        self.player_info_window.clear()
+        self.player_info_window.erase()
         draw_borders(self.player_info_window, 'black-white' if self.selling else 'normal')
         put(self.player_info_window, 0, 1, f'#yellow-black Selling')
 
@@ -473,7 +473,7 @@ class Trade:
             put(self.player_info_window, 2 + i, 2, display_names[i], attr)
 
     def draw_vendor_info_window(self):
-        self.vendor_info_window.clear()
+        self.vendor_info_window.erase()
         draw_borders(self.vendor_info_window, 'black-white' if not self.selling else 'normal')
         # display 
         put(self.vendor_info_window, 0, 1, f'#yellow-black Buying')

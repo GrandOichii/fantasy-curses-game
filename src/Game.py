@@ -109,7 +109,7 @@ class Game:
         self.mid_x = self.tile_window_width // 2
             
     def start(self):
-        self.window.clear()
+        self.window.erase()
         self.window.refresh()
 
         # room tile window
@@ -260,7 +260,7 @@ class Game:
                     self.set_env_var('_last_door_code', door_code)
                     self.game_room = Room.Room.by_name(destination_room, self.config_file, door_code=door_code, env_vars=self.env_vars)
                     self.player_y, self.player_x = self.game_room.player_spawn_y, self.game_room.player_spawn_x
-                    self.tile_window.clear()
+                    self.tile_window.erase()
                     self.tile_window.refresh()
                     if '_load' in self.game_room.scripts:
                         self.exec_script('_load', self.game_room.scripts)
@@ -409,7 +409,7 @@ class Game:
                 break
             if key == 120: # x
                 break
-            self.tile_window.clear()
+            self.tile_window.erase()
             # North
             if key in [56, 259] and cursor_map_y != 0 and distance(cursor_map_y - 1, cursor_map_x, self.player_y, self.player_x) < self.game_room.visible_range:
                 cursor_y -= 1
@@ -615,7 +615,7 @@ class Game:
                 for i in range(min(len(display_names), displayed_item_count)):
                     attr = curses.A_REVERSE if i == cursor else 0
                     put(inventory_window, 3 + i, 3, f'{display_names[i + page_n]}', attr)
-                description_window.clear()
+                description_window.erase()
                 if len(display_names) != 0:
                     desc = items[cursor + page_n].get_description(d_window_width - 2)
                 else:
@@ -659,7 +659,7 @@ class Game:
                     if self.player.equipment['ARM2'] != None:
                         item_name = items[self.player.equipment['ARM2']].name
                     inventory_window.addstr(11, 13, item_name)
-                description_window.clear()
+                description_window.erase()
                 item_id = self.player.equipment[slots[equip_choice_id]]
                 if item_id != None:
                     desc = self.player.items[item_id].get_description(d_window_width - 2)
@@ -674,7 +674,7 @@ class Game:
                 for i in range(min(len(spell_display_names), displayed_spell_count)):
                     attr = curses.A_REVERSE if i == spell_cursor else 0
                     inventory_window.addstr(3 + i, 3, f'{spell_display_names[i + page_n]}', attr)
-                description_window.clear()
+                description_window.erase()
                 if len(spell_display_names) != 0:
                     desc = self.player.spells[spell_cursor + spell_page_n].get_description(d_window_width - 2)
                 else:
@@ -983,9 +983,9 @@ class Game:
                         description_page = len(desc) - description_limit
             
             # clear the space
-            inventory_window.clear()
+            inventory_window.erase()
   
-        self.window.clear()
+        self.window.erase()
         self.window.refresh()
         self.draw()
 
@@ -1013,7 +1013,7 @@ class Game:
 
         while True:
             # display
-            big_log_window.clear()
+            big_log_window.erase()
             draw_borders(big_log_window)
             put(big_log_window, 0, 1, '#magenta-black Log')
             first = 0
@@ -1046,7 +1046,7 @@ class Game:
                     if page > len(splits) - limit:
                         page = len(splits) - limit
             
-        self.window.clear()
+        self.window.erase()
         self.window.refresh()
         self.draw()
     
@@ -1073,7 +1073,7 @@ class Game:
         trade = Trade(self.parent, self.player, vendor_name, self.get_env_var(gold_var), vendor_items, vendor_countable_items)   
         state = trade.start()
         if not state:
-            self.window.clear()
+            self.window.erase()
             self.window.refresh()
             self.draw()
             return
@@ -1117,7 +1117,7 @@ class Game:
             self.set_env_var(code, item.amount)
             
         # clean-up
-        self.window.clear()
+        self.window.erase()
         self.window.refresh()
         self.draw()
     
@@ -1175,7 +1175,7 @@ class Game:
         self.game_log.add(game_log_messages)
 
         # clean-up
-        self.window.clear()
+        self.window.erase()
         self.window.refresh()
         self.draw()
 
@@ -1198,7 +1198,7 @@ class Game:
         self.log_window.refresh()
 
     def draw_log_window(self):
-        self.log_window.clear()
+        self.log_window.erase()
         draw_borders(self.log_window)
         put(self.log_window, 0, 1, '#magenta-black Log')
         max_amount = self.log_window_height - 2
@@ -1214,7 +1214,7 @@ class Game:
         if self.player.health > self.player.get_max_health():
             self.player.health = self.player.get_max_health()
 
-        self.player_info_window.clear()
+        self.player_info_window.erase()
         draw_borders(self.player_info_window)
         put(self.player_info_window, 0, 1, '#magenta-black Player info')
 
@@ -1244,7 +1244,7 @@ class Game:
         put(self.player_info_window, y + 9, x, f'#black-cyan INT: #normal {fill(self.player.INT, 3)}')
 
     def draw_tile_window(self):
-        self.tile_window.clear()
+        self.tile_window.erase()
         draw_borders(self.tile_window)
         put(self.tile_window, 0, 1, '#magenta-black Room display')
         self.draw_tiles(self.player_y, self.player_x, self.game_room.visible_range)
@@ -1259,7 +1259,7 @@ class Game:
         self.draw_enemies()
 
     def draw_mini_map(self, room_name: str):
-        self.mini_map_window.clear()
+        self.mini_map_window.erase()
         draw_borders(self.mini_map_window)
         put(self.mini_map_window, 0, 1, '#magenta-black Minimap')
         if self.full_map == None:
@@ -1493,7 +1493,7 @@ class Game:
             if entity_name == 'camera':
                 self.camera_dy += move_y
                 self.camera_dx += move_x
-            self.tile_window.clear()
+            self.tile_window.erase()
             self.draw_tile_window()
             self.tile_window.refresh()
             return False
@@ -1668,7 +1668,7 @@ class Game:
         box.edit(self._terminal_command_validator)
         result = box.gather()
         curses.curs_set(0)
-        w.clear()
+        w.erase()
         w.refresh()
         self.window.addstr(self.tile_window_height, 1, '  ')
         self.window.refresh()
